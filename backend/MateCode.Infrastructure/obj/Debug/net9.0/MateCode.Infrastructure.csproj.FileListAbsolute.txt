@@ -1,0 +1,17 @@
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\obj\Debug\net9.0\MateCode.Infrastructure.csproj.AssemblyReference.cache
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\obj\Debug\net9.0\MateCode.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\obj\Debug\net9.0\MateCode.Infrastructure.AssemblyInfoInputs.cache
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\obj\Debug\net9.0\MateCode.Infrastructure.AssemblyInfo.cs
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\obj\Debug\net9.0\MateCode.Infrastructure.csproj.CoreCompileInputs.cache
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\bin\Debug\net9.0\MateCode.Infrastructure.deps.json
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\bin\Debug\net9.0\MateCode.Infrastructure.dll
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\bin\Debug\net9.0\MateCode.Infrastructure.pdb
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\bin\Debug\net9.0\MateCode.Application.dll
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\bin\Debug\net9.0\MateCode.Core.dll
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\bin\Debug\net9.0\MateCode.Core.pdb
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\bin\Debug\net9.0\MateCode.Application.pdb
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\obj\Debug\net9.0\MateCode.D05CB882.Up2Date
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\obj\Debug\net9.0\MateCode.Infrastructure.dll
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\obj\Debug\net9.0\refint\MateCode.Infrastructure.dll
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\obj\Debug\net9.0\MateCode.Infrastructure.pdb
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\obj\Debug\net9.0\ref\MateCode.Infrastructure.dll

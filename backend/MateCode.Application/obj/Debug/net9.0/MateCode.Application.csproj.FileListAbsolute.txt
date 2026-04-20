@@ -1,0 +1,15 @@
+C:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\obj\Debug\net9.0\MateCode.Application.csproj.AssemblyReference.cache
+C:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\obj\Debug\net9.0\MateCode.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\obj\Debug\net9.0\MateCode.Application.AssemblyInfoInputs.cache
+C:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\obj\Debug\net9.0\MateCode.Application.AssemblyInfo.cs
+C:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\obj\Debug\net9.0\MateCode.Application.csproj.CoreCompileInputs.cache
+C:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\bin\Debug\net9.0\MateCode.Application.deps.json
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\bin\Debug\net9.0\MateCode.Application.dll
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\bin\Debug\net9.0\MateCode.Application.pdb
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\bin\Debug\net9.0\MateCode.Core.dll
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\bin\Debug\net9.0\MateCode.Core.pdb
+C:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\obj\Debug\net9.0\MateCode.E26D0E63.Up2Date
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\obj\Debug\net9.0\MateCode.Application.dll
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\obj\Debug\net9.0\refint\MateCode.Application.dll
+c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\obj\Debug\net9.0\MateCode.Application.pdb
+C:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Application\obj\Debug\net9.0\ref\MateCode.Application.dll
