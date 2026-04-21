@@ -8,5 +8,6 @@ namespace MateCode.Application.Services
     {
         Task SaveFullStoryMapAsync(Guid projectId, Guid tenantId, JsonElement storyMapData);
         Task UpdateBddCriteriaAsync(Guid storyId, Guid tenantId, JsonElement bddCriteria);
+        Task<IEnumerable<MateCode.Core.Entities.Historia>> GetStoriesByProjectAsync(Guid projectId);
     }
 }

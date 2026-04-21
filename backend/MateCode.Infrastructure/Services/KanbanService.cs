@@ -109,5 +109,68 @@ namespace MateCode.Infrastructure.Services
             await _context.SaveChangesAsync();
             return bugTicket;
         }
+
+        public async Task<IEnumerable<KanbanColumna>> GetColumnsByProyectoAsync(Guid proyectoId, Guid tenantId)
+        {
+            return await _context.KanbanColumnas
+                .Where(c => c.ProyectoId == proyectoId && c.TenantId == tenantId)
+                .OrderBy(c => c.OrdenPosicion)
+                .ToListAsync();
+        }
+
+        public async Task<KanbanColumna> CreateColumnAsync(Guid proyectoId, string nombre, Guid tenantId)
+        {
+            var maxOrden = await _context.KanbanColumnas
+                .Where(c => c.ProyectoId == proyectoId && c.TenantId == tenantId)
+                .Select(c => (int?)c.OrdenPosicion)
+                .MaxAsync() ?? -1;
+
+            var columna = new KanbanColumna
+            {
+                Id = Guid.NewGuid(),
+                ProyectoId = proyectoId,
+                TenantId = tenantId,
+                Nombre = nombre,
+                OrdenPosicion = maxOrden + 1
+            };
+
+            await _context.KanbanColumnas.AddAsync(columna);
+            await _context.SaveChangesAsync();
+            return columna;
+        }
+
+        public async Task InitializeDefaultColumnsAsync(Guid proyectoId, Guid tenantId)
+        {
+            var defaults = new[] { "Por hacer", "En progreso", "En espera", "Completado" };
+            for (int i = 0; i < defaults.Length; i++)
+            {
+                _context.KanbanColumnas.Add(new KanbanColumna
+                {
+                    Id = Guid.NewGuid(),
+                    ProyectoId = proyectoId,
+                    TenantId = tenantId,
+                    Nombre = defaults[i],
+                    OrdenPosicion = i
+                });
+            }
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateColumnsOrderAsync(Guid proyectoId, List<Guid> columnIds, Guid tenantId)
+        {
+            var columns = await _context.KanbanColumnas
+                .Where(c => c.ProyectoId == proyectoId && c.TenantId == tenantId)
+                .ToListAsync();
+
+            foreach (var col in columns)
+            {
+                int index = columnIds.IndexOf(col.Id);
+                if (index != -1)
+                {
+                    col.OrdenPosicion = index;
+                }
+            }
+            await _context.SaveChangesAsync();
+        }
     }
 }

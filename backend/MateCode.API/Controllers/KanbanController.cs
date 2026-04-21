@@ -57,6 +57,47 @@ namespace MateCode.API.Controllers
             var bug = await _kanbanService.CreateBugFromTestingAsync(request.ProyectoId, request.HistoriaId, request.Descripcion, (Guid)tenantObj);
             return Ok(bug);
         }
+
+        [HttpGet("columns/{proyectoId:guid}")]
+        public async Task<IActionResult> GetColumns(Guid proyectoId)
+        {
+            if (!HttpContext.Items.TryGetValue("CurrentTenantId", out var tenantObj) || tenantObj is null)
+                return Unauthorized();
+
+            var columns = await _kanbanService.GetColumnsByProyectoAsync(proyectoId, (Guid)tenantObj);
+            return Ok(columns);
+        }
+
+        [HttpPost("columns")]
+        public async Task<IActionResult> AddColumn([FromBody] AddColumnRequest request)
+        {
+            if (!HttpContext.Items.TryGetValue("CurrentTenantId", out var tenantObj) || tenantObj is null)
+                return Unauthorized();
+
+            var column = await _kanbanService.CreateColumnAsync(request.ProyectoId, request.Nombre, (Guid)tenantObj);
+            return Ok(column);
+        }
+
+        [HttpPut("columns/{proyectoId:guid}/reorder")]
+        public async Task<IActionResult> ReorderColumns(Guid proyectoId, [FromBody] ReorderColumnsRequest request)
+        {
+            if (!HttpContext.Items.TryGetValue("CurrentTenantId", out var tenantObj) || tenantObj is null)
+                return Unauthorized();
+
+            await _kanbanService.UpdateColumnsOrderAsync(proyectoId, request.ColumnIds, (Guid)tenantObj);
+            return Ok();
+        }
+    }
+
+    public class ReorderColumnsRequest
+    {
+        public List<Guid> ColumnIds { get; set; } = new();
+    }
+
+    public class AddColumnRequest
+    {
+        public Guid ProyectoId { get; set; }
+        public string Nombre { get; set; } = string.Empty;
     }
 
     public class MoveRequest

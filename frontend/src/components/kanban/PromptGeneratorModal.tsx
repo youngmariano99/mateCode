@@ -10,7 +10,7 @@ export const PromptGeneratorModal = ({ ticket, onClose }: { ticket: Ticket, onCl
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5032';
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
 
     useEffect(() => {
         const fetchPrompt = async () => {

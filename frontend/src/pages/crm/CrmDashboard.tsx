@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { LeadInbox } from '../../components/crm/LeadInbox';
+import { LeadCaptureModule } from '../../components/crm/LeadCaptureModule';
 import { useProject } from '../../context/ProjectContext';
+import { Users, Filter } from 'lucide-react';
 
 interface Client {
   id: string;
   nombre: string;
   email: string;
 }
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
 
 export default function CrmDashboard() {
   const { tenantId } = useProject();
@@ -16,12 +20,11 @@ export default function CrmDashboard() {
     const fetchClients = async () => {
       if (!tenantId) return;
       try {
-        const response = await fetch('http://localhost:5241/api/Crm/clients', { 
+        const response = await fetch(`${API_BASE}/api/Crm/clients`, { 
           headers: { 'X-Tenant-Id': tenantId }
         });
         if (response.ok) {
-           const data = await response.json();
-           setClients(data);
+           setClients(await response.json());
         }
       } catch (error) {
         console.error('Error fetching clients:', error);
@@ -31,37 +34,62 @@ export default function CrmDashboard() {
   }, [tenantId]);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">CRM & Ventas</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Aprobá prospectos entrantes para convertirlos mágicamente en proyectos y clientes.
-        </p>
-      </div>
-
-      <section>
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">
-          Bandeja de Entrada (Nuevos Leads)
-        </h2>
-        <LeadInbox />
-      </section>
-
-      <section>
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">
-          Clientes Activos (Aprobados)
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-           {clients.map(client => (
-             <div key={client.id} className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-               <span className="font-semibold text-slate-900 dark:text-white block">{client.nombre}</span>
-               <span className="text-sm text-slate-500 dark:text-slate-400">{client.email}</span>
-             </div>
-           ))}
-           {clients.length === 0 && (
-             <p className="text-slate-500 text-sm italic">Todavía no tenés clientes aprobados.</p>
-           )}
+    <div className="max-w-7xl mx-auto space-y-12 pb-20 animate-in fade-in duration-700">
+      
+      {/* HEADER ESTRATÉGICO */}
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+            <h1 className="text-5xl font-black text-white tracking-tighter italic uppercase">CRM & <span className="text-blue-500">Growth</span></h1>
+            <p className="text-zinc-500 font-medium mt-2">Gestioná tu embudo de ventas y calificá prospectos con BANT.</p>
         </div>
-      </section>
+        <div className="flex gap-2">
+            <div className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center gap-2">
+                <Users size={16} className="text-zinc-600" />
+                <span className="text-xs font-black text-zinc-300 uppercase italic">{clients.length} Clientes Activos</span>
+            </div>
+        </div>
+      </header>
+
+      {/* MÓDULO DE CAPTURA (LINK MÁGICO) */}
+      <LeadCaptureModule />
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-12">
+        
+        {/* BANDEJA DE ENTRADA (PROSPECTOS) */}
+        <div className="xl:col-span-2 space-y-6">
+            <div className="flex items-center justify-between px-2">
+                <h2 className="text-lg font-black text-white italic uppercase tracking-widest flex items-center gap-3">
+                    <Filter className="text-blue-500" size={20} />
+                    Prospectos por Calificar
+                </h2>
+            </div>
+            <LeadInbox />
+        </div>
+
+        {/* CARTERA DE CLIENTES (APROBADOS) */}
+        <aside className="space-y-6">
+            <h2 className="text-lg font-black text-white italic uppercase tracking-widest px-2">Cartera de Clientes</h2>
+            <div className="space-y-4">
+                {clients.map(client => (
+                  <div key={client.id} className="p-6 bg-zinc-900 border border-zinc-800 rounded-3xl hover:border-zinc-700 transition-all flex items-center gap-4">
+                    <div className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-center text-[10px] font-black text-zinc-500">
+                      {client.nombre.substring(0,2).toUpperCase()}
+                    </div>
+                    <div>
+                      <span className="font-black text-white text-xs block uppercase tracking-tight italic">{client.nombre}</span>
+                      <span className="text-[10px] text-zinc-600 font-mono block mt-1">{client.email}</span>
+                    </div>
+                  </div>
+                ))}
+                {clients.length === 0 && (
+                  <div className="p-10 text-center border border-dashed border-zinc-800 rounded-3xl">
+                    <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest italic">Sin clientes activos</p>
+                  </div>
+                )}
+            </div>
+        </aside>
+
+      </div>
     </div>
   );
 }

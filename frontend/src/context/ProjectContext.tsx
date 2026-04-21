@@ -6,6 +6,7 @@ interface ProjectContextType {
   tenantId: string | null;
   projectName: string | null;
   setProject: (id: string, name: string) => void;
+  setTenant: (id: string) => void;
   isLoading: boolean;
 }
 
@@ -13,19 +14,19 @@ const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
 export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [projectId, setProjectId] = useState<string | null>(null);
-  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [tenantId, setTenantId] = useState<string | null>(localStorage.getItem('mc_current_tenant'));
   const [projectName, setProjectName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+    useEffect(() => {
     const fetchSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
-        // En un entorno multi-tenant real, el tenant_id vendría en el metadata del usuario o una tabla de perfiles.
-        // Simulamos la extracción del tenant_id asociado al usuario.
-        const userTenantId = session.user.user_metadata?.tenant_id || "8226487e-d4eb-48b5-bf27-f4728562725e";
-        setTenantId(userTenantId);
+        // Usamos el ID del usuario como tenantId por defecto si no hay uno persistido
+        const currentTenant = localStorage.getItem('mc_current_tenant') || session.user.id;
+        setTenantId(currentTenant);
+        localStorage.setItem('mc_current_tenant', currentTenant);
       }
       setIsLoading(false);
     };
@@ -38,8 +39,16 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setProjectName(name);
   };
 
+  const setTenant = (id: string) => {
+    setTenantId(id);
+    localStorage.setItem('mc_current_tenant', id);
+    // Al cambiar de espacio, limpiamos el proyecto actual
+    setProjectId(null);
+    setProjectName(null);
+  };
+
   return (
-    <ProjectContext.Provider value={{ projectId, tenantId, projectName, setProject, isLoading }}>
+    <ProjectContext.Provider value={{ projectId, tenantId, projectName, setProject, setTenant, isLoading }}>
       {children}
     </ProjectContext.Provider>
   );

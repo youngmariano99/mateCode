@@ -68,5 +68,13 @@ namespace MateCode.Infrastructure.Services
                 
             await _context.Database.ExecuteSqlRawAsync(updateBdd, bddCriteria.GetRawText(), storyId, tenantId);
         }
+
+        public async Task<IEnumerable<Historia>> GetStoriesByProjectAsync(Guid projectId)
+        {
+            return await _context.Historias
+                .Where(h => h.ProyectoId == projectId)
+                .OrderBy(h => h.RangoLexicografico)
+                .ToListAsync();
+        }
     }
 }

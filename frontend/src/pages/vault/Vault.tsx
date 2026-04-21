@@ -84,6 +84,14 @@ export default function Vault() {
             Módulos resguardados, stacks tecnológicos reutilizables y activos de proyectos exitosos.
           </p>
         </div>
+        <div className="flex gap-4">
+          <a href="/app/vault/prompts" className="px-4 py-2 bg-zinc-800 text-white rounded-lg text-sm font-bold hover:bg-zinc-700 transition-all">
+            📜 Biblioteca de Prompts
+          </a>
+          <a href="/app/vault/forms" className="px-4 py-2 bg-emerald-500 text-zinc-950 rounded-lg text-sm font-bold hover:bg-emerald-400 transition-all">
+            📝 Biblioteca de Formularios
+          </a>
+        </div>
       </div>
 
       {loading ? (

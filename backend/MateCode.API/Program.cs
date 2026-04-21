@@ -24,16 +24,33 @@ var supabaseSignatureKey = builder.Configuration["Supabase:SignatureKey"]
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        var supabaseUrl = builder.Configuration["Supabase:Url"];
+
+        // 👇 ESTA ES LA MAGIA: .NET va a ir a Supabase a buscar la llave ECC automáticamente
+        options.Authority = $"{supabaseUrl}/auth/v1";
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(supabaseSignatureKey)),
-            ValidateIssuer = false,
-            ValidateAudience = false,
+            // ¡ELIMINAMOS el IssuerSigningKey manual! Ya no hace falta.
+            
+            ValidateIssuer = true,
+            ValidIssuer = $"{supabaseUrl}/auth/v1",
+            
+            ValidateAudience = false, // Lo dejamos en false para evitar problemas en local
             ValidateLifetime = true
         };
-    });
 
+        // Dejamos el espía por si las moscas
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine("\n🔴 [JWT ERROR DETECTADO]: " + context.Exception.Message + "\n");
+                return Task.CompletedTask;
+            }
+        };
+    });
 // Configuración Severa CORS
 builder.Services.AddCors(options =>
 {
@@ -58,8 +75,69 @@ builder.Services.AddScoped<IHarvestService, HarvestService>();
 builder.Services.AddScoped<ITeamService, TeamService>();
 builder.Services.AddScoped<IVaultService, VaultService>();
 builder.Services.AddScoped<IPortfolioService, PortfolioService>();
+builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
+builder.Services.AddScoped<IPromptLibraryService, PromptLibraryService>();
+builder.Services.AddScoped<IFormLibraryService, FormLibraryService>();
 
 var app = builder.Build();
+
+// --- INICIALIZACIÓN DE BASE DE DATOS (AUTO-SAPPING) ---
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<AppDbContext>();
+    try {
+        string sql = @"
+            DO $$ 
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'boveda') THEN
+                    CREATE SCHEMA boveda;
+                END IF;
+
+                -- Catálogo de Tecnologías (Evolución)
+                IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'boveda' AND table_name = 'tecnologias_catalogo') THEN
+                    CREATE TABLE boveda.tecnologias_catalogo (
+                        id UUID PRIMARY KEY,
+                        tenant_id UUID,
+                        nombre VARCHAR(100) NOT NULL,
+                        categoria_principal VARCHAR(100) NOT NULL,
+                        categoria_secundaria VARCHAR(100) NOT NULL,
+                        url_documentacion TEXT,
+                        color_hex VARCHAR(10) DEFAULT '#10B981',
+                        fecha_creacion TIMESTAMP DEFAULT NOW()
+                    );
+                ELSE
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'tecnologias_catalogo' AND column_name = 'categoria') THEN
+                        ALTER TABLE boveda.tecnologias_catalogo RENAME COLUMN categoria TO categoria_principal;
+                    END IF;
+                    
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'tecnologias_catalogo' AND column_name = 'categoria_secundaria') THEN
+                        ALTER TABLE boveda.tecnologias_catalogo ADD COLUMN categoria_secundaria VARCHAR(100) DEFAULT 'Plataforma / Herramienta';
+                    END IF;
+                END IF;
+
+                CREATE TABLE IF NOT EXISTS proyectos.proyecto_stack (
+                    id UUID PRIMARY KEY,
+                    proyecto_id UUID NOT NULL REFERENCES proyectos.proyectos(id) ON DELETE CASCADE,
+                    tecnologia_id UUID NOT NULL REFERENCES boveda.tecnologias_catalogo(id),
+                    descripcion_uso TEXT
+                );
+
+                CREATE TABLE IF NOT EXISTS boveda.plantillas_stack (
+                    id UUID PRIMARY KEY,
+                    tenant_id UUID NOT NULL,
+                    nombre VARCHAR(150) NOT NULL,
+                    descripcion TEXT,
+                    tecnologias_ids_json JSONB NOT NULL,
+                    fecha_creacion TIMESTAMP DEFAULT NOW()
+                );
+            END $$;";
+        context.Database.ExecuteSqlRaw(sql);
+        Console.WriteLine("✅ Infraestructura de Bóveda y Stacks verificada exitosamente.");
+    } catch (Exception ex) {
+        Console.WriteLine("⚠️ Error inicializando tablas de Bóveda: " + ex.Message);
+    }
+}
 
 // Pipeline de Middleware
 app.UseCors("AllowFrontend");

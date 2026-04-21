@@ -11,6 +11,7 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import FormInjectableView from './pages/public/FormInjectableView';
 import ClientPortal from './pages/client/ClientPortal';
+import { PublicLeadForm } from './pages/public/PublicLeadForm';
 
 // --------- Vistas de Negocio (Global) ---------
 import CrmDashboard from './pages/crm/CrmDashboard';
@@ -19,6 +20,8 @@ import Dashboard from './pages/dashboard/Dashboard';
 import ProjectsList from './pages/projects/ProjectsList';
 import Vault from './pages/vault/Vault';
 import Portfolio from './pages/portfolio/Portfolio';
+import { PromptLibrary } from './pages/vault/PromptLibrary';
+import { FormLibrary } from './pages/vault/FormLibrary';
 
 // --------- Vistas del Taller (Fases) ---------
 import Phase0Feasibility from './pages/projects/Phase0Feasibility';
@@ -39,6 +42,8 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/form/:template_id" element={<FormInjectableView />} />
+            <Route path="/public-form/:tenantId" element={<PublicLeadForm />} />
+            <Route path="/public/lead/:projectId" element={<PublicLeadForm />} />
             <Route path="/client/:magic_token" element={<ClientPortal />} />
           </Route>
 
@@ -50,6 +55,8 @@ export default function App() {
             <Route path="/app/crm/clients" element={<CrmDashboard />} />
             <Route path="/app/team" element={<TeamManagement />} />
             <Route path="/app/vault" element={<Vault />} />
+            <Route path="/app/vault/prompts" element={<PromptLibrary />} />
+            <Route path="/app/vault/forms" element={<FormLibrary />} />
             <Route path="/app/portfolio" element={<Portfolio />} />
           </Route>
 

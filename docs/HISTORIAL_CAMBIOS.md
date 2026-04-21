@@ -4,6 +4,69 @@
 
 ---
 
+* **Fecha:** 2026-04-21
+* **Módulo/Tarea:** Reestructuración de Requirement Hub (Fase 0) y CRM 2.0
+* **Archivos Tocados:** `frontend/.../FeasibilityForm.tsx`, `frontend/.../CrmDashboard.tsx`, `frontend/.../LeadInbox.tsx`, `frontend/.../LeadCaptureModule.tsx`, `frontend/.../ProjectsList.tsx`, `backend/.../PublicController.cs`, `backend/.../ProjectEntities.cs`, `backend/.../AppDbContext.cs`
+* **Qué y Por Qué:** Transformación del flujo de captura. (1) Se desacopló el flujo BANT de la Fase 0, moviéndolo al CRM bajo un nuevo modelo de "Link Mágico Global" para calificar leads antes de crear proyectos. (2) Refactorización radical de `FeasibilityForm.tsx` modularizando en componentes (`TemplatePickerModal`, `ProjectStandardsAside`) logrando bajar de 400 a ~130 líneas. (3) Ampliación de la entidad `Cliente` con `ContextoJson` para persistir datos BANT de forma independiente. (4) Rediseño visual "MateCode Dark Premium" de las tarjetas de proyecto solucionando problemas de legibilidad en Dark Mode.
+
+---
+
+* **Fecha:** 2026-04-20
+* **Módulo/Tarea:** Estándares Kanban y Consistencia de Datos (Trinchera)
+* **Archivos Tocados:** `backend/.../KanbanService.cs`, `backend/.../ProjectService.cs`, `backend/.../KanbanController.cs`, `backend/database/scripts/20260420_FixTicketsTable.sql`
+* **Qué y Por Qué:** Automatización del flujo ágil. (1) Sincronización de base de datos para resolver error de columna `titulo` faltante mediante script de reparación. (2) Implementación de flujo de inicialización: ahora cada proyecto nuevo crea automáticamente columnas base ("Por hacer", "En progreso", "En espera", "Completado"). (3) Se habilitó el soporte para reordenación dinámica de columnas desde el backend para personalización total del tablero.
+
+---
+
+* **Fecha:** 2026-04-20
+* **Módulo/Tarea:** Biblioteca de Prompts Dinámica (Bóveda) + Mejoras Fase 2
+* **Archivos Tocados:** `backend/.../PromptLibraryService.cs`, `backend/.../PromptLibraryController.cs`, `backend/.../PromptEngineService.cs`, `frontend/.../GeneradorPromptDesignModal.tsx`, `frontend/.../DiagramWorkspace.tsx`
+* **Qué y Por Qué:** Centralización de prompts en la Bóveda. (1) Se creó el registro dinámico de plantillas en DB eliminando prompts hardcodeados. (2) Se implementó inyección contextual (ADN, BDD, Stack) con "switches" en tiempo real desde la UI. (3) Se optimizó la performance del modal de diseño eliminando latencia mediante carga asíncrona y feedback visual inmediato. (4) Se enriquecieron las plantillas base con ejemplos de formato Few-Shot (DBML/PlantUML).
+
+---
+
+* **Fecha:** 2026-04-20
+* **Módulo/Tarea:** Seguridad y Autenticación (Resolución Error 401 / Migración a JWT ECC P-256)
+* **Archivos Tocados:** `backend/MateCode.API/Program.cs`, `frontend/src/components/layout/WorkspaceSelector.tsx`, `backend/MateCode.API/appsettings.json`
+* **Qué y Por Qué:** Resolución definitiva del error 401 Unauthorized. **El Problema:** Supabase migró de HS256 a ECC P-256 (claves asimétricas), invalidando el secreto estático en texto plano. **Solución Backend:** Se migró a validación dinámica vía `Authority`, permitiendo que .NET descargue las llaves públicas de Supabase automáticamente. **Sincronización JIT:** Se implementó `SyncUserAsync` en el `WorkspaceService` para realizar un *Upsert* del usuario local antes de crear espacios, evitando errores de clave foránea. **Solución Frontend:** Se implementó una guarda de seguridad para evitar peticiones con `undefined` durante la carga inicial de la sesión.
+
+---
+
+* **Fecha:** 2026-04-18
+* **Módulo/Tarea:** Módulo 5: Testing, Bóveda y Portal del Cliente (Cierre de Ciclo)
+* **Archivos Tocados:** `backend/.../ClientPortalController.cs`, `backend/.../VaultService.cs`, `frontend/.../TestingChecklist.tsx`, `frontend/.../ClientMagicLink.tsx`, `frontend/.../VaultExtractorWizard.tsx`
+* **Qué y Por Qué:** Finalización del ciclo de vida del software. (1) Portal del Cliente vía Magic LinkUUID para feedback asíncrono y visualización segura de solo lectura. (2) Módulo de Testing interactivo con teclado que inserta Bugs automáticamente en el Kanban ante fallos. (3) Wizard de Cosecha Exponencial para guardar Stacks y configuraciones en la Bóveda para reutilización futura. Se completó el mapeo total de entidades en español en el AppDbContext.
+
+---
+
+* **Fecha:** 2026-04-18
+* **Módulo/Tarea:** Módulo 4: La Trinchera (Fase 3 Kanban) y Motor de Prompts
+* **Archivos Tocados:** `backend/.../IKanbanService.cs`, `backend/.../KanbanService.cs`, `backend/.../KanbanController.cs`, `frontend/.../KanbanBoard.tsx`, `frontend/.../TicketCard.tsx`, `frontend/.../PromptGeneratorModal.tsx`, `frontend/.../types.ts`
+* **Qué y Por Qué:** Implementación del centro de ejecución ágil. (1) Backend con lógica de reordenamiento lexicográfico O(1) para alta performance. (2) Frontend con `@atlaskit/pragmatic-drag-and-drop`, Optimistic UI y estados visuales para tickets (Bugs/Deuda Técnica). (3) Motor de Prompts que unifica ADN, BDD y Stack para asistir a la IA de desarrollo. Se migró toda la nomenclatura a Español (Historia, Epica).
+
+---
+
+* **Fecha:** 2026-04-18
+* **Módulo/Tarea:** Módulo 3: Diseño Visual (Fase 2) y Cotizador
+* **Archivos Tocados:** `backend/.../IFinanceService.cs`, `backend/.../FinanceService.cs`, `backend/.../AppDbContext.cs`, `frontend/.../DiagramWorkspace.tsx`, `frontend/.../QuoteWizardModal.tsx`, `frontend/.../ParserService.ts`
+* **Qué y Por Qué:** Implementación de la arquitectura visual y financiera. (1) Backend actualizado con entidades `PerfilEmpresa` y `Presupuesto` en español. (2) Workspace de diseño híbrido con React Flow y parser DBML. (3) Cotizador Multi-Marca con lógica de mentor argentino y cálculos financieros aislados en Custom Hook. Se mantiene estética Zinc + Emerald.
+
+---
+
+* **Fecha:** 2026-04-18
+* **Módulo/Tarea:** Módulo 2: Requisitos Visuales y User Story Mapping (Fase 1)
+* **Archivos Tocados:** `backend/.../IAgileService.cs`, `backend/.../AgileService.cs`, `backend/.../AgileController.cs`, `backend/.../AppDbContext.cs`, `frontend/.../Phase1Requirements.tsx`, `frontend/src/components/agile/*`
+* **Qué y Por Qué:** Implementación del mapeo visual 2D. (1) Backend refactorizado para soportar Epicas e Historias con RLS y transaccionalidad. (2) Frontend actualizado con `Pragmatic Drag and Drop` para fluidez extrema. (3) Creación del editor BDD con placeholders educativos para asegurar la trazabilidad hacia la Fase de Testing. Se aplicó estética premium Zinc + Emerald.
+
+---
+
+* **Fecha:** 2026-04-18
+* **Módulo/Tarea:** Módulo 1: Consolidación Fase 0 (ADN del Proyecto) + Inyección Técnica
+* **Archivos Tocados:** `backend/MateCode.Application/Services/IProjectService.cs`, `backend/MateCode.Infrastructure/Services/ProjectService.cs`, `backend/MateCode.API/Controllers/ProjectController.cs`, `backend/MateCode.API/Program.cs`, `frontend/src/components/projects/FeasibilityForm.tsx`
+* **Qué y Por Qué:** Implementación de la lógica de negocio para la Fase 0. Se creó `IProjectService` para gestionar el "ADN del Proyecto". El backend ahora inyecta automáticamente Estándares de Ingeniería (Clean Arch, SOLID, Patrones) en el JSONB del proyecto. Se refactorizó la UI con `React Hook Form`, incluyendo placeholders educativos y feedback gamificado tipo "Mentor Argentino" para asegurar la calidad de los requerimientos iniciales.
+
+---
+
 * **Fecha:** 2026-04-14
 * **Módulo/Tarea:** Limpieza de Frontend, Integración de SurveyJS y Supabase SDK
 * **Archivos Tocados:** `frontend/src/App.tsx`, `frontend/src/pages/dashboard/Dashboard.tsx`, `frontend/src/pages/vault/Vault.tsx`, `frontend/src/pages/portfolio/Portfolio.tsx`, `frontend/src/components/design/DiagramWorkspace.tsx`, `frontend/src/components/design/CodeEditorPane.tsx`, `frontend/src/pages/public/FormInjectableView.tsx`, `frontend/src/lib/supabase.ts`, `frontend/src/pages/auth/Login.tsx`
@@ -85,41 +148,6 @@
 **Módulo/Tarea:** Setup Inicial / Documentación
 **Archivos Tocados:** `/docs/00_CONTEXTO_GLOBAL.md`, `/docs/01_MODELO_DE_DATOS.md`, `/docs/02_SITEMAP_Y_RUTAS.md`, `/docs/03_DISENO_Y_UX.md`, `/docs/04_FLUJO_DE_TRABAJO_IA.md`
 **Qué y Por Qué:** Se estableció la arquitectura base, el modelo RLS en PostgreSQL, el enrutamiento con Modo Enfoque y las reglas de diseño para evitar que futuras generaciones de código rompan el proyecto.
-
----
----
-* **Fecha:** 2026-04-18
-* **Módulo/Tarea:** Módulo 1: Consolidación Fase 0 (ADN del Proyecto) + Inyección Técnica
-* **Archivos Tocados:** `backend/MateCode.Application/Services/IProjectService.cs`, `backend/MateCode.Infrastructure/Services/ProjectService.cs`, `backend/MateCode.API/Controllers/ProjectController.cs`, `backend/MateCode.API/Program.cs`, `frontend/src/components/projects/FeasibilityForm.tsx`
-* **Qué y Por Qué:** Implementación de la lógica de negocio para la Fase 0. Se creó `IProjectService` para gestionar el "ADN del Proyecto". El backend ahora inyecta automáticamente Estándares de Ingeniería (Clean Arch, SOLID, Patrones) en el JSONB del proyecto. Se refactorizó la UI con `React Hook Form`, incluyendo placeholders educativos y feedback gamificado tipo "Mentor Argentino" para asegurar la calidad de los requerimientos iniciales.
-
----
----
-* **Fecha:** 2026-04-18
-* **Módulo/Tarea:** Módulo 2: Requisitos Visuales y User Story Mapping (Fase 1)
-* **Archivos Tocados:** `backend/.../IAgileService.cs`, `backend/.../AgileService.cs`, `backend/.../AgileController.cs`, `backend/.../AppDbContext.cs`, `frontend/.../Phase1Requirements.tsx`, `frontend/src/components/agile/*`
-* **Qué y Por Qué:** Implementación del mapeo visual 2D. (1) Backend refactorizado para soportar Epicas e Historias con RLS y transaccionalidad. (2) Frontend actualizado con `Pragmatic Drag and Drop` para fluidez extrema. (3) Creación del editor BDD con placeholders educativos para asegurar la trazabilidad hacia la Fase de Testing. Se aplicó estética premium Zinc + Emerald.
-
----
----
-* **Fecha:** 2026-04-18
-* **Módulo/Tarea:** Módulo 3: Diseño Visual (Fase 2) y Cotizador
-* **Archivos Tocados:** `backend/.../IFinanceService.cs`, `backend/.../FinanceService.cs`, `backend/.../AppDbContext.cs`, `frontend/.../DiagramWorkspace.tsx`, `frontend/.../QuoteWizardModal.tsx`, `frontend/.../ParserService.ts`
-* **Qué y Por Qué:** Implementación de la arquitectura visual y financiera. (1) Backend actualizado con entidades `PerfilEmpresa` y `Presupuesto` en español. (2) Workspace de diseño híbrido con React Flow y parser DBML. (3) Cotizador Multi-Marca con lógica de mentor argentino y cálculos financieros aislados en Custom Hook. Se mantiene estética Zinc + Emerald.
-
----
----
-* **Fecha:** 2026-04-18
-* **Módulo/Tarea:** Módulo 4: La Trinchera (Fase 3 Kanban) y Motor de Prompts
-* **Archivos Tocados:** `backend/.../IKanbanService.cs`, `backend/.../KanbanService.cs`, `backend/.../KanbanController.cs`, `frontend/.../KanbanBoard.tsx`, `frontend/.../TicketCard.tsx`, `frontend/.../PromptGeneratorModal.tsx`, `frontend/.../types.ts`
-* **Qué y Por Qué:** Implementación del centro de ejecución ágil. (1) Backend con lógica de reordenamiento lexicográfico O(1) para alta performance. (2) Frontend con `@atlaskit/pragmatic-drag-and-drop`, Optimistic UI y estados visuales para tickets (Bugs/Deuda Técnica). (3) Motor de Prompts que unifica ADN, BDD y Stack para asistir a la IA de desarrollo. Se migró toda la nomenclatura a Español (Historia, Epica).
-
----
----
-* **Fecha:** 2026-04-18
-* **Módulo/Tarea:** Módulo 5: Testing, Bóveda y Portal del Cliente (Cierre de Ciclo)
-* **Archivos Tocados:** `backend/.../ClientPortalController.cs`, `backend/.../VaultService.cs`, `frontend/.../TestingChecklist.tsx`, `frontend/.../ClientMagicLink.tsx`, `frontend/.../VaultExtractorWizard.tsx`
-* **Qué y Por Qué:** Finalización del ciclo de vida del software. (1) Portal del Cliente vía Magic LinkUUID para feedback asíncrono y visualización segura de solo lectura. (2) Módulo de Testing interactivo con teclado que inserta Bugs automáticamente en el Kanban ante fallos. (3) Wizard de Cosecha Exponencial para guardar Stacks y configuraciones en la Bóveda para reutilización futura. Se completó el mapeo total de entidades en español en el AppDbContext.
 
 ---
 *(Las futuras entradas de la IA deben insertarse acá arriba)*

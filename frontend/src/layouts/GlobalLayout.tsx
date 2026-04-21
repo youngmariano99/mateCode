@@ -1,6 +1,7 @@
 import React from 'react';
-import { LayoutDashboard, Users, Database, LogOut, Briefcase, Rocket } from 'lucide-react';
+import { LayoutDashboard, Users, Database, LogOut, Briefcase, Rocket, Brain } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { WorkspaceSelector } from '../components/layout/WorkspaceSelector';
 
 export const GlobalLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
@@ -11,6 +12,7 @@ export const GlobalLayout = ({ children }: { children: React.ReactNode }) => {
     { label: 'Mis Proyectos', path: '/app/projects', icon: Rocket },
     { label: 'Mi Equipo', path: '/app/team', icon: Users },
     { label: 'La Bóveda', path: '/app/vault', icon: Database },
+    { label: 'Biblioteca Prompts', path: '/app/vault/prompts', icon: Brain },
     { label: 'Mi Portfolio', path: '/app/portfolio', icon: LayoutDashboard },
   ];
 
@@ -56,8 +58,7 @@ export const GlobalLayout = ({ children }: { children: React.ReactNode }) => {
         {/* Topbar Modern */}
         <header className="h-16 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center px-6 justify-between shrink-0 shadow-sm shadow-zinc-200/50 dark:shadow-none">
           <div className="flex items-center gap-2">
-            <Briefcase size={16} className="text-zinc-400" strokeWidth={1.5} />
-            <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Espacio: <span className="text-zinc-800 dark:text-zinc-200">AppyStudios</span></span>
+            <WorkspaceSelector />
           </div>
           <button className="flex items-center gap-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
             <LogOut size={16} strokeWidth={1.5} />

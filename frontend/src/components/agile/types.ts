@@ -20,9 +20,9 @@ export interface Ticket {
   historiaId?: string;
   tipo: 'Tarea' | 'Bug' | 'DeudaTécnica';
   titulo: string;
-  estado: 'Pendiente' | 'En Progreso' | 'Completado';
+  estado: string; // Ahora dinámico por las columnas de la base de datos
   responsableId?: string;
   rangoLexicografico: string;
 }
 
-export type TicketStatus = Ticket['estado'];
+export type TicketStatus = string;

@@ -22,14 +22,14 @@ namespace MateCode.Infrastructure.Services
         public async Task<IEnumerable<PlantillaStack>> GetTemplatesAsync(Guid tenantId)
         {
             return await _context.PlantillasStack
-                .Where(p => p.EspacioTrabajoId == tenantId)
+                .Where(p => p.TenantId == tenantId)
                 .ToListAsync();
         }
 
         public async Task<bool> DeleteTemplateAsync(Guid id, Guid tenantId)
         {
             var template = await _context.PlantillasStack
-                .FirstOrDefaultAsync(p => p.Id == id && p.EspacioTrabajoId == tenantId);
+                .FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId);
 
             if (template == null) return false;
 
@@ -38,14 +38,15 @@ namespace MateCode.Infrastructure.Services
             return true;
         }
 
-        public async Task<Guid> SaveStackToVaultAsync(Guid tenantId, string nombre, JsonElement payload)
+        public async Task<Guid> SaveStackToVaultAsync(Guid tenantId, string nombre, JsonElement tecnologiasIdsJson)
         {
             var template = new PlantillaStack
             {
                 Id = Guid.NewGuid(),
-                EspacioTrabajoId = tenantId,
+                TenantId = tenantId,
                 Nombre = nombre,
-                PayloadTecnico = payload
+                TecnologiasIdsJson = tecnologiasIdsJson,
+                FechaCreacion = DateTime.UtcNow
             };
 
             await _context.PlantillasStack.AddAsync(template);

@@ -11,6 +11,7 @@ namespace MateCode.Core.Entities
         public string Email { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;
         public string TokenEnlaceMagico { get; set; } = string.Empty;
+        public JsonElement ContextoJson { get; set; }
     }
 
     public class Proyecto
@@ -22,5 +23,14 @@ namespace MateCode.Core.Entities
         public JsonElement ContextoJson { get; set; }
         public string FaseActual { get; set; } = "Fase 0 - Factibilidad";
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+    }
+
+    public class Diagrama
+    {
+        public Guid Id { get; set; }
+        public Guid ProyectoId { get; set; }
+        public string Tipo { get; set; } = string.Empty; // ERD, UML, Sitemap, Roles
+        public string ContenidoCodigo { get; set; } = string.Empty;
+        public DateTime FechaActualizacion { get; set; } = DateTime.UtcNow;
     }
 }

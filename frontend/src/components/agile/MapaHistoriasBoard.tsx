@@ -90,7 +90,7 @@ export const MapaHistoriasBoard = ({ rawJson }: { rawJson: string }) => {
               try {
                 const { data: { session } } = await supabase.auth.getSession();
                 const token = session?.access_token;
-                const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5032';
+                const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
 
                 const response = await fetch(`${API_BASE}/api/Agile/historias/${selectedHistoria.id}/bdd`, {
                   method: 'PUT',

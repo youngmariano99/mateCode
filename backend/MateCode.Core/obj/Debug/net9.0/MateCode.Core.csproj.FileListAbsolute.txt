@@ -9,3 +9,4 @@ C:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Core\o
 C:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Core\obj\Debug\net9.0\refint\MateCode.Core.dll
 C:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Core\obj\Debug\net9.0\MateCode.Core.pdb
 C:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Core\obj\Debug\net9.0\ref\MateCode.Core.dll
+C:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Core\obj\Debug\net9.0\MateCode.Core.sourcelink.json

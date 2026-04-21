@@ -1,302 +1,147 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useProject } from '../../context/ProjectContext';
 import Swal from 'sweetalert2';
-import { 
-  CheckCircle2, 
-  Save, 
-  Rocket, 
-  ShieldCheck, 
-  Cpu, 
-  Layers, 
-  Zap,
-  Info,
-  Loader2
-} from 'lucide-react';
+import { Cpu, Layers, Zap, Loader2, Save, Plus, RefreshCw } from 'lucide-react';
+import { TemplatePickerModal } from '../shared/TemplatePickerModal';
+import { ProjectStandardsAside } from './ProjectStandardsAside';
+import { StackBuilder } from './StackBuilder';
 
-interface FeasibilityFormData {
-  definicion_problema: string;
-  mapa_impacto: string;
-  usuarios_contexto: string;
-  procesos_actuales: string;
-  objetivo_software: string;
-  criterios_exito: string;
-  restricciones_iniciales: string;
-  nivel_prioridad: 'critico' | 'importante' | 'accesorio';
-  vision_crecimiento: 'mvp' | 'escalable';
-}
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
 
 export const FeasibilityForm = () => {
   const { id: projectId } = useParams<{ id: string }>();
   const { tenantId } = useProject();
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
-  
-  const { register, handleSubmit, watch, formState: { errors, isValid } } = useForm<FeasibilityFormData>({
-    mode: 'onChange',
-    defaultValues: {
-      nivel_prioridad: 'importante',
-      vision_crecimiento: 'mvp'
+  const [isBrainstorming, setIsBrainstorming] = useState(false);
+  const [availableForms, setAvailableForms] = useState<any[]>([]);
+  const [adnTemplate, setAdnTemplate] = useState<any>(null);
+  const [adnData, setAdnData] = useState<any>(null);
+  const [showAdnSelector, setShowAdnSelector] = useState(false);
+
+  useEffect(() => {
+    const init = async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+            const projRes = await fetch(`${API_BASE}/api/Project/${projectId}`, { headers: { 'Authorization': `Bearer ${session?.access_token}`, 'X-Tenant-Id': tenantId || '' } });
+            if (projRes.ok) {
+                const project = await projRes.json();
+                setAdnData(project.contextoJson?.adn?.data || {});
+                if (project.contextoJson?.adn?.plantillaId) fetchTemplate(project.contextoJson.adn.plantillaId);
+            }
+            const res = await fetch(`${API_BASE}/api/FormLibrary`, { headers: { 'Authorization': `Bearer ${session?.access_token}`, 'X-Tenant-Id': tenantId || '' } });
+            if (res.ok) setAvailableForms(await res.json());
+        } catch (err) { console.error("Error init:", err); }
+    };
+    init();
+  }, [tenantId, projectId]);
+
+  const fetchTemplate = async (id: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch(`${API_BASE}/api/FormLibrary/${id}`, { headers: { 'Authorization': `Bearer ${session?.access_token}`, 'X-Tenant-Id': tenantId || '' } });
+    if (res.ok) setAdnTemplate(await res.json());
+  };
+
+  const handleAssignTemplate = async (templateId: string) => {
+    if (Object.keys(adnData || {}).length > 0) {
+        const result = await Swal.fire({ title: '¿Cambiar ADN?', text: 'Ya existen datos de ingeniería. ¿Deseas cambiar el modelo?', icon: 'warning', showCancelButton: true, background: '#18181b', color: '#fff' });
+        if (!result.isConfirmed) return;
     }
-  });
+    const { data: { session } } = await supabase.auth.getSession();
+    const projRes = await fetch(`${API_BASE}/api/Project/${projectId}`, { headers: { 'Authorization': `Bearer ${session?.access_token}`, 'X-Tenant-Id': tenantId || '' } });
+    const project = await projRes.json();
+    const ctx = project.contextoJson || {};
+    ctx.adn = { ...ctx.adn, plantillaId: templateId };
 
-  const onSubmit = async (data: FeasibilityFormData) => {
-    setIsSaving(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
-      const response = await fetch(`${API_BASE}/api/Project/${projectId}/feasibility`, {
+    await fetch(`${API_BASE}/api/Project/${projectId}/feasibility`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'X-Tenant-Id': tenantId || ''
-        },
-        body: JSON.stringify(data),
-      });
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}`, 'X-Tenant-Id': tenantId || '' },
+        body: JSON.stringify(ctx),
+    });
+    fetchTemplate(templateId);
+    setShowAdnSelector(false);
+  };
 
-      if (!response.ok) throw new Error('Error al consolidar el ADN');
-
-      setShowSuccess(true);
-      
-      Swal.fire({
-        title: '¡ADN Consolidado! 🧬',
-        text: 'Transformamos tu idea en un objeto de ingeniería. Ahora vamos a por los requisitos.',
-        icon: 'success',
-        background: '#18181b',
-        color: '#fff',
-        confirmButtonColor: '#10b981',
-        confirmButtonText: 'Despegar a Fase 1 🚀',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          navigate(`/projects/${projectId}/phase-1-requirements`);
+  const handleBrainstorming = async () => {
+    const { value: idea } = await Swal.fire({ title: '💡 Brainstorming IA', input: 'textarea', showCancelButton: true, background: '#18181b', color: '#fff' });
+    if (idea) {
+      setIsBrainstorming(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`${API_BASE}/api/FormLibrary/generate-brainstorming`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}`, 'X-Tenant-Id': tenantId || '' },
+          body: JSON.stringify({ idea, formularioId: adnTemplate?.id || availableForms.find(f => (f.tipo || f.Tipo)?.toLowerCase() === 'idea_propia')?.id })
+        });
+        if (res.ok) {
+          const { prompt } = await res.json();
+          await Swal.fire({ title: '🧠 Oráculo', html: `<textarea id="ai-prompt" class="w-full h-64 p-3 bg-zinc-950 text-emerald-400 text-xs font-mono border border-zinc-800 rounded-lg">${prompt}</textarea>`, confirmButtonText: 'Copiar', background: '#18181b', color: '#fff', preConfirm: () => navigator.clipboard.writeText((document.getElementById('ai-prompt') as HTMLTextAreaElement).value) });
+          const { value: jsonResult } = await Swal.fire({ title: 'Pegar JSON', input: 'textarea', background: '#18181b', color: '#fff' });
+          if (jsonResult) setAdnData(JSON.parse(jsonResult));
         }
-      });
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (error) {
-      console.error(error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Se nos lavó el mate',
-        text: 'Hubo un error al intentar guardar el ADN. Revisá tu conexión o reintentá en unos minutos.',
-        background: '#18181b',
-        color: '#fff',
-        confirmButtonColor: '#10b981'
-      });
-    } finally {
-      setIsSaving(false);
+      } finally { setIsBrainstorming(false); }
     }
   };
 
+  const updateAdn = async () => {
+    setIsSaving(true);
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const projRes = await fetch(`${API_BASE}/api/Project/${projectId}`, { headers: { 'Authorization': `Bearer ${session?.access_token}`, 'X-Tenant-Id': tenantId || '' } });
+        const ctx = (await projRes.json()).contextoJson || {};
+        ctx.adn = { ...ctx.adn, data: adnData };
+        await fetch(`${API_BASE}/api/Project/${projectId}/feasibility`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}`, 'X-Tenant-Id': tenantId || '' }, body: JSON.stringify(ctx) });
+        Swal.fire({ icon: 'success', title: 'ADN Consolidado', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+    } finally { setIsSaving(false); }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      
-      {/* --- BANNER DE ÉXITO --- */}
-      {showSuccess && (
-        <div className="bg-emerald-500/10 border border-emerald-500/50 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6 animate-in zoom-in duration-500">
-          <div className="bg-emerald-500 p-3 rounded-full shadow-lg shadow-emerald-500/40">
-            <CheckCircle2 className="text-white h-8 w-8" />
-          </div>
-          <div className="flex-1 text-center md:text-left">
-            <h2 className="text-xl font-black text-emerald-400 uppercase tracking-tighter italic">¡Excelente! Este es el ADN de tu proyecto.</h2>
-            <p className="text-zinc-400 text-sm mt-1 font-medium italic">
-              Con toda esta info, en la Fase 1 te voy a armar un prompt perfecto para que la IA te genere el esqueleto del software en segundos. 
-            </p>
-          </div>
-          <button 
-            onClick={() => navigate(`/projects/${projectId}/phase-1-requirements`)}
-            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all flex items-center gap-2 whitespace-nowrap shadow-lg shadow-emerald-500/20"
-          >
-            <Rocket size={18} />
-            Despegar a Fase 1
-          </button>
+    <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div><h1 className="text-5xl font-black text-white tracking-tighter italic uppercase">ADN Hub <span className="text-emerald-500">Fase 0</span></h1><p className="text-zinc-500 font-medium mt-2">Definición de ingeniería y procesos técnicos del proyecto.</p></div>
+        <button onClick={handleBrainstorming} disabled={isBrainstorming} className="px-8 py-4 bg-emerald-500 text-zinc-950 font-black rounded-2xl flex items-center gap-3 hover:scale-105 transition-all shadow-[0_0_30px_rgba(16,185,129,0.3)]">{isBrainstorming ? <Loader2 className="animate-spin" /> : <Zap size={20} />}<span>Brainstorming IA</span></button>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="lg:col-span-2 space-y-10">
+            <section className="bg-zinc-900 border-2 border-zinc-800 rounded-[3rem] p-10 space-y-8 min-h-[350px]">
+                <div className="flex items-center gap-4"><div className="p-4 bg-emerald-500 rounded-3xl"><Cpu className="text-zinc-950" size={28} /></div><div><h2 className="text-3xl font-black text-white italic uppercase">ADN Interno</h2><p className="text-zinc-500 text-xs font-bold uppercase">Estructura Técnica</p></div></div>
+                {!adnTemplate ? (
+                    <div className="py-12 text-center space-y-6 border-2 border-dashed border-zinc-800 rounded-[2.5rem] bg-zinc-950/30">
+                        <Plus size={32} className="text-zinc-700 mx-auto" /><p className="text-zinc-500 text-sm italic">Asigna un modelo de ingeniería.</p>
+                        <button onClick={() => setShowAdnSelector(true)} className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest text-xs rounded-2xl transition-all">Asignar Modelo ADN</button>
+                    </div>
+                ) : (
+                    <div className="space-y-8 animate-in fade-in duration-500">
+                        <div className="flex justify-between items-center bg-zinc-950 p-6 rounded-[2rem] border border-emerald-500/10 shadow-lg">
+                            <div><p className="text-[10px] text-emerald-500 font-black uppercase mb-1">Modelo Activo</p><p className="text-lg text-zinc-100 font-black italic uppercase">{adnTemplate.nombre}</p></div>
+                            <button onClick={() => setShowAdnSelector(true)} className="p-4 bg-zinc-900 border border-zinc-800 text-zinc-500 rounded-2xl hover:text-emerald-400 transition-all"><RefreshCw size={20} /></button>
+                        </div>
+                        <div className="space-y-6">
+                            {(adnTemplate.configuracionJson || []).map((q: any, i: number) => (
+                                <div key={i} className="space-y-3">
+                                    <label className="text-[11px] font-black text-zinc-600 uppercase tracking-widest">{i+1}. {q.pregunta}</label>
+                                    {(q.tipoInput || q.tipo_input) === 'textarea' ? (
+                                        <textarea value={adnData?.[q.etiquetaSemantica || q.etiqueta_semantica] || ''} onChange={e => setAdnData({ ...adnData, [q.etiquetaSemantica || q.etiqueta_semantica]: e.target.value })} rows={4} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-5 text-sm text-zinc-300 outline-none focus:border-emerald-500/50 transition-all resize-none font-medium" />
+                                    ) : (
+                                        <input value={adnData?.[q.etiquetaSemantica || q.etiqueta_semantica] || ''} onChange={e => setAdnData({ ...adnData, [q.etiquetaSemantica || q.etiqueta_semantica]: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-5 text-sm text-zinc-300 outline-none focus:border-emerald-500/50 transition-all font-medium" />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <button disabled={isSaving} onClick={updateAdn} className="w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-sm rounded-2xl transition-all flex justify-center items-center gap-3">{isSaving ? <Loader2 className="animate-spin" /> : 'Consolidar Ingeniería ADN'}</button>
+                    </div>
+                )}
+            </section>
+
+            {/* SECCIÓN DEL STACK TECNOLÓGICO */}
+            <StackBuilder projectId={projectId!} tenantId={tenantId!} />
         </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        
-        {/* --- FORMULARIO PRINCIPAL --- */}
-        <form 
-          onSubmit={handleSubmit(onSubmit)}
-          className="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-3xl p-8 space-y-8 shadow-2xl relative overflow-hidden"
-        >
-          {/* Indicador de Compleción */}
-          <div className="absolute top-0 left-0 w-full h-1 bg-zinc-800">
-             <div 
-              className="h-full bg-emerald-500 transition-all duration-500" 
-              style={{ width: `${isValid ? '100%' : '40%'}` }}
-             />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
-            {/* Campo 1 */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">1. Definición del Problema</label>
-              <textarea 
-                {...register("definicion_problema", { required: true })}
-                rows={3}
-                placeholder="Ej: El cliente no sabe cuánto stock tiene y pierde ventas por no tenerlo actualizado."
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-100 placeholder-zinc-700 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-none font-medium"
-              />
-            </div>
-
-            {/* Campo 2 */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">2. Mapa de Impacto</label>
-              <textarea 
-                {...register("mapa_impacto", { required: true })}
-                rows={3}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-100 placeholder-zinc-700 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-none font-medium"
-              />
-            </div>
-
-            {/* Campo 3 */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">3. Usuarios y Contexto</label>
-              <textarea 
-                {...register("usuarios_contexto", { required: true })}
-                rows={3}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-100 placeholder-zinc-700 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-none font-medium"
-              />
-            </div>
-
-            {/* Campo 4 */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">4. Procesos Actuales</label>
-              <textarea 
-                {...register("procesos_actuales", { required: true })}
-                rows={3}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-100 placeholder-zinc-700 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-none font-medium"
-              />
-            </div>
-
-            {/* Campo 5 */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">5. Objetivo del Software</label>
-              <textarea 
-                {...register("objetivo_software", { required: true })}
-                rows={3}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-100 placeholder-zinc-700 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-none font-medium"
-              />
-            </div>
-
-            {/* Campo 6 */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">6. Criterios de Éxito (KPIs)</label>
-              <textarea 
-                {...register("criterios_exito", { required: true })}
-                rows={3}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-100 placeholder-zinc-700 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-none font-medium"
-              />
-            </div>
-
-            {/* Campo 7 */}
-            <div className="space-y-2 lg:col-span-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">7. Restricciones Iniciales</label>
-              <textarea 
-                {...register("restricciones_iniciales", { required: true })}
-                rows={2}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-100 placeholder-zinc-700 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-none font-medium"
-              />
-            </div>
-
-            {/* Campo 8 y 9 */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">8. Nivel de Prioridad</label>
-              <select 
-                {...register("nivel_prioridad")}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-100 outline-none focus:border-emerald-500/50 transition-all cursor-pointer font-bold"
-              >
-                <option value="critico">Crítico (Dolor extremo)</option>
-                <option value="importante">Importante (Escalabilidad)</option>
-                <option value="accesorio">Accesorio (Nice to have)</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">9. Visión de Crecimiento</label>
-              <select 
-                {...register("vision_crecimiento")}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-100 outline-none focus:border-emerald-500/50 transition-all cursor-pointer font-bold"
-              >
-                <option value="mvp">MVP Puntual</option>
-                <option value="escalable">Plataforma Escalable</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="pt-8 border-t border-zinc-800 flex justify-end">
-            <button 
-              type="submit" 
-              disabled={isSaving}
-              className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 text-white font-black uppercase tracking-widest text-xs py-5 px-12 rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-3 group"
-            >
-              {isSaving ? <Loader2 className="animate-spin" size={18} /> : (
-                <>
-                  <Save size={18} className="group-hover:scale-110 transition-transform" />
-                  Guardar ADN del Proyecto 🧬
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-
-        {/* --- PANEL LATERAL DE ESTÁNDARES --- */}
-        <aside className="space-y-6">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-emerald-500/10 rounded-lg">
-                <ShieldCheck className="text-emerald-500 h-5 w-5" />
-              </div>
-              <h3 className="font-extrabold text-white text-xs uppercase tracking-tighter">Estándares MateCode</h3>
-            </div>
-            
-            <p className="text-[11px] text-zinc-500 font-medium mb-6 leading-relaxed italic">
-              "Configurar esto una vez significa que la IA nunca más te va a preguntar qué tecnologías usas o cómo querés el código."
-            </p>
-
-            <ul className="space-y-5">
-              <li className="flex items-start gap-3">
-                <Layers className="text-zinc-600 h-4 w-4 mt-0.5" />
-                <div>
-                   <h4 className="text-[10px] font-black text-zinc-300 uppercase italic">Clean Architecture</h4>
-                   <p className="text-[10px] text-zinc-600 font-medium">Separación estricta de capas.</p>
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <Zap className="text-zinc-600 h-4 w-4 mt-0.5" />
-                <div>
-                   <h4 className="text-[10px] font-black text-zinc-300 uppercase italic">SOLID & Patrones</h4>
-                   <p className="text-[10px] text-zinc-600 font-medium">Inyección de dependencias implícita.</p>
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <Cpu className="text-zinc-600 h-4 w-4 mt-0.5" />
-                <div>
-                   <h4 className="text-[10px] font-black text-zinc-300 uppercase italic">QA & BDD</h4>
-                   <p className="text-[10px] text-zinc-600 font-medium">Checklist automatizado por defecto.</p>
-                </div>
-              </li>
-            </ul>
-
-            <div className="mt-8 p-4 bg-zinc-950 border border-dashed border-zinc-800 rounded-2xl">
-              <div className="flex items-center gap-2 text-emerald-500 mb-2">
-                <Info size={14} />
-                <span className="text-[9px] font-black uppercase tracking-widest">Dato Pro</span>
-              </div>
-              <p className="text-[10px] text-zinc-500 leading-normal italic font-medium">
-                Al guardar, inyectamos automáticamente +20 reglas de ingeniería Clean Code en tu perfil.
-              </p>
-            </div>
-          </div>
-        </aside>
-
+        <ProjectStandardsAside onNavigatePhase1={() => navigate(`/projects/${projectId}/phase-1-requirements`)} />
+        <TemplatePickerModal isOpen={showAdnSelector} onClose={() => setShowAdnSelector(false)} type="adn" availableForms={availableForms} onSelect={handleAssignTemplate} />
       </div>
     </div>
   );

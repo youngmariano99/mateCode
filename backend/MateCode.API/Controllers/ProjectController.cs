@@ -28,6 +28,13 @@ namespace MateCode.API.Controllers
             var projects = await _projectService.GetAllProjectsAsync(tenantId);
             return Ok(projects);
         }
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var project = await _projectService.GetProjectByIdAsync(id);
+            if (project == null) return NotFound();
+            return Ok(project);
+        }
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] JsonElement body)
@@ -36,7 +43,12 @@ namespace MateCode.API.Controllers
             if (!Guid.TryParse(tenantHeader, out Guid tenantId)) return BadRequest("Invalid Tenant");
 
             var name = body.GetProperty("Nombre").GetString() ?? "Nuevo Proyecto";
-            var project = await _projectService.CreateProjectAsync(tenantId, name);
+            Guid? templateId = null;
+            if (body.TryGetProperty("PlantillaStackId", out var tId) && tId.ValueKind != JsonValueKind.Null) {
+                if (Guid.TryParse(tId.GetString(), out var gId)) templateId = gId;
+            }
+
+            var project = await _projectService.CreateProjectAsync(tenantId, name, templateId);
             return Ok(project);
         }
 

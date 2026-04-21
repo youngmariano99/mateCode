@@ -10,6 +10,6 @@ namespace MateCode.Application.Services
     {
         Task<IEnumerable<PlantillaStack>> GetTemplatesAsync(Guid tenantId);
         Task<bool> DeleteTemplateAsync(Guid id, Guid tenantId);
-        Task<Guid> SaveStackToVaultAsync(Guid tenantId, string nombre, JsonElement payload);
+        Task<Guid> SaveStackToVaultAsync(Guid tenantId, string nombre, JsonElement tecnologiasIdsJson);
     }
 }

@@ -12,21 +12,29 @@ namespace MateCode.Infrastructure.Services
     public class ProjectService : IProjectService
     {
         private readonly AppDbContext _context;
+        private readonly IKanbanService _kanbanService;
 
-        public ProjectService(AppDbContext context)
+        public ProjectService(AppDbContext context, IKanbanService kanbanService)
         {
             _context = context;
+            _kanbanService = kanbanService;
         }
 
         public async Task<IEnumerable<Proyecto>> GetAllProjectsAsync(Guid tenantId)
         {
-            return await _context.Set<Proyecto>()
+            return await _context.Proyectos
                 .Where(p => p.TenantId == tenantId)
                 .OrderByDescending(p => p.FechaCreacion)
                 .ToListAsync();
         }
 
-        public async Task<Proyecto> CreateProjectAsync(Guid tenantId, string name)
+        public async Task<Proyecto> GetProjectByIdAsync(Guid projectId)
+        {
+            return await _context.Proyectos
+                .FirstOrDefaultAsync(p => p.Id == projectId);
+        }
+
+        public async Task<Proyecto> CreateProjectAsync(Guid tenantId, string name, Guid? plantillaStackId = null)
         {
             var proyecto = new Proyecto
             {
@@ -39,7 +47,36 @@ namespace MateCode.Infrastructure.Services
             };
 
             await _context.Set<Proyecto>().AddAsync(proyecto);
+            
+            // Si viene una plantilla, clonamos el stack
+            if (plantillaStackId.HasValue)
+            {
+                var template = await _context.PlantillasStack.FindAsync(plantillaStackId.Value);
+                if (template != null)
+                {
+                    try {
+                        var techIds = JsonSerializer.Deserialize<List<Guid>>(template.TecnologiasIdsJson.GetRawText());
+                        if (techIds != null)
+                        {
+                            foreach (var tid in techIds)
+                            {
+                                _context.ProyectosStack.Add(new ProyectoStack
+                                {
+                                    Id = Guid.NewGuid(),
+                                    ProyectoId = proyecto.Id,
+                                    TecnologiaId = tid
+                                });
+                            }
+                        }
+                    } catch { }
+                }
+            }
+
             await _context.SaveChangesAsync();
+
+            // Inicializar columnas por defecto
+            await _kanbanService.InitializeDefaultColumnsAsync(proyecto.Id, tenantId);
+
             return proyecto;
         }
 

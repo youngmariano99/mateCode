@@ -21,7 +21,8 @@ export default function Phase1Requirements() {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5032'}/api/Agile/projects/${projectId}/storymap/import`, {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
+      const response = await fetch(`${API_BASE}/api/Agile/projects/${projectId}/storymap/import`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

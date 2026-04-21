@@ -13,7 +13,7 @@ export const TestingChecklist = () => {
     const [items, setItems] = useState<TestItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [reportingBug, setReportingBug] = useState<string | null>(null);
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5032';
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
 
     useEffect(() => {
         const fetchStories = async () => {

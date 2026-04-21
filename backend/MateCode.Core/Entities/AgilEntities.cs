@@ -40,4 +40,13 @@ namespace MateCode.Core.Entities
         public DateTime Fecha { get; set; } = DateTime.UtcNow;
         public bool Procesado { get; set; } = false;
     }
+
+    public class KanbanColumna
+    {
+        public Guid Id { get; set; }
+        public Guid ProyectoId { get; set; }
+        public Guid TenantId { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+        public int OrdenPosicion { get; set; }
+    }
 }

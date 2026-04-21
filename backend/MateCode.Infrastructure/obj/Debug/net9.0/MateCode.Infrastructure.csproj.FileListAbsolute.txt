@@ -15,3 +15,4 @@ c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infras
 c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\obj\Debug\net9.0\refint\MateCode.Infrastructure.dll
 c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\obj\Debug\net9.0\MateCode.Infrastructure.pdb
 c:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\obj\Debug\net9.0\ref\MateCode.Infrastructure.dll
+C:\Users\mari_\OneDrive\Escritorio\t\sistemaDeGestionDev\backend\MateCode.Infrastructure\obj\Debug\net9.0\MateCode.Infrastructure.sourcelink.json

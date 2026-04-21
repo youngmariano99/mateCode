@@ -12,7 +12,7 @@ export const VaultExtractorWizard = ({ onComplete }: { onComplete: () => void })
         diseno: true,
         presupuesto: false
     });
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5032';
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
 
     const handleCosecha = async () => {
         setLoading(true);
