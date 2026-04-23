@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useProject } from '../../context/ProjectContext';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
 import { ChevronDown, ChevronUp, Star, Rocket, Trash2, Send } from 'lucide-react';
 
@@ -12,8 +12,6 @@ interface Lead {
   contextoJson?: any; 
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
-
 export const LeadInbox = () => {
   const { tenantId } = useProject();
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -24,16 +22,8 @@ export const LeadInbox = () => {
     if (!tenantId) return;
     try {
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`${API_BASE}/api/Crm/leads`, {
-        headers: { 
-            'Authorization': `Bearer ${session?.access_token}`,
-            'X-Tenant-Id': tenantId 
-        }
-      });
-      if (response.ok) {
-        setLeads(await response.json());
-      }
+      const data = await api.get('/Crm/leads');
+      setLeads(data);
     } catch (error) {
       console.error('Error fetching leads:', error);
     } finally {
@@ -58,19 +48,9 @@ export const LeadInbox = () => {
     if (!result.isConfirmed) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`${API_BASE}/api/Crm/leads/${id}/approve`, {
-        method: 'POST',
-        headers: { 
-            'Authorization': `Bearer ${session?.access_token}`,
-            'X-Tenant-Id': tenantId || '' 
-        }
-      });
-
-      if (response.ok) {
-        Swal.fire({ title: '¡Proyecto Creado!', icon: 'success', background: '#18181b', color: '#fff' });
-        fetchLeads();
-      }
+      await api.post(`/Crm/leads/${id}/approve`);
+      Swal.fire({ title: '¡Proyecto Creado!', icon: 'success', background: '#18181b', color: '#fff' });
+      fetchLeads();
     } catch (error) {
       console.error(error);
     }

@@ -116,5 +116,52 @@ namespace MateCode.Infrastructure.Services
 
             await _context.Database.ExecuteSqlRawAsync(sql, finalJson, projectId, tenantId);
         }
+
+        public async Task<IEnumerable<EstandarCatalogo>> GetProjectStandardsAsync(Guid projectId)
+        {
+            return await _context.ProyectosEstandares
+                .Where(pe => pe.ProyectoId == projectId)
+                .Include(pe => pe.Estandar)
+                .Select(pe => pe.Estandar!)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<ProyectoStack>> GetProjectStackAsync(Guid projectId)
+        {
+            return await _context.ProyectosStack
+                .Where(ps => ps.ProyectoId == projectId)
+                .Include(ps => ps.Tecnologia)
+                .ToListAsync();
+        }
+
+        public async Task<object> GetContextSummaryAsync(Guid projectId)
+        {
+            var project = await _context.Proyectos.FindAsync(projectId);
+            if (project == null) return null;
+
+            var stackCount = await _context.ProyectosStack.CountAsync(ps => ps.ProyectoId == projectId);
+            var standardsCount = await _context.ProyectosEstandares.CountAsync(pe => pe.ProyectoId == projectId);
+            var storiesCount = await _context.Historias.CountAsync(h => h.ProyectoId == projectId);
+            var diagramsCount = await _context.Diagramas.CountAsync(d => d.ProyectoId == projectId);
+            var activeTickets = await _context.Tickets.CountAsync(t => t.ProyectoId == projectId && t.Estado != "Completado");
+
+            // ADN se considera completo si el JSON no está vacío y tiene la propiedad 'adn'
+            bool hasAdn = false;
+            try {
+                if (project.ContextoJson.ValueKind != JsonValueKind.Null && project.ContextoJson.ValueKind != JsonValueKind.Undefined) {
+                    hasAdn = project.ContextoJson.TryGetProperty("adn", out _);
+                }
+            } catch { }
+
+            return new {
+                tieneAdn = hasAdn,
+                tieneStack = stackCount > 0,
+                tieneBlueprint = standardsCount > 0,
+                cantidadRequisitos = storiesCount,
+                diagramasGenerados = diagramsCount,
+                ticketsActivos = activeTickets,
+                faseActual = project.FaseActual
+            };
+        }
     }
 }

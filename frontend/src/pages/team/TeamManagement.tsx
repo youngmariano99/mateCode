@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PermissionsMatrix } from '../../components/team/PermissionsMatrix';
 import { useProject } from '../../context/ProjectContext';
+import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
 
 interface TeamMember {
@@ -21,14 +22,9 @@ export default function TeamManagement() {
     if (!tenantId) return;
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5241/api/Team', {
-        headers: { 'X-Tenant-Id': tenantId }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTeam(data);
-        if (data.length > 0) setSelectedMember(data[0]);
-      }
+      const data = await api.get('/Team');
+      setTeam(data);
+      if (data.length > 0) setSelectedMember(data[0]);
     } catch (error) {
       console.error('Error fetching team:', error);
     } finally {
@@ -55,25 +51,15 @@ export default function TeamManagement() {
 
     if (email) {
       try {
-        const response = await fetch('http://localhost:5241/api/Team/invite', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'X-Tenant-Id': tenantId 
-          },
-          body: JSON.stringify({ email })
+        await api.post('/Team/invite', { email });
+        Swal.fire({
+          title: '¡Invitación Enviada!',
+          text: `Se ha enviado un correo a ${email}`,
+          icon: 'success',
+          background: '#18181b',
+          color: '#f4f4f5',
+          confirmButtonColor: '#10b981'
         });
-
-        if (response.ok) {
-          Swal.fire({
-            title: '¡Invitación Enviada!',
-            text: `Se ha enviado un correo a ${email}`,
-            icon: 'success',
-            background: '#18181b',
-            color: '#f4f4f5',
-            confirmButtonColor: '#10b981'
-          });
-        }
       } catch (error) {
         console.error('Error inviting member:', error);
       }

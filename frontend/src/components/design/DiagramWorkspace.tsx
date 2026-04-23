@@ -3,13 +3,12 @@ import { CodeEditorPane } from './CodeEditorPane';
 import { VisualCanvas } from './VisualCanvas';
 import { ParserService } from '../../services/agile/ParserService';
 import type { DiagramNode, DiagramEdge } from '../../services/agile/ParserService';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
 import { useParams } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
 import { GeneradorPromptDesignModal } from './GeneradorPromptDesignModal';
 
-const API_BASE = 'http://localhost:5241';
 
 type DiagramType = 'ERD' | 'UML' | 'SITEMAP' | 'ROLES';
 
@@ -33,21 +32,15 @@ export const DiagramWorkspace = () => {
         const loadDiagrams = async () => {
             if (!projectId) return;
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                const res = await fetch(`${API_BASE}/api/Diagram/project/${projectId}`, {
-                    headers: { 'Authorization': `Bearer ${session?.access_token}` }
+                const data: any[] = await api.get(`/Diagram/project/${projectId}`);
+                const newCodes = { ...DEFAULT_CODES };
+                data.forEach(d => {
+                    const type = d.tipo.toUpperCase() as DiagramType;
+                    if (newCodes[type] !== undefined) {
+                        newCodes[type] = d.contenidoCodigo;
+                    }
                 });
-                if (res.ok) {
-                    const data: any[] = await res.json();
-                    const newCodes = { ...DEFAULT_CODES };
-                    data.forEach(d => {
-                        const type = d.tipo.toUpperCase() as DiagramType;
-                        if (newCodes[type] !== undefined) {
-                            newCodes[type] = d.contenidoCodigo;
-                        }
-                    });
-                    setCodes(newCodes);
-                }
+                setCodes(newCodes);
             } catch (err) {
                 console.error("Error cargando diagramas", err);
             }
@@ -71,15 +64,7 @@ export const DiagramWorkspace = () => {
         if (!projectId) return;
         setIsSaving(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            await fetch(`${API_BASE}/api/Diagram/project/${projectId}/${activeTab}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session?.access_token}`
-                },
-                body: JSON.stringify({ codigo: codes[activeTab] })
-            });
+            await api.put(`/Diagram/project/${projectId}/${activeTab}`, { codigo: codes[activeTab] });
             Swal.fire({
                 icon: 'success',
                 title: 'Diagrama guardado',

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useProject } from '../../context/ProjectContext';
-import { supabase } from '../../lib/supabase';
-import Swal from 'sweetalert2';
 import { ChevronDown, Plus, Briefcase, Check } from 'lucide-react';
+import { api } from '../../lib/apiClient';
+import Swal from 'sweetalert2';
 
 interface Workspace {
   id: string;
@@ -13,30 +13,11 @@ export const WorkspaceSelector = () => {
   const { tenantId, setTenant } = useProject();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
 
   const fetchWorkspaces = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      // AGREGAR ESTA VALIDACIÓN: Si no hay token, no hacemos la petición
-      if (!session?.access_token) {
-        console.warn("No hay sesión activa de Supabase todavía.");
-        return;
-      }
-
-      const response = await fetch(`${API_BASE}/api/Workspace`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setWorkspaces(data);
-      } else {
-        console.error("Error del backend:", response.status);
-      }
+      const data = await api.get('/Workspace').catch(() => []);
+      setWorkspaces(data);
     } catch (err) {
       console.error("Error fetching workspaces", err);
     }
@@ -63,28 +44,16 @@ export const WorkspaceSelector = () => {
 
     if (name) {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const response = await fetch(`${API_BASE}/api/Workspace`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`
-          },
-          body: JSON.stringify({ Nombre: name })
+        const newWs = await api.post('/Workspace', { Nombre: name });
+        await fetchWorkspaces();
+        setTenant(newWs.id);
+        Swal.fire({
+          title: '¡Espacio Creado!',
+          text: `Ya estás trabajando en ${name}`,
+          icon: 'success',
+          background: '#18181b',
+          color: '#f4f4f5'
         });
-
-        if (response.ok) {
-          const newWs = await response.json();
-          await fetchWorkspaces();
-          setTenant(newWs.id);
-          Swal.fire({
-            title: '¡Espacio Creado!',
-            text: `Ya estás trabajando en ${name}`,
-            icon: 'success',
-            background: '#18181b',
-            color: '#f4f4f5'
-          });
-        }
       } catch (err) {
         console.error("Error creating workspace", err);
       }

@@ -25,7 +25,7 @@ namespace MateCode.API.Controllers
         public async Task<IActionResult> GetCatalog([FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
         {
             var catalog = await _context.TecnologiasCatalogo
-                .Where(t => t.TenantId == null || t.TenantId == tenantId)
+                .Where(t => t.Activo && (t.TenantId == null || t.TenantId == tenantId))
                 .OrderBy(t => t.CategoriaPrincipal)
                 .ThenBy(t => t.Nombre)
                 .ToListAsync();
@@ -46,14 +46,31 @@ namespace MateCode.API.Controllers
         [HttpDelete("catalog/{id:guid}")]
         public async Task<IActionResult> DeleteTech(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
         {
-            var tech = await _context.TecnologiasCatalogo.FirstOrDefaultAsync(t => t.Id == id && (t.TenantId == tenantId || t.TenantId == null));
-            if (tech == null) return NotFound();
+            var existing = await _context.TecnologiasCatalogo.FirstOrDefaultAsync(t => t.Id == id && (t.TenantId == tenantId || t.TenantId == null));
+            if (existing == null) return NotFound();
 
-            if (tech.TenantId == null) return BadRequest("No se pueden eliminar tecnologías globales.");
-
-            _context.TecnologiasCatalogo.Remove(tech);
+            // Permitimos desactivar globales para quitarlas del catálogo sin romper integridad
+            existing.Activo = false;
             await _context.SaveChangesAsync();
             return Ok(new { success = true });
+        }
+
+        [HttpPut("catalog/{id:guid}")]
+        public async Task<IActionResult> UpdateTech(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId, [FromBody] TecnologiaCatalogo techUpdate)
+        {
+            var existing = await _context.TecnologiasCatalogo.FirstOrDefaultAsync(t => t.Id == id && (t.TenantId == tenantId || t.TenantId == null));
+            if (existing == null) return NotFound();
+
+            if (existing.TenantId == null) return BadRequest("No se pueden editar tecnologías globales.");
+
+            existing.Nombre = techUpdate.Nombre;
+            existing.CategoriaPrincipal = techUpdate.CategoriaPrincipal;
+            existing.CategoriaSecundaria = techUpdate.CategoriaSecundaria;
+            existing.UrlDocumentacion = techUpdate.UrlDocumentacion;
+            existing.ColorHex = techUpdate.ColorHex;
+
+            await _context.SaveChangesAsync();
+            return Ok(existing);
         }
 
         // --- PROYECTO STACK ---
@@ -91,7 +108,11 @@ namespace MateCode.API.Controllers
         [HttpGet("templates")]
         public async Task<IActionResult> GetTemplates([FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
         {
-            return Ok(await _context.PlantillasStack.Where(p => p.TenantId == tenantId).ToListAsync());
+            var templates = await _context.PlantillasStack
+                .Where(p => p.TenantId == tenantId && p.Activo)
+                .OrderByDescending(p => p.FechaCreacion)
+                .ToListAsync();
+            return Ok(templates);
         }
 
         [HttpPost("templates")]
@@ -100,6 +121,7 @@ namespace MateCode.API.Controllers
             template.Id = Guid.NewGuid();
             template.TenantId = tenantId;
             template.FechaCreacion = DateTime.UtcNow;
+            template.Activo = true;
             _context.PlantillasStack.Add(template);
             await _context.SaveChangesAsync();
             return Ok(template);
@@ -117,6 +139,17 @@ namespace MateCode.API.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(existing);
+        }
+
+        [HttpDelete("templates/{id:guid}")]
+        public async Task<IActionResult> DeleteTemplate(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
+        {
+            var template = await _context.PlantillasStack.FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId);
+            if (template == null) return NotFound();
+            
+            template.Activo = false;
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true });
         }
     }
 }

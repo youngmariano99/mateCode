@@ -13,10 +13,12 @@ namespace MateCode.API.Controllers
     public class ProjectController : ControllerBase
     {
         private readonly IProjectService _projectService;
+        private readonly IPromptEngineService _promptEngine;
 
-        public ProjectController(IProjectService projectService)
+        public ProjectController(IProjectService projectService, IPromptEngineService promptEngine)
         {
             _projectService = projectService;
+            _promptEngine = promptEngine;
         }
 
         [HttpGet]
@@ -75,6 +77,28 @@ namespace MateCode.API.Controllers
             {
                 return StatusCode(500, new { error = ex.Message });
             }
+        }
+
+        [HttpGet("{id}/context-summary")]
+        public async Task<IActionResult> GetContextSummary(Guid id)
+        {
+            var summary = await _projectService.GetContextSummaryAsync(id);
+            if (summary == null) return NotFound();
+            return Ok(summary);
+        }
+
+        [HttpGet("{id}/master-prompt")]
+        public async Task<IActionResult> GetMasterPrompt(Guid id)
+        {
+            var prompt = await _promptEngine.GenerarMasterPromptAsync(id);
+            return Ok(new { prompt });
+        }
+
+        [HttpGet("{id}/phase1-prompt")]
+        public async Task<IActionResult> GetPhase1Prompt(Guid id)
+        {
+            var prompt = await _promptEngine.GenerarPromptFase1Async(id);
+            return Ok(new { prompt });
         }
     }
 }

@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
 import { useProject } from '../../context/ProjectContext';
+import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
-
-const API_BASE = 'http://localhost:5241';
 
 interface Plantilla {
     id?: string;
@@ -29,21 +27,10 @@ export const PromptLibrary = () => {
         if (!tenantId) return;
         setLoading(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            
-            const url = new URL(`${API_BASE}/api/PromptLibrary`);
-            if (filterFase) url.searchParams.append('fase', filterFase);
-
-            const res = await fetch(url.toString(), {
-                headers: { 
-                    'Authorization': `Bearer ${session?.access_token}`,
-                    'X-Tenant-Id': tenantId
-                }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setTemplates(data);
-            }
+            const data = await api.get('/PromptLibrary', { params: { fase: filterFase || undefined } });
+            setTemplates(data);
+        } catch (err) {
+            console.error(err);
         } finally {
             setLoading(false);
         }
@@ -69,28 +56,15 @@ export const PromptLibrary = () => {
         };
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            
-            const method = isEditing?.id ? 'PUT' : 'POST';
-            const url = isEditing?.id 
-                ? `${API_BASE}/api/PromptLibrary/${isEditing.id}` 
-                : `${API_BASE}/api/PromptLibrary`;
-
-            const res = await fetch(url, {
-                method,
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session?.access_token}`,
-                    'X-Tenant-Id': tenantId || ''
-                },
-                body: JSON.stringify(isEditing?.id ? { ...payload, id: isEditing.id } : payload)
-            });
-
-            if (res.ok) {
-                Swal.fire({ icon: 'success', title: 'Guardado', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false, background: '#18181b', color: '#fff' });
-                setIsEditing(null);
-                fetchTemplates();
+            if (isEditing?.id) {
+                await api.put(`/PromptLibrary/${isEditing.id}`, { ...payload, id: isEditing.id });
+            } else {
+                await api.post('/PromptLibrary', payload);
             }
+
+            Swal.fire({ icon: 'success', title: 'Guardado', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false, background: '#18181b', color: '#fff' });
+            setIsEditing(null);
+            fetchTemplates();
         } catch (err) {
             console.error(err);
         }
@@ -110,15 +84,12 @@ export const PromptLibrary = () => {
         });
 
         if (result.isConfirmed) {
-            const { data: { session } } = await supabase.auth.getSession();
-            await fetch(`${API_BASE}/api/PromptLibrary/${id}`, {
-                method: 'DELETE',
-                headers: { 
-                    'Authorization': `Bearer ${session?.access_token}`,
-                    'X-Tenant-Id': tenantId || ''
-                }
-            });
-            fetchTemplates();
+            try {
+                await api.delete(`/PromptLibrary/${id}`);
+                fetchTemplates();
+            } catch (err) {
+                console.error(err);
+            }
         }
     };
 

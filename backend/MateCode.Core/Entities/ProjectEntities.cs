@@ -1,5 +1,6 @@
 using System;
 using System.Text.Json;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MateCode.Core.Entities
 {
@@ -32,5 +33,15 @@ namespace MateCode.Core.Entities
         public string Tipo { get; set; } = string.Empty; // ERD, UML, Sitemap, Roles
         public string ContenidoCodigo { get; set; } = string.Empty;
         public DateTime FechaActualizacion { get; set; } = DateTime.UtcNow;
+    }
+    [Table("proyecto_estandar", Schema = "proyectos")]
+    public class ProyectoEstandar
+    {
+        public Guid ProyectoId { get; set; }
+        public Guid EstandarId { get; set; }
+
+        // Relaciones
+        public virtual Proyecto? Proyecto { get; set; }
+        public virtual EstandarCatalogo? Estandar { get; set; }
     }
 }

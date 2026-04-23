@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Rocket, Copy, RefreshCw } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { TemplatePickerModal } from '../shared/TemplatePickerModal';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
 
 export const LeadCaptureModule = () => {
     const { tenantId } = useProject();
@@ -19,21 +17,15 @@ export const LeadCaptureModule = () => {
     useEffect(() => {
         const load = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) return;
-
                 // 1. Cargar todas las plantillas para el selector
-                const resForms = await fetch(`${API_BASE}/api/FormLibrary`, {
-                    headers: { 
-                        'Authorization': `Bearer ${session?.access_token}`,
-                        'X-Tenant-Id': tenantId || '' 
-                    }
-                });
-                if (resForms.ok) setAvailableForms(await resForms.json());
+                const formsData = await api.get('/FormLibrary');
+                setAvailableForms(formsData);
 
-                // 2. Cargar la plantilla actualmente asignada
-                const resCurrent = await fetch(`${API_BASE}/api/Public/form/${tenantId}?tipo=lead`);
-                if (resCurrent.ok) setTemplate(await resCurrent.json());
+                // 2. Cargar la plantilla actualmente asignada (endpoint público)
+                const currentData = await api.get(`/Public/form/${tenantId}`, { params: { tipo: 'lead' } });
+                setTemplate(currentData);
+            } catch (err) {
+                console.error("Error cargando configuración de captura:", err);
             } finally {
                 setLoading(false);
             }

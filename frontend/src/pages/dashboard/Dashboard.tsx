@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useProject } from '../../context/ProjectContext';
+import { api } from '../../lib/apiClient';
 import { 
   Briefcase, 
   Users, 
@@ -22,13 +23,8 @@ export default function Dashboard() {
       if (!tenantId) return;
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5241/api/Dashboard/summary', {
-          headers: { 'X-Tenant-Id': tenantId }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setSummary(data);
-        }
+        const data = await api.get('/Dashboard/summary');
+        setSummary(data);
       } catch (error) {
         console.error('Error fetching dashboard summary:', error);
       } finally {

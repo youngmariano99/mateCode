@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LeadInbox } from '../../components/crm/LeadInbox';
 import { LeadCaptureModule } from '../../components/crm/LeadCaptureModule';
 import { useProject } from '../../context/ProjectContext';
+import { api } from '../../lib/apiClient';
 import { Users, Filter } from 'lucide-react';
 
 interface Client {
@@ -10,24 +11,21 @@ interface Client {
   email: string;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
-
 export default function CrmDashboard() {
   const { tenantId } = useProject();
   const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchClients = async () => {
       if (!tenantId) return;
       try {
-        const response = await fetch(`${API_BASE}/api/Crm/clients`, { 
-          headers: { 'X-Tenant-Id': tenantId }
-        });
-        if (response.ok) {
-           setClients(await response.json());
-        }
+        const data = await api.get('/Crm/clients');
+        setClients(data);
       } catch (error) {
         console.error('Error fetching clients:', error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchClients();

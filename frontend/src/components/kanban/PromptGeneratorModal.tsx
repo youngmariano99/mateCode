@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { X, Sparkles, Copy, Check, Loader2, AlertCircle } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/apiClient';
 import type { Ticket } from '../agile/types';
 
 export const PromptGeneratorModal = ({ ticket, onClose }: { ticket: Ticket, onClose: () => void }) => {
@@ -10,21 +10,11 @@ export const PromptGeneratorModal = ({ ticket, onClose }: { ticket: Ticket, onCl
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
 
     useEffect(() => {
         const fetchPrompt = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                const response = await fetch(`${API_BASE}/api/Kanban/tickets/${ticket.id}/prompt`, {
-                    headers: {
-                        'Authorization': `Bearer ${session?.access_token}`,
-                        'X-Tenant-Id': tenantId || ''
-                    }
-                });
-                
-                if (!response.ok) throw new Error("Error al consultar el oráculo.");
-                const data = await response.json();
+                const data = await api.get(`/Kanban/tickets/${ticket.id}/prompt`);
                 setPrompt(data.prompt);
             } catch (err: any) {
                 setError(err.message || "Se nos lavó el mate al generar el prompt.");
@@ -34,7 +24,7 @@ export const PromptGeneratorModal = ({ ticket, onClose }: { ticket: Ticket, onCl
         };
 
         fetchPrompt();
-    }, [ticket.id, tenantId, API_BASE]);
+    }, [ticket.id, tenantId]);
 
     const handleCopy = () => {
         navigator.clipboard.writeText(prompt);

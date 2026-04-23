@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Package, ShieldCheck, ArrowRight, Check, Loader2, Sparkles } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/apiClient';
 
 export const VaultExtractorWizard = ({ onComplete }: { onComplete: () => void }) => {
     const { projectId, tenantId } = useProject();
@@ -12,33 +12,20 @@ export const VaultExtractorWizard = ({ onComplete }: { onComplete: () => void })
         diseno: true,
         presupuesto: false
     });
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
 
     const handleCosecha = async () => {
         setLoading(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            
             // Si el usuario eligió el stack, lo persistimos en la Bóveda
             if (selections.stack) {
-                const response = await fetch(`${API_BASE}/api/Finance/vault/stack`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session?.access_token}`,
-                        'X-Tenant-Id': tenantId || ''
-                    },
-                    body: JSON.stringify({
-                        Nombre: `Stack Reutilizable - Proyecto ${projectId?.substring(0, 6)}`,
-                        PayloadTecnico: {
-                            selections,
-                            cosechadoEn: new Date().toISOString(),
-                            projectId
-                        }
-                    })
+                await api.post('/Finance/vault/stack', {
+                    Nombre: `Stack Reutilizable - Proyecto ${projectId?.substring(0, 6)}`,
+                    PayloadTecnico: {
+                        selections,
+                        cosechadoEn: new Date().toISOString(),
+                        projectId
+                    }
                 });
-
-                if (!response.ok) throw new Error();
             }
 
             setStep(3);

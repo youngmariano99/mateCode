@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { X, Brain, Copy, Check, Loader2, Zap, Settings2 } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
 
-const API_BASE = 'http://localhost:5241';
 
 interface Props {
     projectId: string;
@@ -26,62 +25,42 @@ export const GeneradorPromptDesignModal = ({ projectId, diagramType, onClose }: 
     useEffect(() => {
         const fetchTemplate = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                const response = await fetch(`${API_BASE}/api/PromptLibrary?fase=Fase 2`, {
-                    headers: {
-                        'Authorization': `Bearer ${session?.access_token}`,
-                        'X-Tenant-Id': tenantId || ''
-                    }
-                });
-                if (response.ok) {
-                    const templates: any[] = await response.json();
-                    // Buscar la plantilla que mejor encaja con el tipo de diagrama
-                    const match = templates.find(t => {
-                        const tags = typeof t.etiquetasJson === 'string' ? JSON.parse(t.etiquetasJson) : (t.etiquetasJson || []);
-                        return t.titulo.toLowerCase().includes(diagramType.toLowerCase()) || 
-                               tags.some((e: string) => e.toLowerCase().includes(diagramType.toLowerCase()));
-                    }) || templates[0];
-                    
-                    setTemplate(match);
-                    if (match) {
-                        setCtx({ 
-                            adn: match.inyectaAdn, 
-                            bdd: match.inyectaBdd, 
-                            stack: match.inyectaStack 
-                        });
-                    }
+                const templates: any[] = await api.get('/PromptLibrary', { params: { fase: 'Fase 2' } });
+                
+                // Buscar la plantilla que mejor encaja con el tipo de diagrama
+                const match = templates.find(t => {
+                    const tags = typeof t.etiquetasJson === 'string' ? JSON.parse(t.etiquetasJson) : (t.etiquetasJson || []);
+                    return t.titulo.toLowerCase().includes(diagramType.toLowerCase()) || 
+                           tags.some((e: string) => e.toLowerCase().includes(diagramType.toLowerCase()));
+                }) || templates[0];
+                
+                setTemplate(match);
+                if (match) {
+                    setCtx({ 
+                        adn: match.inyectaAdn, 
+                        bdd: match.inyectaBdd, 
+                        stack: match.inyectaStack 
+                    });
                 }
             } finally {
                 setLoading(false);
             }
         };
         fetchTemplate();
-    }, [tenantId, diagramType]);
+    }, [diagramType]);
 
     const handleGenerate = async () => {
         if (!template) return;
         setIsGenerating(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const response = await fetch(`${API_BASE}/api/PromptLibrary/generate-contextual`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session?.access_token}`,
-                    'X-Tenant-Id': tenantId || ''
-                },
-                body: JSON.stringify({
-                    templateId: template.id,
-                    projectId: projectId,
-                    overrideAdn: ctx.adn,
-                    overrideBdd: ctx.bdd,
-                    overrideStack: ctx.stack
-                })
+            const data = await api.post('/PromptLibrary/generate-contextual', {
+                templateId: template.id,
+                projectId: projectId,
+                overrideAdn: ctx.adn,
+                overrideBdd: ctx.bdd,
+                overrideStack: ctx.stack
             });
-            if (response.ok) {
-                const data = await response.json();
-                setGeneratedPrompt(data.prompt);
-            }
+            setGeneratedPrompt(data.prompt);
         } finally {
             setIsGenerating(false);
         }

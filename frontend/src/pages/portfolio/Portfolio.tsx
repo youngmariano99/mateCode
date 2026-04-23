@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useProject } from '../../context/ProjectContext';
+import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
 import { Rocket, Plus, ExternalLink, Calendar } from 'lucide-react';
 
@@ -19,13 +20,8 @@ export default function Portfolio() {
     if (!tenantId) return;
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5241/api/Portfolio', {
-        headers: { 'X-Tenant-Id': tenantId }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setPortfolio(data);
-      }
+      const data = await api.get('/Portfolio');
+      setPortfolio(data);
     } catch (error) {
       console.error('Error fetching portfolio:', error);
     } finally {
@@ -61,28 +57,19 @@ export default function Portfolio() {
 
     if (formValues) {
       try {
-        const response = await fetch('http://localhost:5241/api/Portfolio/express', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'X-Tenant-Id': tenantId 
-          },
-          body: JSON.stringify({ 
-            Nombre: formValues.nombre, 
-            Stack: formValues.stack 
-          })
+        await api.post('/Portfolio/express', { 
+          Nombre: formValues.nombre, 
+          Stack: formValues.stack 
         });
 
-        if (response.ok) {
-          Swal.fire({
-            title: '¡Proyecto Importado!',
-            text: 'Se ha añadido a tu portfolio como "Finalizado".',
-            icon: 'success',
-            background: '#18181b',
-            color: '#f4f4f5'
-          });
-          fetchPortfolio();
-        }
+        Swal.fire({
+          title: '¡Proyecto Importado!',
+          text: 'Se ha añadido a tu portfolio como "Finalizado".',
+          icon: 'success',
+          background: '#18181b',
+          color: '#f4f4f5'
+        });
+        fetchPortfolio();
       } catch (error) {
         console.error('Error in express import:', error);
       }

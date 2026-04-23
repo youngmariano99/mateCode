@@ -1,22 +1,55 @@
 using System;
+using System.Text.Json;
 
 namespace MateCode.Core.Entities
 {
+    public class Release
+    {
+        public Guid Id { get; set; }
+        public Guid ProyectoId { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public int OrdenPosicion { get; set; }
+    }
+
+    public class PersonaProyecto
+    {
+        public Guid Id { get; set; }
+        public Guid ProyectoId { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+        public string Rol { get; set; } = string.Empty;
+    }
+
+    public class Feature
+    {
+        public Guid Id { get; set; }
+        public Guid EpicaId { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+        public string? ColorHex { get; set; }
+        public int OrdenPosicion { get; set; }
+    }
+
     public class Epica
     {
         public Guid Id { get; set; }
         public Guid ProyectoId { get; set; }
         public string Titulo { get; set; } = string.Empty;
-        public string RangoLexicografico { get; set; } = "a";
+        public string? ColorHex { get; set; }
+        public int OrdenPosicion { get; set; }
     }
 
     public class Historia
     {
         public Guid Id { get; set; }
-        public Guid EpicaId { get; set; }
+        public Guid? FeatureId { get; set; }
+        public Guid? ReleaseId { get; set; }
         public Guid ProyectoId { get; set; }
         public string Titulo { get; set; } = string.Empty;
+        public string UsuarioNarrativo { get; set; } = "Usuario";
         public string CriteriosBdd { get; set; } = string.Empty;
+        public JsonElement? CriteriosAceptacion { get; set; }
+        public string Prioridad { get; set; } = "MVP";
+        public JsonElement? TareasTecnicasJson { get; set; }
         public string RangoLexicografico { get; set; } = "a";
     }
 

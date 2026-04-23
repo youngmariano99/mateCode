@@ -9,6 +9,7 @@ interface Phase {
 }
 
 const PHASES: Phase[] = [
+  { id: 'Dashboard', label: 'Dashboard', path: '' },
   { id: '0', label: 'ADN', path: 'phase-0-feasibility' },
   { id: '1', label: 'Requisitos', path: 'phase-1-requirements' },
   { id: '2', label: 'Diseño', path: 'phase-2-design' },
@@ -32,7 +33,7 @@ export const FocusLayout = ({ children, phaseTitle }: { children: React.ReactNod
                 className="flex items-center gap-2 text-[10px] font-black text-zinc-400 hover:text-emerald-500 transition-colors uppercase tracking-[0.2em]"
             >
                 <ArrowLeft size={14} strokeWidth={3} />
-                Volver
+                Lista de Proyectos
             </Link>
             <span className="h-4 w-px bg-zinc-200 dark:bg-zinc-800"></span>
             <div className="flex items-center gap-2">
@@ -52,14 +53,16 @@ export const FocusLayout = ({ children, phaseTitle }: { children: React.ReactNod
         <nav className="flex justify-center border-t border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30 overflow-x-auto no-scrollbar">
             <div className="flex items-center px-4">
                 {PHASES.map((phase, index) => {
-                    const isActive = location.pathname.includes(phase.path);
-                    const isCompleted = PHASES.slice(0, index).some(p => location.pathname.includes(p.path)) || !isActive && PHASES.indexOf(PHASES.find(p => location.pathname.includes(p.id)) || PHASES[0]) > index;
-                    // Simplificamos la lógica de completado para el prototipo visual
+                    const isActive = phase.path === '' 
+                        ? location.pathname === `/projects/${projectId}` || location.pathname === `/projects/${projectId}/`
+                        : location.pathname.includes(phase.path);
+                    
+                    const isCompleted = PHASES.slice(0, index).some(p => p.path !== '' && location.pathname.includes(p.path));
                     
                     return (
                         <React.Fragment key={phase.id}>
                             <Link
-                                to={`/projects/${projectId}/${phase.path}`}
+                                to={`/projects/${projectId}${phase.path ? '/' + phase.path : ''}`}
                                 className={`flex items-center gap-2 px-6 py-3 border-b-2 transition-all duration-300 relative group ${
                                     isActive 
                                     ? 'border-emerald-500 text-emerald-500' 
@@ -67,7 +70,7 @@ export const FocusLayout = ({ children, phaseTitle }: { children: React.ReactNod
                                 }`}
                             >
                                 <span className={`text-[10px] font-black ${isActive ? 'text-emerald-500' : 'text-zinc-600 group-hover:text-zinc-400'}`}>
-                                    0{phase.id}
+                                    {phase.id === 'Dashboard' ? 'HUB' : `0${phase.id}`}
                                 </span>
                                 <span className="text-[11px] font-bold uppercase tracking-wider whitespace-nowrap">
                                     {phase.label}

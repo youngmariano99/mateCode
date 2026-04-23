@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { api } from '../../lib/apiClient';
 import { Check, X, ClipboardCheck, ArrowRight, Loader2, Bug } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { supabase } from '../../lib/supabase';
@@ -9,25 +11,21 @@ interface TestItem extends Historia {
 }
 
 export const TestingChecklist = () => {
-    const { projectId, tenantId } = useProject();
+    const { id: paramProjectId } = useParams<{ id: string }>();
+    const { projectId: contextProjectId, tenantId } = useProject();
+    const projectId = paramProjectId || contextProjectId;
+    
     const [items, setItems] = useState<TestItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [reportingBug, setReportingBug] = useState<string | null>(null);
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
 
     useEffect(() => {
         const fetchStories = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
                 // Usamos el endpoint de Agile para traer historias de este proyecto
-                const response = await fetch(`${API_BASE}/api/Agile/projects/${projectId}/stories`, {
-                    headers: {
-                        'Authorization': `Bearer ${session?.access_token}`,
-                        'X-Tenant-Id': tenantId || ''
-                    }
-                });
-                const data = await response.json();
-                setItems(data.map((h: any) => ({ ...h, resultado: 'Pendiente' })));
+                const data = await api.get(`/Agile/projects/${projectId}/stories`);
+
+                setItems(Array.isArray(data) ? data.map((h: any) => ({ ...h, resultado: 'Pendiente' })) : []);
             } catch (err) {
                 console.error("Error cargando QA", err);
             } finally {
@@ -36,7 +34,7 @@ export const TestingChecklist = () => {
         };
 
         if (projectId) fetchStories();
-    }, [projectId, tenantId, API_BASE]);
+    }, [projectId, tenantId]);
 
     const handleResult = async (id: string, result: 'Pasó' | 'Falló') => {
         setItems(prev => prev.map(item => item.id === id ? { ...item, resultado: result } : item));
@@ -47,22 +45,12 @@ export const TestingChecklist = () => {
 
             setReportingBug(id);
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                const response = await fetch(`${API_BASE}/api/Kanban/testing/report-bug`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session?.access_token}`,
-                        'X-Tenant-Id': tenantId || ''
-                    },
-                    body: JSON.stringify({
-                        ProyectoId: projectId,
-                        HistoriaId: id,
-                        Descripcion: `Falla en QA de historia: ${item.titulo}. Verificar criterios BDD.`
-                    })
+                await api.post('/Kanban/testing/report-bug', {
+                    ProyectoId: projectId,
+                    HistoriaId: id,
+                    Descripcion: `Falla en QA de historia: ${item.titulo}. Verificar criterios BDD.`
                 });
 
-                if (!response.ok) throw new Error();
                 alert("🛠️ Bug reportado automáticamente al tablero Kanban.");
             } catch (err) {
                 alert("⚠️ Se nos lavó el mate. No pudimos reportar el Bug al Kanban.");
@@ -97,7 +85,7 @@ export const TestingChecklist = () => {
             </div>
 
             <div className="grid gap-4">
-                {items.map((item) => (
+                {items.length > 0 ? items.map((item) => (
                     <div key={item.id} className="glass-card group hover:border-zinc-700 transition-all overflow-hidden">
                         <div className="flex items-center gap-6 p-6">
                             <div className="flex-1">
@@ -130,10 +118,18 @@ export const TestingChecklist = () => {
                             </div>
                         </div>
                     </div>
-                ))}
+                )) : (
+                    <div className="py-20 text-center bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2rem]">
+                        <Bug className="mx-auto text-zinc-700 mb-4" size={40} />
+                        <h4 className="text-zinc-400 font-bold uppercase text-xs tracking-widest">Sin historias para testear</h4>
+                        <p className="text-zinc-600 text-[10px] mt-2 max-w-xs mx-auto italic">
+                            Parece que no hay Historias de Usuario definidas en la Fase 1. El QA Checklist se genera automáticamente a partir de ellas.
+                        </p>
+                    </div>
+                )}
             </div>
 
-            {items.filter(i => i.resultado !== 'Pendiente').length === items.length && (
+            {items.length > 0 && items.filter(i => i.resultado !== 'Pendiente').length === items.length && (
                 <div className="mt-12 p-10 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex flex-col items-center text-center space-y-4 animate-in zoom-in duration-500">
                     <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/40 text-zinc-900">
                         <Check size={32} strokeWidth={3} />

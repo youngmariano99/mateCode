@@ -131,6 +131,15 @@ using (var scope = app.Services.CreateScope())
                     tecnologias_ids_json JSONB NOT NULL,
                     fecha_creacion TIMESTAMP DEFAULT NOW()
                 );
+
+                -- Columnas de Soft Delete (Seguridad)
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'tecnologias_catalogo' AND column_name = 'activo') THEN
+                    ALTER TABLE boveda.tecnologias_catalogo ADD COLUMN activo BOOLEAN DEFAULT TRUE;
+                END IF;
+
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_stack' AND column_name = 'activo') THEN
+                    ALTER TABLE boveda.plantillas_stack ADD COLUMN activo BOOLEAN DEFAULT TRUE;
+                END IF;
             END $$;";
         context.Database.ExecuteSqlRaw(sql);
         Console.WriteLine("✅ Infraestructura de Bóveda y Stacks verificada exitosamente.");

@@ -13,6 +13,9 @@ namespace MateCode.Infrastructure.Persistence
         public DbSet<Proyecto> Proyectos { get; set; }
         public DbSet<Epica> Epicas { get; set; }
         public DbSet<Historia> Historias { get; set; }
+        public DbSet<Release> Releases { get; set; }
+        public DbSet<PersonaProyecto> PersonasProyecto { get; set; }
+        public DbSet<Feature> Features { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<FeedbackCliente> FeedbackClientes { get; set; }
         public DbSet<PerfilEmpresa> PerfilesEmpresa { get; set; }
@@ -25,6 +28,8 @@ namespace MateCode.Infrastructure.Persistence
         public DbSet<TecnologiaCatalogo> TecnologiasCatalogo { get; set; }
         public DbSet<ProyectoStack> ProyectosStack { get; set; }
         public DbSet<PlantillaStack> PlantillasStack { get; set; }
+        public DbSet<EstandarCatalogo> EstandaresCatalogo { get; set; }
+        public DbSet<ProyectoEstandar> ProyectosEstandares { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -79,21 +84,53 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(p => p.ContextoJson).HasColumnName("contexto_json").HasColumnType("jsonb");
             });
 
+            modelBuilder.Entity<Release>(e => {
+                e.ToTable("releases", "agil");
+                e.Property(r => r.Id).HasColumnName("id");
+                e.Property(r => r.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(r => r.Nombre).HasColumnName("nombre");
+                e.Property(r => r.Descripcion).HasColumnName("descripcion");
+                e.Property(r => r.OrdenPosicion).HasColumnName("orden_posicion");
+            });
+
+            modelBuilder.Entity<PersonaProyecto>(e => {
+                e.ToTable("personas_proyecto", "agil");
+                e.Property(p => p.Id).HasColumnName("id");
+                e.Property(p => p.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(p => p.Nombre).HasColumnName("nombre");
+                e.Property(p => p.Rol).HasColumnName("rol");
+            });
+
+            modelBuilder.Entity<Feature>(e => {
+                e.ToTable("features", "agil");
+                e.Property(f => f.Id).HasColumnName("id");
+                e.Property(f => f.EpicaId).HasColumnName("epica_id");
+                e.Property(f => f.Nombre).HasColumnName("nombre");
+                e.Property(f => f.ColorHex).HasColumnName("color_hex");
+                e.Property(f => f.OrdenPosicion).HasColumnName("orden_posicion");
+            });
+
             modelBuilder.Entity<Epica>(e => {
                 e.ToTable("epicas", "agil");
                 e.Property(ep => ep.Id).HasColumnName("id");
                 e.Property(ep => ep.ProyectoId).HasColumnName("proyecto_id");
                 e.Property(ep => ep.Titulo).HasColumnName("titulo");
-                e.Property(ep => ep.RangoLexicografico).HasColumnName("rango_lexicografico");
+                e.Property(ep => ep.ColorHex).HasColumnName("color_hex");
+                e.Property(ep => ep.OrdenPosicion).HasColumnName("orden_posicion");
             });
 
             modelBuilder.Entity<Historia>(e => {
                 e.ToTable("historias", "agil");
                 e.Property(h => h.Id).HasColumnName("id");
-                e.Property(h => h.EpicaId).HasColumnName("epica_id");
+                e.Property(h => h.FeatureId).HasColumnName("feature_id");
+                e.Property(h => h.ReleaseId).HasColumnName("release_id");
                 e.Property(h => h.ProyectoId).HasColumnName("proyecto_id");
                 e.Property(h => h.Titulo).HasColumnName("titulo");
+                e.Property(h => h.UsuarioNarrativo).HasColumnName("usuario_narrativo");
                 e.Property(h => h.CriteriosBdd).HasColumnName("criterios_bdd");
+                e.Property(h => h.CriteriosAceptacion).HasColumnName("criterios_aceptacion").HasColumnType("jsonb");
+                e.Property(h => h.Prioridad).HasColumnName("prioridad");
+                e.Property(h => h.TareasTecnicasJson).HasColumnName("tareas_tecnicas_json").HasColumnType("jsonb");
                 e.Property(h => h.RangoLexicografico).HasColumnName("rango_lexicografico");
             });
 
@@ -202,6 +239,26 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(f => f.Tipo).HasColumnName("tipo");
                 e.Property(f => f.ConfiguracionJson).HasColumnName("configuracion_json").HasColumnType("jsonb");
                 e.Property(f => f.FechaCreacion).HasColumnName("fecha_creacion");
+            });
+
+            modelBuilder.Entity<EstandarCatalogo>(e => {
+                e.ToTable("estandares_catalogo", "boveda");
+                e.Property(ec => ec.Id).HasColumnName("id");
+                e.Property(ec => ec.EspacioTrabajoId).HasColumnName("espacio_trabajo_id");
+                e.Property(ec => ec.Categoria).HasColumnName("categoria");
+                e.Property(ec => ec.Nombre).HasColumnName("nombre");
+                e.Property(ec => ec.DescripcionDidactica).HasColumnName("descripcion_didactica");
+                e.Property(ec => ec.ColorHex).HasColumnName("color_hex");
+                e.Property(ec => ec.EliminadoEn).HasColumnName("eliminado_en");
+            });
+
+            modelBuilder.Entity<ProyectoEstandar>(e => {
+                e.ToTable("proyecto_estandar", "proyectos");
+                e.HasKey(pe => new { pe.ProyectoId, pe.EstandarId });
+                e.Property(pe => pe.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(pe => pe.EstandarId).HasColumnName("estandar_id");
+                e.HasOne(pe => pe.Proyecto).WithMany().HasForeignKey(pe => pe.ProyectoId);
+                e.HasOne(pe => pe.Estandar).WithMany().HasForeignKey(pe => pe.EstandarId);
             });
         }
     }

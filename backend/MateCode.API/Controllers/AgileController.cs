@@ -23,11 +23,28 @@ namespace MateCode.API.Controllers
         [HttpPost("projects/{projectId:guid}/mapa-historias/importar")]
         public async Task<IActionResult> ImportarMapaHistorias(Guid projectId, [FromBody] JsonElement request)
         {
-            if (!HttpContext.Items.TryGetValue("CurrentTenantId", out var tenantObj) || tenantObj is null)
-                return Unauthorized("Espacio de trabajo no identificado.");
+            var tenantHeader = Request.Headers["X-Tenant-Id"].ToString();
+            if (!Guid.TryParse(tenantHeader, out Guid tenantId)) return BadRequest("Invalid Tenant");
                 
-            await _agileService.SaveFullStoryMapAsync(projectId, (Guid)tenantObj, request);
+            await _agileService.SaveFullStoryMapAsync(projectId, tenantId, request);
             return Ok(new { Message = "Mapa de Historias importado con éxito." });
+        }
+
+        [HttpGet("projects/{projectId:guid}/mapa-historias")]
+        public async Task<IActionResult> GetMapaHistorias(Guid projectId)
+        {
+            var data = await _agileService.GetFullStoryMapAsync(projectId);
+            return Ok(data);
+        }
+
+        [HttpPost("projects/{projectId:guid}/sincronizar-backlog")]
+        public async Task<IActionResult> SyncBacklog(Guid projectId, [FromQuery] bool cleanSync = false)
+        {
+            var tenantHeader = Request.Headers["X-Tenant-Id"].ToString();
+            if (!Guid.TryParse(tenantHeader, out Guid tenantId)) return BadRequest("Invalid Tenant");
+
+            var created = await _agileService.SyncBacklogAsync(projectId, tenantId, cleanSync);
+            return Ok(new { Message = $"Backlog sincronizado. Se crearon {created} tickets nuevos.", count = created });
         }
 
         [HttpPut("historias/{historiaId:guid}/bdd")]
@@ -38,6 +55,13 @@ namespace MateCode.API.Controllers
 
             await _agileService.UpdateBddCriteriaAsync(historiaId, (Guid)tenantObj, request.BddCriteria);
             return Ok(new { Message = "Criterios BDD guardados." });
+        }
+
+        [HttpGet("projects/{projectId:guid}/stories")]
+        public async Task<IActionResult> GetStories(Guid projectId)
+        {
+            var stories = await _agileService.GetStoriesByProjectAsync(projectId);
+            return Ok(stories);
         }
     }
 }

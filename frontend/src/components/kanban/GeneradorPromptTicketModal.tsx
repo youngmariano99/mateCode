@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { X, Brain, Copy, Check, Loader2, AlertCircle, ChevronRight } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/apiClient';
 import type { Ticket } from '../agile/types';
 import Swal from 'sweetalert2';
 
-const API_BASE = 'http://localhost:5241';
 
 export const GeneradorPromptTicketModal = ({ ticket, onClose }: { ticket: Ticket, onClose: () => void }) => {
     const { tenantId } = useProject();
@@ -19,46 +18,25 @@ export const GeneradorPromptTicketModal = ({ ticket, onClose }: { ticket: Ticket
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                const response = await fetch(`${API_BASE}/api/PromptLibrary?fase=Kanban`, {
-                    headers: {
-                        'Authorization': `Bearer ${session?.access_token}`,
-                        'X-Tenant-Id': tenantId || ''
-                    }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    setTemplates(data);
-                }
+                const data = await api.get('/PromptLibrary', { params: { fase: 'Kanban' } });
+                setTemplates(data);
             } finally {
                 setLoading(false);
             }
         };
         fetchTemplates();
-    }, [tenantId]);
+    }, []);
 
     const handleGenerate = async () => {
         if (!selectedTemplate) return;
         setIsGenerating(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const response = await fetch(`${API_BASE}/api/PromptLibrary/generate-contextual`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session?.access_token}`,
-                    'X-Tenant-Id': tenantId || ''
-                },
-                body: JSON.stringify({
-                    templateId: selectedTemplate,
-                    projectId: ticket.proyectoId,
-                    ticketId: ticket.id
-                })
+            const data = await api.post('/PromptLibrary/generate-contextual', {
+                templateId: selectedTemplate,
+                projectId: ticket.proyectoId,
+                ticketId: ticket.id
             });
-            if (response.ok) {
-                const data = await response.json();
-                setGeneratedPrompt(data.prompt);
-            }
+            setGeneratedPrompt(data.prompt);
         } finally {
             setIsGenerating(false);
         }

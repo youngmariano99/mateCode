@@ -4,6 +4,20 @@
 
 ---
 
+* **Fecha:** 2026-04-22
+* **Módulo/Tarea:** Estandarización de Infraestructura API (Migration a Centralized Client) y Fix CRM
+* **Archivos Tocados:** `frontend/src/lib/apiClient.ts`, `frontend/src/pages/vault/*.tsx`, `frontend/src/components/crm/*.tsx`, `frontend/src/components/projects/StackBuilder.tsx`, `backend/.../CrmService.cs`, `backend/.../ProjectEntities.cs`
+* **Qué y Por Qué:** (1) Creación de `apiClient.ts` para centralizar la comunicación HTTP, eliminando el uso disperso de `fetch` y URLs hardcodeadas (`localhost:5241`). **Objetivo:** Facilitar el despliegue multi-entorno mediante `VITE_API_URL`. (2) Automatización de headers de seguridad (JWT + Tenant ID) en todas las peticiones, simplificando los componentes de UI. (3) Resolución de error `PostgresException` en el CRM mediante la implementación de la columna `contexto_json` en la entidad `Cliente` y su persistencia en el `CrmService`. (4) Mejora del tipado en el cliente API para soportar parámetros de consulta dinámicos (`params`), resolviendo errores de compilación en la Bóveda de Prompts.
+
+---
+
+* **Fecha:** 2026-04-22
+* **Módulo/Tarea:** Refinamiento #6: Hub de Contexto y Salud del ADN (Sincronización Total)
+* **Archivos Tocados:** `backend/.../ProjectController.cs`, `backend/.../ProjectService.cs`, `backend/.../PromptEngineService.cs`, `backend/.../AgileController.cs`, `frontend/.../ProjectDashboard.tsx`, `frontend/.../FocusLayout.tsx`, `frontend/.../TestingChecklist.tsx`, `frontend/.../App.tsx`
+* **Qué y Por Qué:** (1) Implementación del **Context Hub** (`ProjectDashboard.tsx`) como vista raíz de proyectos, ofreciendo un resumen visual de completitud técnica (ADN, Stack, Requisitos). (2) Desarrollo del **Motor de Prompt Maestro** que genera un mega-contexto Markdown agregando todo el estado del proyecto para inicializar chats de IA. (3) Unificación del estado `activo` (Soft Delete) en catálogos de Bóveda, sincronizando el "DNA Health Monitor" con la realidad de la DB. (4) Resolución de errores 404 y estados de carga infinitos en el módulo de Testing mediante la exposición de endpoints en `AgileController` y el uso de `useParams` como fallback de ID. (5) Integración del Dashboard como pestaña central ("HUB") en el `FocusLayout` para navegación fluida.
+
+---
+
 * **Fecha:** 2026-04-21
 * **Módulo/Tarea:** Reestructuración de Requirement Hub (Fase 0) y CRM 2.0
 * **Archivos Tocados:** `frontend/.../FeasibilityForm.tsx`, `frontend/.../CrmDashboard.tsx`, `frontend/.../LeadInbox.tsx`, `frontend/.../LeadCaptureModule.tsx`, `frontend/.../ProjectsList.tsx`, `backend/.../PublicController.cs`, `backend/.../ProjectEntities.cs`, `backend/.../AppDbContext.cs`

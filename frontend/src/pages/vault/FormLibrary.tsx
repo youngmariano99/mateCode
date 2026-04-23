@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
 import { useProject } from '../../context/ProjectContext';
-
-const API_BASE = 'http://localhost:5241';
 
 const SEMANTIC_TAGS = [
     { value: 'definicion_problema', label: '🧠 Definición del Problema' },
@@ -43,17 +41,10 @@ export const FormLibrary = () => {
 
     const loadForms = async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-
-            const response = await fetch(`${API_BASE}/api/FormLibrary`, {
-                headers: { 
-                    'Authorization': `Bearer ${session?.access_token}`,
-                    'X-Tenant-Id': tenantId || ''
-                }
-            });
-            if (response.ok) {
-                setForms(await response.json());
-            }
+            const data = await api.get('/FormLibrary');
+            setForms(data);
+        } catch (err) {
+            console.error(err);
         } finally {
             setIsLoading(false);
         }
@@ -84,28 +75,17 @@ export const FormLibrary = () => {
         if (!editingForm) return;
         setIsSaving(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-
-            const method = editingForm.id ? 'PUT' : 'POST';
-            const url = editingForm.id 
-                ? `${API_BASE}/api/FormLibrary/${editingForm.id}` 
-                : `${API_BASE}/api/FormLibrary`;
-
-            const response = await fetch(url, {
-                method,
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session?.access_token}`,
-                    'X-Tenant-Id': tenantId || ''
-                },
-                body: JSON.stringify(editingForm)
-            });
-
-            if (response.ok) {
-                Swal.fire('¡Éxito!', 'Formulario guardado', 'success');
-                setEditingForm(null);
-                loadForms();
+            if (editingForm.id) {
+                await api.put(`/FormLibrary/${editingForm.id}`, editingForm);
+            } else {
+                await api.post('/FormLibrary', editingForm);
             }
+
+            Swal.fire('¡Éxito!', 'Formulario guardado', 'success');
+            setEditingForm(null);
+            loadForms();
+        } catch (err) {
+            console.error(err);
         } finally {
             setIsSaving(false);
         }

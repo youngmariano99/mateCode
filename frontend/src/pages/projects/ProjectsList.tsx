@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Rocket, Clock, ArrowRight, Loader2, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
 
 interface Proyecto {
@@ -12,8 +12,6 @@ interface Proyecto {
   fechaCreacion: string;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
-
 export default function ProjectsList() {
   const { tenantId } = useProject();
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
@@ -21,15 +19,8 @@ export default function ProjectsList() {
 
   const fetchProjects = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`${API_BASE}/api/Project`, {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
-          'X-Tenant-Id': tenantId || ''
-        }
-      });
-      if (!response.ok) throw new Error("Error al traer proyectos");
-      setProyectos(await response.json());
+      const data = await api.get('/Project');
+      setProyectos(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -43,11 +34,8 @@ export default function ProjectsList() {
 
   const handleCreateProject = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
       // Cargamos plantillas disponibles
-      const resTemplates = await fetch(`${API_BASE}/api/Stack/templates`, { headers: { 'X-Tenant-Id': tenantId || '' } });
-      const templates = resTemplates.ok ? await resTemplates.json() : [];
+      const templates = await api.get('/Stack/templates').catch(() => []);
 
       const { value: formValues } = await Swal.fire({
         title: 'Nuevo Proyecto',
@@ -74,20 +62,11 @@ export default function ProjectsList() {
       });
 
       if (formValues && formValues.nombre) {
-        const response = await fetch(`${API_BASE}/api/Project`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
-            'X-Tenant-Id': tenantId || ''
-          },
-          body: JSON.stringify({ 
+        await api.post('/Project', { 
             Nombre: formValues.nombre,
             PlantillaStackId: formValues.plantillaId || null
-          })
         });
 
-        if (!response.ok) throw new Error("Error al crear");
         Swal.fire({ icon: 'success', title: '¡Proyecto Creado!', text: 'Con el stack de la bóveda cargado.', timer: 2000, showConfirmButton: false, background: '#18181b', color: '#fff' });
         fetchProjects();
       }
@@ -142,7 +121,7 @@ export default function ProjectsList() {
             </div>
 
             <Link
-              to={`/projects/${proy.id}/phase-0-feasibility`}
+              to={`/projects/${proy.id}`}
               className="mt-12 w-full py-4 bg-zinc-950 border border-zinc-800 hover:border-emerald-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-3 group/btn overflow-hidden relative"
             >
               <div className="absolute inset-0 bg-emerald-500/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />

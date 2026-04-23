@@ -3,7 +3,7 @@ import { monitorForElements, dropTargetForElements } from '@atlaskit/pragmatic-d
 import { TicketCard } from './TicketCard';
 import { getMidRank } from './rankUtils';
 import { useProject } from '../../context/ProjectContext';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/apiClient';
 import type { Ticket } from '../agile/types';
 import { LayoutGrid, Loader2, Plus } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -65,33 +65,23 @@ export const KanbanBoard = ({ projectId }: { projectId: string }) => {
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [columnas, setColumnas] = useState<KanbanColumna[]>([]);
     const [loading, setLoading] = useState(true);
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
 
     const fetchBoardData = useCallback(async () => {
         try {
             setLoading(true);
-            const { data: { session } } = await supabase.auth.getSession();
-            const headers = {
-                'Authorization': `Bearer ${session?.access_token}`,
-                'X-Tenant-Id': tenantId || ''
-            };
-
-            const [tRes, cRes] = await Promise.all([
-                fetch(`${API_BASE}/api/Kanban/tickets/${projectId}`, { headers }),
-                fetch(`${API_BASE}/api/Kanban/columns/${projectId}`, { headers })
+            const [tData, cData] = await Promise.all([
+                api.get(`/Kanban/tickets/${projectId}`),
+                api.get(`/Kanban/columns/${projectId}`)
             ]);
 
-            if (tRes.ok && cRes.ok) {
-                const [tData, cData] = await Promise.all([tRes.json(), cRes.json()]);
-                setTickets(tData);
-                setColumnas(cData);
-            }
+            setTickets(tData);
+            setColumnas(cData);
         } catch (err) {
             console.error("Error al cargar tablero", err);
         } finally {
             setLoading(false);
         }
-    }, [projectId, tenantId, API_BASE]);
+    }, [projectId]);
 
     useEffect(() => {
         fetchBoardData();
@@ -126,20 +116,8 @@ export const KanbanBoard = ({ projectId }: { projectId: string }) => {
 
         if (name) {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                const response = await fetch(`${API_BASE}/api/Kanban/columns`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session?.access_token}`,
-                        'X-Tenant-Id': tenantId || ''
-                    },
-                    body: JSON.stringify({ ProyectoId: projectId, Nombre: name })
-                });
-
-                if (response.ok) {
-                    await fetchBoardData();
-                }
+                await api.post('/Kanban/columns', { ProyectoId: projectId, Nombre: name });
+                await fetchBoardData();
             } catch (err) {
                 console.error("Error adding column", err);
             }
@@ -173,7 +151,6 @@ export const KanbanBoard = ({ projectId }: { projectId: string }) => {
 
         // 2. Persistence
         try {
-            const { data: { session } } = await supabase.auth.getSession();
             const ticketsEnColumna = backupTickets
                 .filter(t => t.estado === nuevoEstado)
                 .sort((a, b) => a.rangoLexicografico.localeCompare(b.rangoLexicografico));
@@ -182,17 +159,7 @@ export const KanbanBoard = ({ projectId }: { projectId: string }) => {
             const nextTicket = ticketsEnColumna[indexDestino] || null;
             const nuevoRango = getMidRank(prevTicket?.rangoLexicografico || null, nextTicket?.rangoLexicografico || null);
 
-            const response = await fetch(`${API_BASE}/api/Kanban/tickets/${ticketId}/move`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session?.access_token}`,
-                    'X-Tenant-Id': tenantId || ''
-                },
-                body: JSON.stringify({ Estado: nuevoEstado, Rango: nuevoRango })
-            });
-
-            if (!response.ok) throw new Error();
+            await api.put(`/Kanban/tickets/${ticketId}/move`, { Estado: nuevoEstado, Rango: nuevoRango });
         } catch (err) {
             Swal.fire({
                 title: 'Error',

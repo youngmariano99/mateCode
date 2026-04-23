@@ -39,10 +39,11 @@ namespace MateCode.Infrastructure.Services
             {
                 Id = Guid.NewGuid(),
                 EspacioTrabajoId = tenantId,
-                Nombre = rawData.TryGetProperty("fullName", out var name) ? name.GetString() ?? "Sin Nombre" : "Nuevo Lead",
+                Nombre = rawData.TryGetProperty("nombre", out var name) ? name.GetString() ?? "Sin Nombre" : "Nuevo Lead",
                 Email = rawData.TryGetProperty("email", out var email) ? email.GetString() ?? "" : "sin@email.com",
                 Estado = "potencial",
-                TokenEnlaceMagico = Guid.NewGuid().ToString("N")
+                TokenEnlaceMagico = Guid.NewGuid().ToString("N"),
+                ContextoJson = rawData
             };
 
             await _context.Clientes.AddAsync(lead);

@@ -3,7 +3,11 @@ export interface Historia {
   proyectoId: string;
   epicaId: string;
   titulo: string;
+  user?: string; // Ej: Colono, Administrador
   criteriosBdd?: string;
+  prioridad?: string; // MVP, Iteración 1, etc.
+  tareasTecnicasJson?: any;
+  ticketStatus?: string; // Sync con Kanban
   rangoLexicografico?: string;
 }
 
@@ -11,6 +15,7 @@ export interface Epica {
   id: string;
   proyectoId: string;
   titulo: string;
+  actividad?: string;
   historias: Historia[];
 }
 

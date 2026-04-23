@@ -1,18 +1,24 @@
 using System;
 using System.Text.Json;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MateCode.Core.Entities
 {
+    [Table("tecnologias_catalogo", Schema = "boveda")]
     public class TecnologiaCatalogo
     {
-        public Guid Id { get; set; }
+        [Key]
+        public Guid Id { get; set; } = Guid.NewGuid();
         public Guid? TenantId { get; set; }
         public string Nombre { get; set; } = string.Empty;
         public string CategoriaPrincipal { get; set; } = string.Empty;
         public string CategoriaSecundaria { get; set; } = string.Empty;
-        public string UrlDocumentacion { get; set; } = string.Empty;
-        public string ColorHex { get; set; } = "#10B981";
+        public string? UrlDocumentacion { get; set; }
+        public string? ColorHex { get; set; } = "#10B981";
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+        [Column("activo")]
+        public bool Activo { get; set; } = true; // Soft Delete
     }
 
     public class ProyectoStack
@@ -26,14 +32,19 @@ namespace MateCode.Core.Entities
         public virtual TecnologiaCatalogo? Tecnologia { get; set; }
     }
 
+    [Table("plantillas_stack", Schema = "boveda")]
     public class PlantillaStack
     {
-        public Guid Id { get; set; }
+        [Key]
+        public Guid Id { get; set; } = Guid.NewGuid();
         public Guid TenantId { get; set; }
         public string Nombre { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
+        [Column("tecnologias_ids_json", TypeName = "jsonb")]
         public JsonElement TecnologiasIdsJson { get; set; } // Array de IDs
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+        [Column("activo")]
+        public bool Activo { get; set; } = true; // Soft Delete
     }
 
     public class Portafolio
@@ -58,5 +69,19 @@ namespace MateCode.Core.Entities
         public bool InyectaBdd { get; set; }
         public bool InyectaTicket { get; set; }
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+    }
+    [Table("estandares_catalogo", Schema = "boveda")]
+    public class EstandarCatalogo
+    {
+        [Key]
+        public Guid Id { get; set; } = Guid.NewGuid();
+        public Guid? EspacioTrabajoId { get; set; }
+        public string Categoria { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public string? DescripcionDidactica { get; set; }
+        public string ColorHex { get; set; } = "#10B981";
+        public DateTime? EliminadoEn { get; set; }
+        [Column("activo")]
+        public bool Activo { get; set; } = true;
     }
 }

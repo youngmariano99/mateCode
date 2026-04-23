@@ -22,6 +22,7 @@ import Vault from './pages/vault/Vault';
 import Portfolio from './pages/portfolio/Portfolio';
 import { PromptLibrary } from './pages/vault/PromptLibrary';
 import { FormLibrary } from './pages/vault/FormLibrary';
+import { StandardLibrary } from './pages/vault/StandardLibrary';
 
 // --------- Vistas del Taller (Fases) ---------
 import Phase0Feasibility from './pages/projects/Phase0Feasibility';
@@ -30,6 +31,7 @@ import Phase2Design from './pages/projects/Phase2Design';
 import Phase3Implementation from './pages/projects/Phase3Implementation';
 import Phase4Testing from './pages/projects/Phase4Testing';
 import Phase5Deployment from './pages/projects/Phase5Deployment';
+import ProjectDashboard from './pages/projects/ProjectDashboard';
 
 export default function App() {
   return (
@@ -57,13 +59,14 @@ export default function App() {
             <Route path="/app/vault" element={<Vault />} />
             <Route path="/app/vault/prompts" element={<PromptLibrary />} />
             <Route path="/app/vault/forms" element={<FormLibrary />} />
+            <Route path="/app/vault/standards" element={<StandardLibrary />} />
             <Route path="/app/portfolio" element={<Portfolio />} />
           </Route>
 
           {/* --- 3. Rutas del Taller (Modo Enfoque con Phase Stepper) --- */}
           {/* Usamos un wrapper funcional para inyectar el título de fase dinámicamente si fuera necesario, 
               o dejamos que el layout lo gestione */}
-          <Route path="/projects/:id" element={<Navigate to="phase-0-feasibility" replace />} />
+          <Route path="/projects/:id" element={<FocusLayout phaseTitle="Context Hub" children={<ProjectDashboard />} />} />
           
           <Route path="/projects/:id/phase-0-feasibility" element={<FocusLayout phaseTitle="ADN" children={<Phase0Feasibility />} />} />
           <Route path="/projects/:id/phase-1-requirements" element={<FocusLayout phaseTitle="Requisitos" children={<Phase1Requirements />} />} />
