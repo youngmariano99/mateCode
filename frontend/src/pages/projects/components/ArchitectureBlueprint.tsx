@@ -53,9 +53,8 @@ const ArchitectureBlueprint: React.FC<Props> = ({ projectId }) => {
 
   const handleToggle = async (standardId: string) => {
     try {
-      const data = await api.post(`/Project/${projectId}/standards/toggle`, {
-        EstandarId: standardId
-      });
+      // El backend espera un Guid directo en el body ([FromBody] Guid standardId), no un objeto.
+      const data = await api.post(`/Project/${projectId}/standards/toggle`, standardId);
       
       if (data.active) {
         setSeleccionados(prev => [...prev, standardId]);

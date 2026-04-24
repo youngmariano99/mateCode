@@ -278,6 +278,13 @@ namespace MateCode.Infrastructure.Services
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<PersonaProyecto>> GetPersonasByProjectAsync(Guid projectId)
+        {
+            return await _context.PersonasProyecto
+                .Where(p => p.ProyectoId == projectId)
+                .ToListAsync();
+        }
+
         public async Task<IEnumerable<Ticket>> GetTicketsByProjectAsync(Guid projectId)
         {
             return await _context.Tickets

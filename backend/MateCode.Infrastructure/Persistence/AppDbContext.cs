@@ -221,6 +221,9 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(p => p.TenantId).HasColumnName("tenant_id");
                 e.Property(p => p.Titulo).HasColumnName("titulo");
                 e.Property(p => p.Descripcion).HasColumnName("descripcion");
+                e.Property(p => p.BloquePersona).HasColumnName("bloque_persona");
+                e.Property(p => p.BloqueTarea).HasColumnName("bloque_tarea");
+                e.Property(p => p.TipoDiagrama).HasColumnName("tipo_diagrama");
                 e.Property(p => p.ContenidoPlantilla).HasColumnName("contenido_plantilla");
                 e.Property(p => p.FaseObjetivo).HasColumnName("fase_objetivo");
                 e.Property(p => p.EtiquetasJson).HasColumnName("etiquetas").HasColumnType("jsonb");
@@ -228,6 +231,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(p => p.InyectaStack).HasColumnName("inyecta_stack");
                 e.Property(p => p.InyectaBdd).HasColumnName("inyecta_bdd");
                 e.Property(p => p.InyectaTicket).HasColumnName("inyecta_ticket");
+                e.Property(p => p.InyectaBlueprint).HasColumnName("inyecta_blueprint");
                 e.Property(p => p.FechaCreacion).HasColumnName("fecha_creacion");
             });
 

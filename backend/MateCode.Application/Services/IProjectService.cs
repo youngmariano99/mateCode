@@ -13,5 +13,7 @@ namespace MateCode.Application.Services
         Task<IEnumerable<MateCode.Core.Entities.EstandarCatalogo>> GetProjectStandardsAsync(Guid projectId);
         Task<IEnumerable<MateCode.Core.Entities.ProyectoStack>> GetProjectStackAsync(Guid projectId);
         Task<object> GetContextSummaryAsync(Guid projectId);
+        Task<IEnumerable<MateCode.Core.Entities.Diagrama>> GetDiagramsByProjectAsync(Guid projectId);
+        Task SaveDiagramAsync(Guid projectId, string tipo, string codigo);
     }
 }

@@ -163,5 +163,37 @@ namespace MateCode.Infrastructure.Services
                 faseActual = project.FaseActual
             };
         }
+        public async Task<IEnumerable<Diagrama>> GetDiagramsByProjectAsync(Guid projectId)
+        {
+            return await _context.Diagramas
+                .Where(d => d.ProyectoId == projectId)
+                .OrderByDescending(d => d.FechaActualizacion)
+                .ToListAsync();
+        }
+
+        public async Task SaveDiagramAsync(Guid projectId, string tipo, string codigo)
+        {
+            var existing = await _context.Diagramas
+                .FirstOrDefaultAsync(d => d.ProyectoId == projectId && d.Tipo == tipo);
+
+            if (existing != null)
+            {
+                existing.ContenidoCodigo = codigo;
+                existing.FechaActualizacion = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.Diagramas.Add(new Diagrama
+                {
+                    Id = Guid.NewGuid(),
+                    ProyectoId = projectId,
+                    Tipo = tipo,
+                    ContenidoCodigo = codigo,
+                    FechaActualizacion = DateTime.UtcNow
+                });
+            }
+
+            await _context.SaveChangesAsync();
+        }
     }
 }

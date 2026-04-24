@@ -55,19 +55,30 @@ namespace MateCode.Core.Entities
         public JsonElement PayloadLimpio { get; set; }
     }
 
+    [Table("plantillas_prompt", Schema = "boveda")]
     public class PlantillaPrompt
     {
-        public Guid Id { get; set; }
+        [Key]
+        public Guid Id { get; set; } = Guid.NewGuid();
         public Guid TenantId { get; set; }
         public string Titulo { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
+        
+        // Estructura Modular
+        public string BloquePersona { get; set; } = string.Empty;
+        public string BloqueTarea { get; set; } = string.Empty;
+        public string TipoDiagrama { get; set; } = "General"; // ERD, SITEMAP, UML, etc.
+
+        [Obsolete("Usar BloquePersona + BloqueTarea")]
         public string ContenidoPlantilla { get; set; } = string.Empty;
+
         public string FaseObjetivo { get; set; } = "General";
         public string EtiquetasJson { get; set; } = "[]";
         public bool InyectaAdn { get; set; }
         public bool InyectaStack { get; set; }
         public bool InyectaBdd { get; set; }
         public bool InyectaTicket { get; set; }
+        public bool InyectaBlueprint { get; set; }
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
     }
     [Table("estandares_catalogo", Schema = "boveda")]

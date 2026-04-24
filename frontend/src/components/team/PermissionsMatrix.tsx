@@ -28,7 +28,7 @@ export const PermissionsMatrix = ({ initialMatrix }: { initialMatrix: Matrix }) 
       fase_0: "Factibilidad y ADN",
       fase_1: "Requisitos 2D",
       fase_2: "Diseño Visual",
-      fase_3: "Trinchera (Kanban)",
+      fase_3: "Desarrollo (Kanban)",
       fase_4: "Testing",
       crm: "CRM y Clientes",
       vault: "La Bóveda"

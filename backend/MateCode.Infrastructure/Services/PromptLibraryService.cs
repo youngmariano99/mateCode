@@ -21,15 +21,65 @@ namespace MateCode.Infrastructure.Services
         public async Task<IEnumerable<PlantillaPrompt>> GetTemplatesAsync(Guid tenantId, string? fase = null)
         {
             var globalId = Guid.Empty;
-            var query = _context.PlantillasPrompt
-                .Where(p => p.TenantId == tenantId || p.TenantId == globalId);
+            var templates = await _context.PlantillasPrompt
+                .Where(p => p.TenantId == tenantId || p.TenantId == globalId)
+                .ToListAsync();
+
+            // Si es un tenant nuevo y no tiene las plantillas maestras de diagramas, las creamos
+            if (!templates.Any(t => t.TenantId == tenantId && t.FaseObjetivo == "Fase 2"))
+            {
+                await SeedDefaultTemplatesAsync(tenantId);
+                return await GetTemplatesAsync(tenantId, fase); // Re-consultar
+            }
             
             if (!string.IsNullOrEmpty(fase))
             {
-                query = query.Where(p => p.FaseObjetivo == fase);
+                templates = templates.Where(p => p.FaseObjetivo == fase).ToList();
             }
 
-            return await query.OrderByDescending(p => p.FechaCreacion).ToListAsync();
+            return templates.OrderByDescending(p => p.FechaCreacion);
+        }
+
+        private async Task SeedDefaultTemplatesAsync(Guid tenantId)
+        {
+            var defaults = new List<PlantillaPrompt>
+            {
+                new PlantillaPrompt {
+                    Id = Guid.NewGuid(), TenantId = tenantId, FaseObjetivo = "Fase 2", TipoDiagrama = "ERD",
+                    Titulo = "Diseño de Base de Datos (ERD)",
+                    Descripcion = "Genera el modelo relacional completo basado en el ADN y las historias de usuario.",
+                    BloquePersona = "Actúa como un Arquitecto de Software Senior y Experto en Modelado de Datos.",
+                    BloqueTarea = "Tu tarea es analizar el contexto del sistema y generar el Diagrama de Entidad-Relación (ERD) profesional.",
+                    InyectaAdn = true, InyectaBdd = true, InyectaStack = true
+                },
+                new PlantillaPrompt {
+                    Id = Guid.NewGuid(), TenantId = tenantId, FaseObjetivo = "Fase 2", TipoDiagrama = "SITEMAP",
+                    Titulo = "Arquitectura de Información (Sitemap)",
+                    Descripcion = "Define la navegación, rutas y roles de acceso del sistema.",
+                    BloquePersona = "Actúa como un Arquitecto UX/UI y Experto en Arquitectura de Información.",
+                    BloqueTarea = "Tu tarea es generar el Sitemap (Mapa de Navegación) del sistema basándote en el contexto del proyecto y los roles identificados.",
+                    InyectaAdn = true, InyectaBdd = true, InyectaStack = false
+                },
+                new PlantillaPrompt {
+                    Id = Guid.NewGuid(), TenantId = tenantId, FaseObjetivo = "Fase 2", TipoDiagrama = "UML",
+                    Titulo = "Diagrama de Secuencia y Lógica (UML)",
+                    Descripcion = "Visualiza el flujo de mensajes y la interacción entre componentes.",
+                    BloquePersona = "Actúa como un Arquitecto de Software Senior experto en Patrones de Diseño.",
+                    BloqueTarea = "Tu tarea es generar la lógica de interacción detallada usando diagramas PlantUML.",
+                    InyectaAdn = true, InyectaBdd = true, InyectaStack = true
+                },
+                new PlantillaPrompt {
+                    Id = Guid.NewGuid(), TenantId = tenantId, FaseObjetivo = "Fase 2", TipoDiagrama = "ROLES",
+                    Titulo = "Matriz de Roles y Seguridad",
+                    Descripcion = "Cruza las funcionalidades con los permisos de cada tipo de usuario.",
+                    BloquePersona = "Actúa como un Especialista en Ciberseguridad y Gestión de Accesos (IAM).",
+                    BloqueTarea = "Tu tarea es generar la matriz de permisos y roles basándote en los actores del sistema.",
+                    InyectaAdn = true, InyectaBdd = true, InyectaStack = false
+                }
+            };
+
+            await _context.PlantillasPrompt.AddRangeAsync(defaults);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<PlantillaPrompt> CreateTemplateAsync(PlantillaPrompt template)

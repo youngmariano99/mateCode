@@ -13,7 +13,7 @@ const PHASES: Phase[] = [
   { id: '0', label: 'ADN', path: 'phase-0-feasibility' },
   { id: '1', label: 'Requisitos', path: 'phase-1-requirements' },
   { id: '2', label: 'Diseño', path: 'phase-2-design' },
-  { id: '3', label: 'Trinchera', path: 'phase-3-implementation' },
+  { id: '3', label: 'Desarrollo', path: 'phase-3-implementation' },
   { id: '4', label: 'Testing', path: 'phase-4-testing' },
   { id: '5', label: 'Cosecha', path: 'phase-5-deploy' },
 ];

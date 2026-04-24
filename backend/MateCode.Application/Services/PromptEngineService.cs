@@ -34,199 +34,177 @@ namespace MateCode.Application.Services
             var standards = await _projectService.GetProjectStandardsAsync(projectId);
             var stack = await _projectService.GetProjectStackAsync(projectId);
 
-            var standardsText = string.Join("\n", standards.Select(s => $"- {s.Categoria}: {s.Nombre} - {s.DescripcionDidactica}"));
-            
-            var stackText = string.Join(", ", stack.Select(s => $"{s.Tecnologia?.Nombre} ({s.Tecnologia?.CategoriaPrincipal})"));
-
             var contextData = new
             {
                 project = new { name = project?.Nombre ?? "MateCode Project" },
                 stack = new { 
-                    details = stackText,
-                    frontend = stack.FirstOrDefault(s => s.Tecnologia?.CategoriaPrincipal == "Frontend")?.Tecnologia?.Nombre ?? "Por definir",
-                    backend = stack.FirstOrDefault(s => s.Tecnologia?.CategoriaPrincipal == "Backend")?.Tecnologia?.Nombre ?? "Por definir",
-                    database = stack.FirstOrDefault(s => s.Tecnologia?.CategoriaPrincipal == "Base de Datos")?.Tecnologia?.Nombre ?? "Por definir",
+                    details = string.Join(", ", stack.Select(s => $"{s.Tecnologia?.Nombre} ({s.Tecnologia?.CategoriaPrincipal})")),
                     architecture = "Clean Architecture" 
                 },
-                standards = standardsText,
+                standards = string.Join("\n", standards.Select(s => $"- {s.Categoria}: {s.Nombre} - {s.DescripcionDidactica}")),
                 context = new { restrictions = "Aplicación de nivel profesional. Seguir el ADN del proyecto." },
                 ticket = new { title = ticketTitle, bdd_criteria = bddCriteria },
                 user_intent = userIntent
             };
 
-            // Plantilla Maestra en Scriban
-            var templateString = @"
-Actúa como un Tech Lead Full-Stack Senior. Hablame en español argentino profesional y amigable.
-
-Estamos trabajando en el proyecto ""{{ project.name }}"" bajo estas reglas técnicas:
-- Stack Completo: {{ stack.details }}
-- Arquitectura: {{ stack.architecture }}
-- Restricciones comerciales: {{ context.restrictions }}
-
-REGLAS A SEGUIR (BLUEPRINT):
-{{ standards }}
-
-Tu tarea es implementar la siguiente Historia de Usuario:
-TÍTULO: {{ ticket.title }}
-CRITERIOS DE ACEPTACIÓN (BDD):
-{{ ticket.bdd_criteria }}
-
-El desarrollador te solicita específicamente esto: ""{{ user_intent }}""
-
-Generá el código necesario respetando rigurosamente los principios SOLID y separando responsabilidades. Explicame rápido qué hiciste al principio.";
-
-            var template = Template.Parse(templateString);
-            var result = await template.RenderAsync(contextData);
-            
-            // Aquí podríamos pasar el result al _kernel.InvokeAsync si la IA corrío auto en el mismo backend, 
-            // pero el requerimiento es devolver el prompt al portapapeles del frontend.
-            return result;
-        }
-
-        public async Task<string> GenerateDesignCodeAsync(string userPrompt, string diagramType)
-        {
-            // Simulación de llamada a Semantic Kernel / OpenAI
-            await Task.Delay(1500); // Simular latencia de "Pensando..."
-
-            if (diagramType.ToUpper() == "ERD")
-            {
-                return "Table usuarios {\n  id uuid [pk]\n  email varchar\n}\nTable perfiles {\n  id uuid [pk]\n  usuario_id uuid [ref: > usuarios.id]\n  nombre varchar\n  bio text\n}";
-            }
-            
-            if (diagramType.ToUpper() == "FLOWCHART" || diagramType.ToUpper() == "UML")
-            {
-                return "@startuml\nactor \"Usuario\" as U\nparticipant \"Sistema\" as S\nU -> S: Iniciar Sesión\nS -> U: Confirmar Acceso\n@enduml";
-            }
-
-            return "// Generación IA para " + diagramType + ": " + userPrompt;
+            var template = Template.Parse(AgilePromptBuilder.GetMagicPromptTemplate());
+            return await template.RenderAsync(contextData);
         }
 
         public async Task<string> GetMasterDesignPromptAsync(Proyecto project, IEnumerable<Historia> stories, string diagramType)
         {
             var adn = project?.ContextoJson.ToString() ?? "{}";
+            var stack = await _projectService.GetProjectStackAsync(project?.Id ?? Guid.Empty);
+            var standards = await _projectService.GetProjectStandardsAsync(project?.Id ?? Guid.Empty);
+            var storyMap = await _agileService.GetFullStoryMapAsync(project?.Id ?? Guid.Empty);
             
-            var prompt = $@"Actúa como un Arquitecto de Software Senior y Experto en Diagramación.
-Estamos en la Fase 2 (Diseño) del proyecto ""{project?.Nombre}"".
-
-CONTEXTO ADN (FASE 0):
-{adn}
-
-HISTORIAS DE USUARIO Y CRITERIOS BDD (FASE 1):
-{string.Join("\n", stories.Select(s => $"- {s.Titulo}: {s.CriteriosBdd}"))}
-
-TU TAREA:
-Generar el código para un diagrama de tipo {diagramType.ToUpper()}.
-
-REGLAS DE FORMATO:
-1. Si es ERD: Devolvé solo código DBML válido.
-2. Si es UML o Sitemap: Devolvé solo código PlantUML.
-3. Si es Roles: Devolvé un JSON con la estructura: {{ ""roles"": [ {{ ""name"": ""..."", ""permissions"": [] }} ] }}.
-
-IMPORTANTE: Devolvé ÚNICAMENTE el código en crudo, sin bloques de markdown (```) ni explicaciones.";
-
-            return prompt;
+            return DesignPromptBuilder.BuildMasterPrompt(
+                project, adn, 
+                string.Join(", ", stack.Select(s => s.Tecnologia?.Nombre)),
+                string.Join(", ", standards.Select(s => s.Nombre)),
+                storyMap, diagramType);
         }
 
-        public async Task<string> GenerarPromptContextual(Guid templateId, Guid projectId, Guid? ticketId, Guid tenantId, bool? overrideAdn = null, bool? overrideBdd = null, bool? overrideStack = null)
+        public async Task<string> GenerarPromptContextual(Guid templateId, Guid projectId, Guid? ticketId, Guid tenantId, bool? overrideAdn = null, bool? overrideBdd = null, bool? overrideStack = null, string? overridePersona = null, string? overrideTarea = null)
         {
             var template = await _promptLibrary.GetTemplateByIdAsync(templateId, tenantId);
             if (template == null) return "Plantilla no encontrada.";
 
-            var finalPrompt = template.ContenidoPlantilla;
+            var project = await _projectService.GetProjectByIdAsync(projectId);
+            var stories = await _agileService.GetStoriesByProjectAsync(projectId);
+            var personas = await _agileService.GetPersonasByProjectAsync(projectId);
+            var stackList = await _projectService.GetProjectStackAsync(projectId);
+
+            // Preparar datos formateados
+            var adnRaw = project?.ContextoJson.ValueKind != JsonValueKind.Undefined && project?.ContextoJson.ValueKind != JsonValueKind.Null
+                ? project.ContextoJson.GetRawText()
+                : "{}";
+            var adnFormatted = DesignPromptBuilder.FormatAdn(adnRaw);
+            var stackFormatted = stackList != null && stackList.Any() ? string.Join(", ", stackList.Select(s => s.Tecnologia?.Nombre)) : "Sin stack definido.";
+            var storiesFormatted = FormatStories(stories ?? new List<Historia>());
+            var personasFormatted = personas != null && personas.Any() 
+                ? string.Join("\n", personas.Select(p => $"- {p.Nombre} ({p.Rol})")) 
+                : "No se han definido personas/roles para este proyecto.";
+
+            var sb = new StringBuilder();
             
-            bool shouldInyectAdn = overrideAdn ?? template.InyectaAdn;
-            bool shouldInyectBdd = overrideBdd ?? template.InyectaBdd;
-            bool shouldInyectStack = overrideStack ?? template.InyectaStack;
+            // Flags para evitar duplicidad si el usuario ya usó placeholders en su plantilla
+            bool adnUsed = false;
+            bool bddUsed = false;
+            bool stackUsed = false;
+            bool personasUsed = false;
 
-            // Inyectar ADN (Fase 0)
-            if (shouldInyectAdn)
-            {
-                var project = await _projectService.GetProjectByIdAsync(projectId);
-                finalPrompt = finalPrompt.Replace("{ADN_AQUI}", project?.ContextoJson.ToString() ?? "{}");
-            }
-            else
-            {
-                finalPrompt = finalPrompt.Replace("{ADN_AQUI}", "[Contexto ADN no solicitado]");
-            }
-
-            // Inyectar BDD (Fase 1)
-            if (shouldInyectBdd)
-            {
-                var stories = await _agileService.GetStoriesByProjectAsync(projectId);
-                var bddText = string.Join("\n", stories.Select(s => $"- {s.Titulo}: {s.CriteriosBdd}"));
-                finalPrompt = finalPrompt.Replace("{BDD_AQUI}", bddText);
-            }
-            else
-            {
-                finalPrompt = finalPrompt.Replace("{BDD_AQUI}", "[Contexto Historias de Usuario no solicitado]");
-            }
-
-            // Inyectar Ticket (Fase 3 - Contexto de ejecución)
-            if (template.InyectaTicket && ticketId.HasValue)
-            {
-                finalPrompt = finalPrompt.Replace("{TICKET_ID}", ticketId.Value.ToString());
-            }
-
-            // Inyectar Estándares (Blueprint)
-            var projectStandards = await _projectService.GetProjectStandardsAsync(projectId);
-
-            var blueprintText = "REGLAS A SEGUIR (BLUEPRINT):\n" + 
-                               string.Join("\n", projectStandards.Select(s => $"- {s.Categoria}: {s.Nombre} - {s.DescripcionDidactica}"));
+            // 1. [Identidad persona]
+            var personaRaw = !string.IsNullOrEmpty(overridePersona) ? overridePersona : 
+                         (string.IsNullOrEmpty(template.BloquePersona) ? "Actúa como un Arquitecto de Software Senior y Experto en Diagramación." : template.BloquePersona);
             
-            finalPrompt = finalPrompt.Replace("{BLUEPRINT_AQUI}", blueprintText);
+            if (personaRaw.Contains("{ADN_AQUI}")) { personaRaw = personaRaw.Replace("{ADN_AQUI}", adnFormatted); adnUsed = true; }
+            if (personaRaw.Contains("{BDD_AQUI}")) { personaRaw = personaRaw.Replace("{BDD_AQUI}", storiesFormatted); bddUsed = true; }
+            if (personaRaw.Contains("{STACK_AQUI}")) { personaRaw = personaRaw.Replace("{STACK_AQUI}", stackFormatted); stackUsed = true; }
+            if (personaRaw.Contains("{PERSONAS_AQUI}")) { personaRaw = personaRaw.Replace("{PERSONAS_AQUI}", personasFormatted); personasUsed = true; }
 
-            // Inyectar Stack (Estación 2)
-            if (shouldInyectStack)
+            sb.AppendLine(personaRaw);
+            sb.AppendLine();
+
+            // 2. [Objetivo / Tarea]
+            var tareaRaw = !string.IsNullOrEmpty(overrideTarea) ? overrideTarea :
+                        (!string.IsNullOrEmpty(template.BloqueTarea) ? template.BloqueTarea : 
+                        (!string.IsNullOrEmpty(template.ContenidoPlantilla) ? template.ContenidoPlantilla : "Generar el diseño técnico detallado basándote en el contexto anterior."));
+            
+            if (tareaRaw.Contains("{ADN_AQUI}")) { tareaRaw = tareaRaw.Replace("{ADN_AQUI}", adnFormatted); adnUsed = true; }
+            if (tareaRaw.Contains("{BDD_AQUI}")) { tareaRaw = tareaRaw.Replace("{BDD_AQUI}", storiesFormatted); bddUsed = true; }
+            if (tareaRaw.Contains("{STACK_AQUI}")) { tareaRaw = tareaRaw.Replace("{STACK_AQUI}", stackFormatted); stackUsed = true; }
+            if (tareaRaw.Contains("{PERSONAS_AQUI}")) { tareaRaw = tareaRaw.Replace("{PERSONAS_AQUI}", personasFormatted); personasUsed = true; }
+
+            // Solo agregamos el encabezado si la tarea no parece tener uno propio
+            if (!tareaRaw.Trim().StartsWith("#")) sb.AppendLine("### OBJETIVO:");
+            sb.AppendLine(tareaRaw);
+            sb.AppendLine();
+
+            // 3. [Contexto] (Solo lo marcado Y que NO haya sido usado ya en placeholders)
+            bool hasContext = (overrideAdn ?? template.InyectaAdn) && !adnUsed || 
+                             (overrideStack ?? template.InyectaStack) && !stackUsed || 
+                             (overrideBdd ?? template.InyectaBdd) && (!bddUsed || !personasUsed) || 
+                             template.InyectaBlueprint;
+
+            if (hasContext)
             {
-                var projectStack = await _projectService.GetProjectStackAsync(projectId);
-                var stackText = string.Join(", ", projectStack.Select(s => $"{s.Tecnologia?.Nombre} ({s.Tecnologia?.CategoriaPrincipal})"));
-                finalPrompt = finalPrompt.Replace("{STACK_AQUI}", stackText);
-            }
-            else
-            {
-                finalPrompt = finalPrompt.Replace("{STACK_AQUI}", "[Stack Tecnológico no solicitado]");
+                sb.AppendLine("### CONTEXTO DEL PROYECTO:");
+                
+                if ((overrideAdn ?? template.InyectaAdn) && !adnUsed) {
+                    sb.AppendLine("#### CONTEXTO ADN (FASE 0):");
+                    sb.AppendLine(adnFormatted);
+                    sb.AppendLine();
+                }
+
+                if ((overrideStack ?? template.InyectaStack) && !stackUsed) {
+                    sb.AppendLine($"#### STACK TECNOLÓGICO: {stackFormatted}");
+                    sb.AppendLine();
+                }
+
+                if (template.InyectaBlueprint) {
+                    var standards = await _projectService.GetProjectStandardsAsync(projectId);
+                    if (standards != null && standards.Any()) {
+                        sb.AppendLine("#### ESTÁNDARES DE CALIDAD:");
+                        sb.AppendLine(string.Join("\n", standards.Select(s => $"- {s.Categoria}: {s.Nombre}")));
+                        sb.AppendLine();
+                    }
+                }
+
+                if (overrideBdd ?? template.InyectaBdd) {
+                    if (!personasUsed) {
+                        sb.AppendLine("#### ROLES Y PERSONAS (FASE 1):");
+                        sb.AppendLine(personasFormatted);
+                        sb.AppendLine();
+                    }
+                    
+                    if (!bddUsed) {
+                        sb.AppendLine("#### HISTORIAS DE USUARIO (FASE 1):");
+                        sb.AppendLine(storiesFormatted);
+                        sb.AppendLine();
+                    }
+                }
             }
 
-            return finalPrompt;
+            // 4. [Formato ideal] (Reglas estrictas del Backend)
+            sb.AppendLine("### REGLAS DE FORMATO Y SALIDA (ESTRICTO):");
+            
+            var diagramType = string.IsNullOrEmpty(template.TipoDiagrama) ? "General" : template.TipoDiagrama;
+            switch (diagramType.ToUpper())
+            {
+                case "ERD":
+                    DesignPromptBuilder.AddErdInstructions(sb);
+                    break;
+                case "SITEMAP":
+                    DesignPromptBuilder.AddSitemapInstructions(sb);
+                    break;
+                case "UML":
+                    DesignPromptBuilder.AddUmlInstructions(sb);
+                    break;
+                case "ROLES":
+                    DesignPromptBuilder.AddRolesInstructions(sb);
+                    break;
+                default:
+                    sb.AppendLine("Devolver la respuesta en un formato estructurado y técnico acorde al tipo de diagrama.");
+                    break;
+            }
+
+            sb.AppendLine();
+            sb.AppendLine("IMPORTANTE: Devolvé ÚNICAMENTE el código en crudo, sin bloques de markdown (```) ni explicaciones.");
+
+            return sb.ToString();
         }
 
         public async Task<string> GenerarPromptBrainstormingAsync(string idea, Guid formularioId, Guid tenantId)
         {
             var form = await _formLibrary.GetFormByIdAsync(formularioId, tenantId);
-
             if (form == null) return "Error: Formulario no encontrado.";
 
-            var sb = new StringBuilder();
-            sb.AppendLine("### MATECODE AI BRAINSTORMING ORACLE ###");
-            sb.AppendLine();
-            sb.AppendLine($"Tengo esta idea inicial: \"{idea}\"");
-            sb.AppendLine();
-            sb.AppendLine("Actúa como un Senior Product Manager y Arquitecto de Software. Tu tarea es analizar esta idea y completar las siguientes preguntas para estructurar el ADN del proyecto.");
-            sb.AppendLine();
-            sb.AppendLine("Reglas Estrictas:");
-            sb.AppendLine("1. Responde de forma técnica, concisa y profesional.");
-            sb.AppendLine("2. Devuelve ÚNICAMENTE un objeto JSON válido donde las llaves sean las 'etiqueta_semantica' listadas abajo.");
-            sb.AppendLine("3. No incluyas bloques de markdown, ni saludos, ni explicaciones externas.");
-            sb.AppendLine();
-            sb.AppendLine("Preguntas a responder y sus etiquetas:");
-            
             using var doc = JsonDocument.Parse(form.ConfiguracionJson.GetRawText());
-            foreach (var item in doc.RootElement.EnumerateArray())
-            {
-                var pregunta = item.GetProperty("pregunta").GetString();
-                var etiqueta = item.GetProperty("etiqueta_semantica").GetString();
-                sb.AppendLine($"- {pregunta} (Etiqueta: {etiqueta})");
-            }
-
+            var questions = string.Join("\n", doc.RootElement.EnumerateArray().Select(i => $"- {i.GetProperty("pregunta").GetString()} (Etiqueta: {i.GetProperty("etiqueta_semantica").GetString()})"));
             var exampleJson = "{ " + string.Join(", ", doc.RootElement.EnumerateArray().Select(i => $"\"{i.GetProperty("etiqueta_semantica").GetString()}\": \"...\"")) + " }";
 
-            sb.AppendLine();
-            sb.AppendLine("Ejemplo de formato esperado:");
-            sb.AppendLine("```json");
-            sb.AppendLine(exampleJson);
-            sb.AppendLine("```");
-
-            return sb.ToString();
+            return ContextPromptBuilder.BuildBrainstormingPrompt(idea, questions, exampleJson);
         }
 
         public async Task<string> GenerarMasterPromptAsync(Guid projectId)
@@ -237,77 +215,13 @@ IMPORTANTE: Devolvé ÚNICAMENTE el código en crudo, sin bloques de markdown (`
             var stories = await _agileService.GetStoriesByProjectAsync(projectId);
             var tickets = await _agileService.GetTicketsByProjectAsync(projectId);
 
-            var sb = new StringBuilder();
-            sb.AppendLine("# CONTEXTO GLOBAL DEL PROYECTO: " + (project?.Nombre ?? "Sin Nombre"));
-            sb.AppendLine();
-
-            sb.AppendLine("## 1. ADN (Fase 0)");
-            sb.AppendLine(project?.ContextoJson.ToString() ?? "Sin datos de ADN definidos.");
-            sb.AppendLine();
-
-            sb.AppendLine("## 2. STACK Y ARQUITECTURA");
-            if (stack.Any())
-            {
-                foreach (var s in stack)
-                {
-                    sb.AppendLine($"- {s.Tecnologia?.Nombre} ({s.Tecnologia?.CategoriaPrincipal})");
-                }
-            }
-            else
-            {
-                sb.AppendLine("Stack tecnológico no definido.");
-            }
-            sb.AppendLine();
-
-            sb.AppendLine("## 3. BLUEPRINT (Estándares Técnicos)");
-            if (standards.Any())
-            {
-                foreach (var s in standards)
-                {
-                    sb.AppendLine($"- {s.Categoria}: {s.Nombre} - {s.DescripcionDidactica}");
-                }
-            }
-            else
-            {
-                sb.AppendLine("Estándares de arquitectura no definidos.");
-            }
-            sb.AppendLine();
-
-            sb.AppendLine("## 4. REQUISITOS (Fase 1)");
-            if (stories.Any())
-            {
-                foreach (var s in stories)
-                {
-                    sb.AppendLine($"### {s.Titulo}");
-                    sb.AppendLine(s.CriteriosBdd);
-                    sb.AppendLine();
-                }
-            }
-            else
-            {
-                sb.AppendLine("No se han definido historias de usuario todavía.");
-            }
-            sb.AppendLine();
-
-            sb.AppendLine("## 5. ESTADO ACTUAL (Kanban)");
-            var pendingTickets = tickets.Where(t => t.Estado != "Completado").ToList();
-            if (pendingTickets.Any())
-            {
-                foreach (var t in pendingTickets)
-                {
-                    sb.AppendLine($"- [{t.Estado}] {t.Tipo}: {t.Titulo}");
-                }
-            }
-            else
-            {
-                sb.AppendLine("No hay tickets pendientes.");
-            }
-            sb.AppendLine();
-
-            sb.AppendLine("---");
-            sb.AppendLine("INSTRUCCIÓN PARA LA IA: Has sido inicializada con el estado actual de este proyecto. Responde 'Contexto asimilado, ¿en qué módulo trabajamos hoy?'");
-
-            return sb.ToString();
+            return ContextPromptBuilder.BuildGlobalContextPrompt(
+                project, project?.ContextoJson.ValueKind != JsonValueKind.Null ? project.ContextoJson.GetRawText() : "Sin ADN",
+                string.Join(", ", stack.Select(s => s.Tecnologia?.Nombre)),
+                string.Join("\n", standards.Select(s => $"- {s.Nombre}")),
+                string.Join("\n", stories.Select(s => $"- {s.Titulo}")),
+                string.Join("\n", tickets.Where(t => t.Estado != "Completado").Select(t => $"- {t.Titulo}"))
+            );
         }
 
         public async Task<string> GenerarPromptFase1Async(Guid projectId)
@@ -316,112 +230,24 @@ IMPORTANTE: Devolvé ÚNICAMENTE el código en crudo, sin bloques de markdown (`
             var stack = await _projectService.GetProjectStackAsync(projectId);
             var standards = await _projectService.GetProjectStandardsAsync(projectId);
 
-            var sb = new StringBuilder();
-            sb.AppendLine("### MATECODE AI: ORÁCULO DE REQUISITOS (FASE 1) ###");
-            sb.AppendLine();
-            sb.AppendLine("Actúa como un Senior Product Manager y Business Analyst. Tu objetivo es generar un 'User Story Mapping' completo basado en la visión técnica y estratégica del proyecto.");
-            sb.AppendLine();
-
-            sb.AppendLine("## 1. CONTEXTO ESTRATÉGICO (ADN - FASE 0)");
-            var adnRaw = project?.ContextoJson.ToString();
-            if (string.IsNullOrEmpty(adnRaw) || adnRaw == "{}" || adnRaw == "null")
-            {
-                sb.AppendLine("> ⚠️ [AVISO]: Todavía no se ha consolidado el ADN detallado de este proyecto. Generá una propuesta basada en el nombre del proyecto, pero recordá que con el ADN completo la precisión sería mucho mayor.");
-            }
-            else
-            {
-                try {
-                    using var doc = JsonDocument.Parse(adnRaw);
-                    if (doc.RootElement.TryGetProperty("adn", out var adnNode) && adnNode.TryGetProperty("data", out var dataNode))
-                    {
-                        foreach (var prop in dataNode.EnumerateObject())
-                        {
-                            sb.AppendLine($"- {prop.Name.ToUpper()}: {prop.Value.GetString()}");
-                        }
-                    }
-                    else
-                    {
-                        sb.AppendLine(adnRaw);
-                    }
-                } catch {
-                    sb.AppendLine(adnRaw);
-                }
-            }
-            sb.AppendLine();
-
-            sb.AppendLine("## 2. STACK TECNOLÓGICO");
-            if (stack == null || !stack.Any())
-            {
-                sb.AppendLine("> 💡 [CONSEJO]: No se ha definido el Stack tecnológico aún. Si eliges uno en la Fase 0, podré darte historias de usuario con criterios de aceptación técnicos mucho más específicos.");
-            }
-            else
-            {
-                foreach (var s in stack)
-                {
-                    sb.AppendLine($"- {s.Tecnologia?.Nombre} ({s.Tecnologia?.CategoriaPrincipal})");
-                }
-            }
-            sb.AppendLine();
-
-            sb.AppendLine("## 3. BLUEPRINT Y ESTÁNDARES");
-            if (standards == null || !standards.Any())
-            {
-                sb.AppendLine("> ⚠️ [AVISO]: No hay estándares de ingeniería seleccionados. Las historias de usuario serán generales.");
-            }
-            else
-            {
-                foreach (var s in standards)
-                {
-                    sb.AppendLine($"- {s.Categoria}: {s.Nombre}");
-                }
-            }
-            sb.AppendLine();
-
-            sb.AppendLine("## TU TAREA:");
-            sb.AppendLine("Diseñá un 'User Story Map' bidimensional detallado (Jeff Patton style). Debés devolver ÚNICAMENTE un objeto JSON válido con la siguiente estructura estricta:");
-            sb.AppendLine();
-            sb.AppendLine(@"{
-  ""proyecto"": ""Nombre del Proyecto"",
-  ""personas"": [ { ""id"": ""p1"", ""nombre"": ""Laura"", ""rol"": ""Usuario"" } ],
-  ""releases"": [ 
-    { ""id"": ""v1"", ""nombre"": ""Version 1 (MVP)"", ""descripcion"": ""Core funcional"" },
-    { ""id"": ""v2"", ""nombre"": ""Version 2"", ""descripcion"": ""Mejoras"" }
-  ],
-  ""epics"": [
-    {
-      ""id"": ""e1"",
-      ""nombre"": ""Nombre Epic"",
-      ""color"": ""#hex"",
-      ""features"": [
-        {
-          ""id"": ""f1"",
-          ""nombre"": ""Nombre Feature"",
-          ""color"": ""#hex"",
-          ""user_stories"": [
-            { 
-              ""id"": ""us1"", 
-              ""titulo"": ""Como... quiero... para..."", 
-              ""user"": ""Laura"", 
-              ""release_id"": ""v1"", 
-              ""prioridad"": ""MVP"",
-              ""bdd"": ""Dado que... cuando... entonces..."",
-              ""criterios_aceptacion"": [""check 1"", ""check 2""]
-            }
-          ]
+            return AgilePromptBuilder.BuildPhase1Prompt(
+                project, project?.ContextoJson.ValueKind != JsonValueKind.Null ? project.ContextoJson.GetRawText() : "Sin ADN",
+                string.Join(", ", stack.Select(s => s.Tecnologia?.Nombre)),
+                string.Join("\n", standards.Select(s => s.Nombre))
+            );
         }
-      ]
-    }
-  ]
-}");
-            sb.AppendLine();
-            sb.AppendLine("REGLAS:");
-            sb.AppendLine("1. EJE HORIZONTAL: Epics agrupan Features (pasos narrativos).");
-            sb.AppendLine("2. EJE VERTICAL (RELEASES): Realizá el 'Slicing' en al menos 3 releases (V1, V2, V3).");
-            sb.AppendLine("3. PERSONAS: Identificá actores clave. El campo 'user' en cada 'user_story' DEBE ser el nombre de una de las personas definidas en la lista 'personas'.");
-            sb.AppendLine("4. STORY MAPPING: Cada 'user_story' DEBE tener un 'release_id' válido.");
-            sb.AppendLine("5. FORMATO: Solo JSON crudo, sin bloques markdown ni texto adicional.");
 
+        private string FormatStories(IEnumerable<Historia> stories)
+        {
+            if (stories == null || !stories.Any()) return "No hay historias de usuario cargadas.";
+            var sb = new StringBuilder();
+            foreach (var s in stories)
+            {
+                sb.AppendLine($"  - {s.Titulo}: {s.CriteriosBdd}");
+            }
             return sb.ToString();
         }
+
+        public Task<string> GenerateDesignCodeAsync(string userPrompt, string diagramType) => Task.FromResult("// Simulación: " + diagramType);
     }
 }

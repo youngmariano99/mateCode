@@ -133,7 +133,7 @@ const ProjectDashboard = () => {
       description: "Diagramar evita sorpresas costosas. Permite que la IA genere el código base con una precisión quirúrgica, respetando tu visión arquitectónica."
     },
     {
-      title: "Trinchera (Kanban)",
+      title: "Desarrollo (Kanban)",
       subtitle: "Donde sucede la magia",
       icon: <Kanban className="w-6 h-6" />,
       done: summary?.ticketsActivos === 0 && summary?.cantidadRequisitos > 0,

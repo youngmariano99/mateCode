@@ -5,6 +5,13 @@
 ---
 
 * **Fecha:** 2026-04-22
+* **Módulo/Tarea:** Reingeniería Story Mapping Multidimensional (Jeff Patton Style)
+* **Archivos Tocados:** `backend/.../AgileService.cs`, `backend/.../AgilEntities.cs`, `backend/.../AppDbContext.cs`, `backend/.../PromptEngineService.cs`, `frontend/.../MapaHistoriasBoard.tsx`, `frontend/.../Phase1Requirements.tsx`, `backend/db/update_storymap_schema.sql`
+* **Qué y Por Qué:** (1) Transformación del Story Map a un modelo bidimensional estricto con Epics (Backbone), Features (Narrativa) y Releases (Swimlanes/Versiones). (2) Evolución del esquema DB con tablas para Releases, Personas y Features, asegurando integridad referencial mediante transacciones y guardado parcial. (3) Implementación de UX avanzada con "Panning" (arrastrar para desplazar) y pantallas de carga para hidratación de datos. (4) Mejora del Motor de Prompts para exigir la asignación de Personas (roles) a cada historia. (5) Sincronización de backlog con modos "Incremental" y "Total" (Sobrescribir) para gestión flexible de tickets.
+
+---
+
+* **Fecha:** 2026-04-22
 * **Módulo/Tarea:** Estandarización de Infraestructura API (Migration a Centralized Client) y Fix CRM
 * **Archivos Tocados:** `frontend/src/lib/apiClient.ts`, `frontend/src/pages/vault/*.tsx`, `frontend/src/components/crm/*.tsx`, `frontend/src/components/projects/StackBuilder.tsx`, `backend/.../CrmService.cs`, `backend/.../ProjectEntities.cs`
 * **Qué y Por Qué:** (1) Creación de `apiClient.ts` para centralizar la comunicación HTTP, eliminando el uso disperso de `fetch` y URLs hardcodeadas (`localhost:5241`). **Objetivo:** Facilitar el despliegue multi-entorno mediante `VITE_API_URL`. (2) Automatización de headers de seguridad (JWT + Tenant ID) en todas las peticiones, simplificando los componentes de UI. (3) Resolución de error `PostgresException` en el CRM mediante la implementación de la columna `contexto_json` en la entidad `Cliente` y su persistencia en el `CrmService`. (4) Mejora del tipado en el cliente API para soportar parámetros de consulta dinámicos (`params`), resolviendo errores de compilación en la Bóveda de Prompts.

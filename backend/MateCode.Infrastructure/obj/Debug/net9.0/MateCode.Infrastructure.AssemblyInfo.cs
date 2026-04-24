@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MateCode.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+33c00a87b7f09a181fe07eeb49546b3a6bc4ebcb")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6427a3e0c5ea62eb4dee4192f736fcf4eee0a8f3")]
 [assembly: System.Reflection.AssemblyProductAttribute("MateCode.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MateCode.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

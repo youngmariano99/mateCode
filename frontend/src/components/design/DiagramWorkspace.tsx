@@ -6,14 +6,23 @@ import type { DiagramNode, DiagramEdge } from '../../services/agile/ParserServic
 import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
 import { useParams } from 'react-router-dom';
-import { useProject } from '../../context/ProjectContext';
+import { Monitor, RefreshCcw, Maximize2, Minimize2, Zap, Save } from 'lucide-react';
 import { GeneradorPromptDesignModal } from './GeneradorPromptDesignModal';
+import { UniversalErdWorkspace } from './UniversalErdWorkspace';
+import { UniversalSitemapBrandingWorkspace } from './UniversalSitemapBrandingWorkspace';
 
 
 type DiagramType = 'ERD' | 'UML' | 'SITEMAP' | 'ROLES';
 
 const DEFAULT_CODES: Record<DiagramType, string> = {
-    ERD: `Table usuarios {\n  id uuid [pk]\n  email varchar\n}\n\nTable perfiles {\n  id uuid [pk]\n  usuario_id uuid [ref: > usuarios.id]\n  nombre varchar\n}`,
+    ERD: JSON.stringify({
+        project_name: 'Database Principal',
+        default_engine: 'postgresql',
+        tables: [
+            { id: 't1', name: 'usuarios', columns: [{ name: 'id', data_family: 'uuid', is_primary_key: true }, { name: 'email', data_family: 'string' }] }
+        ],
+        relationships: []
+    }, null, 2),
     UML: `@startuml\nactor "Usuario" as U\nusecase "Login" as UC1\nU --> UC1\n@enduml`,
     SITEMAP: `{\n  "sitemap": {\n    "home": {\n      "sections": [\n        { "name": "Dashboard" }\n      ]\n    }\n  }\n}`,
     ROLES: `{\n  "roles": [\n    { "name": "Admin", "permissions": ["all"] }\n  ]\n}`
@@ -25,13 +34,17 @@ export const DiagramWorkspace = () => {
     const [codes, setCodes] = useState<Record<DiagramType, string>>(DEFAULT_CODES);
     const [elements, setElements] = useState<{ nodes: DiagramNode[], edges: DiagramEdge[] }>({ nodes: [], edges: [] });
     const [isSaving, setIsSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+    const [dataLoaded, setDataLoaded] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     // Cargar diagramas al iniciar
     useEffect(() => {
         const loadDiagrams = async () => {
             if (!projectId) return;
             try {
+                setLoading(true);
                 const data: any[] = await api.get(`/Diagram/project/${projectId}`);
                 const newCodes = { ...DEFAULT_CODES };
                 data.forEach(d => {
@@ -41,20 +54,24 @@ export const DiagramWorkspace = () => {
                     }
                 });
                 setCodes(newCodes);
+                setDataLoaded(true);
             } catch (err) {
                 console.error("Error cargando diagramas", err);
+            } finally {
+                setLoading(false);
             }
         };
         loadDiagrams();
     }, [projectId]);
 
-    // Parsear código dinámicamente según la pestaña activa
+    // Parsear código dinámicamente según la pestaña activa (para las que no son Universal ERD)
     useEffect(() => {
+        if (activeTab === 'ERD') return;
+
         const currentCode = codes[activeTab];
         let parsed = { nodes: [], edges: [] };
 
-        if (activeTab === 'ERD') parsed = ParserService.parseDBML(currentCode);
-        else if (activeTab === 'UML') parsed = ParserService.parsePlantUML(currentCode);
+        if (activeTab === 'UML') parsed = ParserService.parsePlantUML(currentCode);
         else if (activeTab === 'SITEMAP') parsed = ParserService.parseSitemap(currentCode);
 
         setElements(parsed);
@@ -67,79 +84,132 @@ export const DiagramWorkspace = () => {
             await api.put(`/Diagram/project/${projectId}/${activeTab}`, { codigo: codes[activeTab] });
             Swal.fire({
                 icon: 'success',
-                title: 'Diagrama guardado',
+                title: 'Diseño Guardado',
+                text: 'El plano se ha sincronizado correctamente.',
                 toast: true,
                 position: 'top-end',
-                timer: 2000,
                 showConfirmButton: false,
+                timer: 3000,
                 background: '#18181b',
                 color: '#fff'
             });
+        } catch (error) {
+            Swal.fire('Error', 'No se pudo guardar el diseño', 'error');
         } finally {
             setIsSaving(false);
         }
     };
 
+    const containerHeight = isFullscreen ? 'h-screen' : 'h-[85vh]';
+
     return (
-        <div className="flex flex-col gap-4">
-            {/* Header con Tabs y Botones */}
-            <div className="flex items-center justify-between bg-zinc-900 p-2 rounded-xl border border-zinc-800 shadow-xl">
-                <div className="flex gap-1">
-                    {(['ERD', 'UML', 'SITEMAP', 'ROLES'] as DiagramType[]).map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === tab
-                                ? 'bg-emerald-500 text-zinc-950 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                                : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                                }`}
-                        >
-                            {tab}
-                        </button>
-                    ))}
+        <div className={`p-6 space-y-6 bg-black min-h-screen ${isFullscreen ? 'fixed inset-0 z-[9999] overflow-hidden' : ''}`}>
+            {/* Header del Espacio de Trabajo */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 backdrop-blur-xl">
+                <div>
+                    <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
+                        <Monitor className="text-emerald-500" />
+                        ORÁCULO DE DISEÑO <span className="text-zinc-600">/</span> {activeTab}
+                    </h2>
+                    <p className="text-zinc-500 text-sm mt-1 font-medium italic">"Donde la estrategia se convierte en arquitectura."</p>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex items-center gap-3">
                     <button
-                        onClick={() => setIsPromptModalOpen(true)}
-                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-emerald-400 rounded-lg text-xs font-bold flex items-center gap-2 transition-all border border-emerald-500/20 shadow-lg"
+                        onClick={() => setIsFullscreen(!isFullscreen)}
+                        className="p-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all border border-zinc-700"
+                        title={isFullscreen ? "Salir de Pantalla Completa" : "Pantalla Completa"}
                     >
-                        <span>💡 Obtener Prompt para IA</span>
+                        {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
                     </button>
-                    <button
+                    <button 
+                        onClick={() => setIsPromptModalOpen(true)}
+                        className="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl flex items-center gap-2 transition-all font-bold text-sm border border-zinc-700 group"
+                    >
+                        <Zap size={18} className="text-emerald-500 group-hover:scale-125 transition-transform" />
+                        GENERAR PROMPT IA
+                    </button>
+                    <button 
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-xl"
+                        className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-black rounded-xl flex items-center gap-2 transition-all font-black text-sm shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50"
                     >
-                        {isSaving ? 'Guardando...' : 'Guardar Diseño'}
+                        <Save size={18} />
+                        {isSaving ? 'GUARDANDO...' : 'GUARDAR DISEÑO'}
                     </button>
                 </div>
             </div>
 
-            <div className="flex h-[75vh] bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl relative group">
-                {/* Panel Izquierdo: Editor */}
-                <div className="w-1/3 border-r border-zinc-800 flex flex-col bg-zinc-950/50">
-                    <div className="p-4 bg-zinc-900/50 border-b border-zinc-800 flex items-center justify-between">
-                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Editor de Código ({activeTab})</span>
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-                    </div>
-                    <CodeEditorPane
-                        code={codes[activeTab]}
-                        onChange={(val) => setCodes(prev => ({ ...prev, [activeTab]: val }))}
-                    />
-                </div>
+            {/* Selector de Tablero */}
+            <div className="flex p-1 bg-zinc-900 border border-zinc-800 rounded-2xl w-fit">
+                {['ERD', 'UML', 'SITEMAP', 'ROLES'].map((tab) => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab as any)}
+                        className={`px-8 py-2.5 rounded-xl text-xs font-black transition-all tracking-widest ${
+                            activeTab === tab 
+                                ? 'bg-emerald-500 text-black shadow-lg' 
+                                : 'text-zinc-500 hover:text-white hover:bg-zinc-800'
+                        }`}
+                    >
+                        {tab}
+                    </button>
+                ))}
+            </div>
 
-                {/* Panel Derecho: VisualCanvas */}
-                <div className="flex-1 bg-zinc-950 relative overflow-hidden">
-                    <VisualCanvas nodes={elements.nodes} edges={elements.edges} />
-
-                    {/* Micro-copy Mentor Argentino */}
-                    <div className="absolute bottom-6 left-6 right-6 p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl backdrop-blur-xl group-hover:border-emerald-500/30 transition-all duration-500">
-                        <p className="text-xs text-emerald-400/80 leading-relaxed font-medium">
-                            <span className="font-bold text-emerald-400">💡 Mentor Argentino:</span> "Che, si no tenés ganas de escribir, hacé clic en el botón de arriba. Copiás el prompt, se lo tirás a tu IA favorita, y cuando te devuelva el código lo pegás acá. ¡Queda todo guardado y sincronizado!"
-                        </p>
-                    </div>
+            {loading ? (
+                <div className={`${containerHeight} flex flex-col items-center justify-center bg-zinc-900 border border-zinc-800 rounded-2xl animate-pulse`}>
+                    <RefreshCcw className="animate-spin text-emerald-500 mb-4" size={48} />
+                    <p className="text-zinc-500 text-sm font-bold uppercase tracking-widest">Sincronizando Planos...</p>
                 </div>
+            ) : (
+                <>
+                {activeTab === 'ERD' ? (
+                    <div className={`${containerHeight} bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl relative`}>
+                        {dataLoaded && (
+                            <UniversalErdWorkspace 
+                                initialCode={codes.ERD} 
+                                onCodeChange={(newCode) => setCodes(prev => ({ ...prev, ERD: newCode }))} 
+                            />
+                        )}
+                    </div>
+                ) : activeTab === 'SITEMAP' ? (
+                    <div className={`${containerHeight} bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl relative`}>
+                        {dataLoaded && (
+                            <UniversalSitemapBrandingWorkspace 
+                                initialCode={codes.SITEMAP} 
+                                onCodeChange={(newCode) => setCodes(prev => ({ ...prev, SITEMAP: newCode }))} 
+                            />
+                        )}
+                    </div>
+                ) : (
+                    <div className={`flex ${containerHeight} bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl relative group`}>
+                        {/* Panel Izquierdo: Editor */}
+                        <div className="w-1/3 border-r border-zinc-800 flex flex-col bg-zinc-950/50">
+                            <div className="p-4 bg-zinc-900/50 border-b border-zinc-800 flex items-center justify-between">
+                                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Editor de Código ({activeTab})</span>
+                                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+                            </div>
+                            <CodeEditorPane
+                                code={codes[activeTab]}
+                                onChange={(val) => setCodes(prev => ({ ...prev, [activeTab]: val }))}
+                            />
+                        </div>
+
+                        {/* Panel Derecho: VisualCanvas */}
+                        <div className="flex-1 bg-zinc-950 relative overflow-hidden">
+                            <VisualCanvas nodes={elements.nodes} edges={elements.edges} />
+                        </div>
+                    </div>
+                )}
+                </>
+            )}
+
+            {/* Micro-copy Mentor Argentino - Fuera del diagrama */}
+            <div className="p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl backdrop-blur-xl">
+                <p className="text-xs text-emerald-400/80 leading-relaxed font-medium">
+                    <span className="font-bold text-emerald-400">💡 Mentor Argentino:</span> "Che, si no tenés ganas de escribir, hacé clic en el botón de arriba. Copiás el prompt, se lo tirás a tu IA favorita, y cuando te devuelva el código lo pegás acá. ¡Queda todo guardado y sincronizado!"
+                </p>
             </div>
 
             {isPromptModalOpen && projectId && (

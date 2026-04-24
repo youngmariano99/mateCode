@@ -64,7 +64,7 @@ namespace MateCode.Infrastructure.Services
             if (data == null) return "Error: No se encontró el contexto del ticket.";
 
             var sb = new StringBuilder();
-            sb.AppendLine("### MATECODE MAGIC PROMPT - FASE 3 (TRINCHERA) ###");
+            sb.AppendLine("### MATECODE MAGIC PROMPT - FASE 3 (DESARROLLO) ###");
             sb.AppendLine();
             sb.AppendLine($"**TAREAS ACTUAL:** {data.ticket.Titulo}");
             sb.AppendLine($"**TIPO:** {data.ticket.Tipo}");
@@ -141,7 +141,7 @@ namespace MateCode.Infrastructure.Services
 
         public async Task InitializeDefaultColumnsAsync(Guid proyectoId, Guid tenantId)
         {
-            var defaults = new[] { "Por hacer", "En progreso", "En espera", "Completado" };
+            var defaults = new[] { "Por hacer", "En progreso", "Terminado", "Aprobado" };
             for (int i = 0; i < defaults.Length; i++)
             {
                 _context.KanbanColumnas.Add(new KanbanColumna

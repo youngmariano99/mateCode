@@ -78,6 +78,7 @@ builder.Services.AddScoped<IPortfolioService, PortfolioService>();
 builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
 builder.Services.AddScoped<IPromptLibraryService, PromptLibraryService>();
 builder.Services.AddScoped<IFormLibraryService, FormLibraryService>();
+builder.Services.AddScoped<IDatabaseSyncService, DatabaseSyncService>();
 
 var app = builder.Build();
 
@@ -139,6 +140,19 @@ using (var scope = app.Services.CreateScope())
 
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_stack' AND column_name = 'activo') THEN
                     ALTER TABLE boveda.plantillas_stack ADD COLUMN activo BOOLEAN DEFAULT TRUE;
+                END IF;
+                -- Infraestructura de Prompts Modulares
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'bloque_persona') THEN
+                    ALTER TABLE boveda.plantillas_prompt ADD COLUMN bloque_persona TEXT DEFAULT '';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'bloque_tarea') THEN
+                    ALTER TABLE boveda.plantillas_prompt ADD COLUMN bloque_tarea TEXT DEFAULT '';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'tipo_diagrama') THEN
+                    ALTER TABLE boveda.plantillas_prompt ADD COLUMN tipo_diagrama VARCHAR(50) DEFAULT 'General';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'inyecta_blueprint') THEN
+                    ALTER TABLE boveda.plantillas_prompt ADD COLUMN inyecta_blueprint BOOLEAN DEFAULT FALSE;
                 END IF;
             END $$;";
         context.Database.ExecuteSqlRaw(sql);

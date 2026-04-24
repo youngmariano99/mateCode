@@ -62,7 +62,9 @@ namespace MateCode.API.Controllers
                 tenantId,
                 req.OverrideAdn,
                 req.OverrideBdd,
-                req.OverrideStack);
+                req.OverrideStack,
+                req.OverridePersona,
+                req.OverrideTarea);
             return Ok(new { prompt });
         }
 
@@ -74,6 +76,8 @@ namespace MateCode.API.Controllers
             public bool? OverrideAdn { get; set; }
             public bool? OverrideBdd { get; set; }
             public bool? OverrideStack { get; set; }
+            public string? OverridePersona { get; set; }
+            public string? OverrideTarea { get; set; }
         }
     }
 }

@@ -71,7 +71,7 @@ export default function App() {
           <Route path="/projects/:id/phase-0-feasibility" element={<FocusLayout phaseTitle="ADN" children={<Phase0Feasibility />} />} />
           <Route path="/projects/:id/phase-1-requirements" element={<FocusLayout phaseTitle="Requisitos" children={<Phase1Requirements />} />} />
           <Route path="/projects/:id/phase-2-design" element={<FocusLayout phaseTitle="Diseño" children={<Phase2Design />} />} />
-          <Route path="/projects/:id/phase-3-implementation" element={<FocusLayout phaseTitle="Trinchera" children={<Phase3Implementation />} />} />
+          <Route path="/projects/:id/phase-3-implementation" element={<FocusLayout phaseTitle="Desarrollo" children={<Phase3Implementation />} />} />
           <Route path="/projects/:id/phase-4-testing" element={<FocusLayout phaseTitle="Testing" children={<Phase4Testing />} />} />
           <Route path="/projects/:id/phase-5-deploy" element={<FocusLayout phaseTitle="Cosecha" children={<Phase5Deployment />} />} />
 
