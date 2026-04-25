@@ -4,6 +4,20 @@
 
 ---
 
+* **Fecha:** 2026-04-24
+* **Módulo/Tarea:** Fase 3 Completa - Backlog Inteligente y Gestión de Sprints
+* **Archivos Tocados:** `20260424_ModuloSprints.sql`, `AgilEntities.cs`, `AppDbContext.cs`, `BacklogService.cs`, `SprintController.cs`, `BacklogHub.tsx`, `ActiveSprintBoard.tsx`, `SprintRetrospectiveModal.tsx`
+* **Qué y Por Qué:** Se implementó el motor de importación de tickets y generación de mega-prompt con la Bóveda y Fase 0/1, tableros Kanban activos con timestamps invisibles, y el proceso de cierre de sprints con cálculo de Cycle Time y Triage obligatorio de tareas sueltas.
+
+---
+
+* **Fecha:** 2026-04-24
+* **Módulo/Tarea:** Unificación de Diseño IA-Ready y Matriz de Roles Plana
+* **Archivos Tocados:** `frontend/.../RolesMatrixView.tsx`, `frontend/.../DiagramWorkspace.tsx`, `frontend/.../UniversalSitemapBrandingWorkspace.tsx`, `frontend/.../MapaHistoriasBoard.tsx`, `frontend/.../CodeEditorPane.tsx`, `frontend/.../GeneradorPromptDesignModal.tsx`
+* **Qué y Por Qué:** (1) Evolución de la Matriz de Roles a un modelo de "Tabla Plana" con detección dinámica de roles e indicadores visuales de alta fidelidad. (2) Implementación de Sincronización Bidireccional (Live Sync) en tiempo real entre editores JSON y vistas visuales para Sitemap (Wiremap) y Story Map 2D (Requisitos). (3) Desarrollo de UX inmersiva mediante paneles laterales colapsables ("Modo Foco"), navegación "Drag-to-Pan" para tablas extensas y gestión inteligente de altura del editor. (4) Creación de motor de exportación multi-formato con soporte para captura de PNG de alta resolución y PDF de presentación. (5) Optimización de Ingeniería de Prompts en el Oráculo para forzar esquemas JSON estrictos compatibles con el nuevo motor visual.
+
+---
+
 * **Fecha:** 2026-04-22
 * **Módulo/Tarea:** Reingeniería Story Mapping Multidimensional (Jeff Patton Style)
 * **Archivos Tocados:** `backend/.../AgileService.cs`, `backend/.../AgilEntities.cs`, `backend/.../AppDbContext.cs`, `backend/.../PromptEngineService.cs`, `frontend/.../MapaHistoriasBoard.tsx`, `frontend/.../Phase1Requirements.tsx`, `backend/db/update_storymap_schema.sql`

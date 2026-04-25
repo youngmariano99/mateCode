@@ -33,6 +33,9 @@ import Phase4Testing from './pages/projects/Phase4Testing';
 import Phase5Deployment from './pages/projects/Phase5Deployment';
 import ProjectDashboard from './pages/projects/ProjectDashboard';
 
+// --------- DevHub (Colaboración) ---------
+import { DevHubLayout } from './components/devhub/DevHubLayout';
+
 export default function App() {
   return (
     <ProjectProvider>
@@ -74,6 +77,9 @@ export default function App() {
           <Route path="/projects/:id/phase-3-implementation" element={<FocusLayout phaseTitle="Desarrollo" children={<Phase3Implementation />} />} />
           <Route path="/projects/:id/phase-4-testing" element={<FocusLayout phaseTitle="Testing" children={<Phase4Testing />} />} />
           <Route path="/projects/:id/phase-5-deploy" element={<FocusLayout phaseTitle="Cosecha" children={<Phase5Deployment />} />} />
+
+          {/* --- 4. DevHub (Colaboración Tiempo Real) --- */}
+          <Route path="/projects/:projectId/devhub" element={<DevHubLayout />} />
 
           {/* Fallback General */}
           <Route path="*" element={<Navigate to="/app/dashboard" replace />} />

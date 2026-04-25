@@ -6,10 +6,11 @@ import type { DiagramNode, DiagramEdge } from '../../services/agile/ParserServic
 import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
 import { useParams } from 'react-router-dom';
-import { Monitor, RefreshCcw, Maximize2, Minimize2, Zap, Save } from 'lucide-react';
+import { Monitor, RefreshCcw, Maximize2, Minimize2, Zap, Save, LayoutList } from 'lucide-react';
 import { GeneradorPromptDesignModal } from './GeneradorPromptDesignModal';
 import { UniversalErdWorkspace } from './UniversalErdWorkspace';
 import { UniversalSitemapBrandingWorkspace } from './UniversalSitemapBrandingWorkspace';
+import { RolesMatrixView } from './RolesMatrixView';
 
 
 type DiagramType = 'ERD' | 'UML' | 'SITEMAP' | 'ROLES';
@@ -25,7 +26,16 @@ const DEFAULT_CODES: Record<DiagramType, string> = {
     }, null, 2),
     UML: `@startuml\nactor "Usuario" as U\nusecase "Login" as UC1\nU --> UC1\n@enduml`,
     SITEMAP: `{\n  "sitemap": {\n    "home": {\n      "sections": [\n        { "name": "Dashboard" }\n      ]\n    }\n  }\n}`,
-    ROLES: `{\n  "roles": [\n    { "name": "Admin", "permissions": ["all"] }\n  ]\n}`
+    ROLES: JSON.stringify({
+        roles: [
+            { name: "Administrador", description: "Acceso total al sistema y configuraciones globales.", permissions: ["*"] },
+            { name: "Usuario", description: "Acceso limitado a sus propios datos y funciones básicas.", permissions: ["perfil:read", "perfil:update"] }
+        ],
+        permission_matrix: {
+            "Administrador": ["*"],
+            "Usuario": ["perfil:read", "perfil:update"]
+        }
+    }, null, 2)
 };
 
 export const DiagramWorkspace = () => {
@@ -38,6 +48,23 @@ export const DiagramWorkspace = () => {
     const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+    // ... funciones de exportación (las definiremos mejor abajo o en componentes)
+    const exportAsImage = async () => {
+        const element = document.getElementById('visual-area');
+        if (!element) return;
+        const { toPng } = await import('html-to-image');
+        const dataUrl = await toPng(element, { backgroundColor: '#09090b', quality: 1 });
+        const link = document.createElement('a');
+        link.download = `MateCode_${activeTab}_${Date.now()}.png`;
+        link.href = dataUrl;
+        link.click();
+    };
+
+    const exportAsPDF = () => {
+        window.print();
+    };
 
     // Cargar diagramas al iniciar
     useEffect(() => {
@@ -73,6 +100,7 @@ export const DiagramWorkspace = () => {
 
         if (activeTab === 'UML') parsed = ParserService.parsePlantUML(currentCode);
         else if (activeTab === 'SITEMAP') parsed = ParserService.parseSitemap(currentCode);
+        else if (activeTab === 'ROLES') parsed = ParserService.parseRoles(currentCode);
 
         setElements(parsed);
     }, [activeTab, codes]);
@@ -114,7 +142,20 @@ export const DiagramWorkspace = () => {
                     <p className="text-zinc-500 text-sm mt-1 font-medium italic">"Donde la estrategia se convierte en arquitectura."</p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex bg-zinc-800 rounded-xl p-1 border border-zinc-700">
+                        <button onClick={exportAsImage} className="p-2.5 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-lg transition-all" title="Exportar PNG"><Maximize2 size={16} /></button>
+                        <button onClick={exportAsPDF} className="p-2.5 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-lg transition-all" title="Exportar PDF/Imprimir"><Monitor size={16} /></button>
+                    </div>
+
+                    <button
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        className={`p-3 rounded-xl transition-all border ${isSidebarOpen ? 'bg-emerald-500 text-black border-emerald-400' : 'bg-zinc-800 text-white border-zinc-700 hover:bg-zinc-700'}`}
+                        title={isSidebarOpen ? "Ocultar Editor" : "Mostrar Editor"}
+                    >
+                        <LayoutList size={20} />
+                    </button>
+
                     <button
                         onClick={() => setIsFullscreen(!isFullscreen)}
                         className="p-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all border border-zinc-700"
@@ -127,7 +168,7 @@ export const DiagramWorkspace = () => {
                         className="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl flex items-center gap-2 transition-all font-bold text-sm border border-zinc-700 group"
                     >
                         <Zap size={18} className="text-emerald-500 group-hover:scale-125 transition-transform" />
-                        GENERAR PROMPT IA
+                        IA PROMPT
                     </button>
                     <button 
                         onClick={handleSave}
@@ -135,7 +176,7 @@ export const DiagramWorkspace = () => {
                         className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-black rounded-xl flex items-center gap-2 transition-all font-black text-sm shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50"
                     >
                         <Save size={18} />
-                        {isSaving ? 'GUARDANDO...' : 'GUARDAR DISEÑO'}
+                        {isSaving ? 'SAVE' : 'GUARDAR'}
                     </button>
                 </div>
             </div>
@@ -165,7 +206,7 @@ export const DiagramWorkspace = () => {
             ) : (
                 <>
                 {activeTab === 'ERD' ? (
-                    <div className={`${containerHeight} bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl relative`}>
+                    <div id="visual-area" className={`${containerHeight} bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl relative`}>
                         {dataLoaded && (
                             <UniversalErdWorkspace 
                                 initialCode={codes.ERD} 
@@ -173,32 +214,34 @@ export const DiagramWorkspace = () => {
                             />
                         )}
                     </div>
-                ) : activeTab === 'SITEMAP' ? (
-                    <div className={`${containerHeight} bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl relative`}>
-                        {dataLoaded && (
-                            <UniversalSitemapBrandingWorkspace 
-                                initialCode={codes.SITEMAP} 
-                                onCodeChange={(newCode) => setCodes(prev => ({ ...prev, SITEMAP: newCode }))} 
-                            />
-                        )}
-                    </div>
                 ) : (
                     <div className={`flex ${containerHeight} bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl relative group`}>
-                        {/* Panel Izquierdo: Editor */}
-                        <div className="w-1/3 border-r border-zinc-800 flex flex-col bg-zinc-950/50">
-                            <div className="p-4 bg-zinc-900/50 border-b border-zinc-800 flex items-center justify-between">
-                                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Editor de Código ({activeTab})</span>
-                                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+                        {/* Panel Izquierdo: Editor (Condicional) */}
+                        {isSidebarOpen && (
+                            <div className="w-1/3 border-r border-zinc-800 flex flex-col bg-zinc-950/50 animate-in slide-in-from-left duration-300">
+                                <div className="p-4 bg-zinc-900/50 border-b border-zinc-800 flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Editor de Código ({activeTab})</span>
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+                                </div>
+                                <CodeEditorPane
+                                    code={codes[activeTab]}
+                                    onChange={(val) => setCodes(prev => ({ ...prev, [activeTab]: val }))}
+                                />
                             </div>
-                            <CodeEditorPane
-                                code={codes[activeTab]}
-                                onChange={(val) => setCodes(prev => ({ ...prev, [activeTab]: val }))}
-                            />
-                        </div>
+                        )}
 
-                        {/* Panel Derecho: VisualCanvas */}
-                        <div className="flex-1 bg-zinc-950 relative overflow-hidden">
-                            <VisualCanvas nodes={elements.nodes} edges={elements.edges} />
+                        {/* Panel Derecho: VisualArea (Sitemap, Roles o UML) */}
+                        <div id="visual-area" className="flex-1 bg-zinc-950 relative overflow-hidden">
+                            {activeTab === 'ROLES' ? (
+                                <RolesMatrixView code={codes.ROLES} />
+                            ) : activeTab === 'SITEMAP' ? (
+                                <UniversalSitemapBrandingWorkspace 
+                                    initialCode={codes.SITEMAP} 
+                                    onCodeChange={(newCode) => setCodes(prev => ({ ...prev, SITEMAP: newCode }))} 
+                                />
+                            ) : (
+                                <VisualCanvas nodes={elements.nodes} edges={elements.edges} />
+                            )}
                         </div>
                     </div>
                 )}

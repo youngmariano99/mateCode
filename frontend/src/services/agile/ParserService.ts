@@ -233,4 +233,47 @@ export class ParserService {
             return { nodes: [], edges: [] };
         }
     }
+
+    /**
+     * Parsea la Matriz de Roles y Permisos.
+     */
+    static parseRoles(jsonStr: string): { nodes: DiagramNode[], edges: DiagramEdge[] } {
+        try {
+            const data = JSON.parse(jsonStr);
+            const nodes: DiagramNode[] = [];
+            const edges: DiagramEdge[] = [];
+            
+            if (data.roles && Array.isArray(data.roles)) {
+                let x = 0;
+                let y = 0;
+                data.roles.forEach((role: any, idx: number) => {
+                    const permissions = data.permission_matrix ? (data.permission_matrix[role.name] || []) : role.permissions;
+                    
+                    nodes.push({
+                        id: `role-${idx}`,
+                        type: 'database', // Reutilizamos el estilo de tabla/caja informativa
+                        data: {
+                            label: role.name,
+                            columns: [
+                                { name: 'DESCRIPCIÓN', type: role.description },
+                                ...permissions.slice(0, 10).map((p: string) => ({ name: '🔑 ' + p, type: 'Permiso' })),
+                                { name: permissions.length > 10 ? `... y ${permissions.length - 10} más` : '', type: '' }
+                            ]
+                        },
+                        position: { x, y }
+                    });
+
+                    x += 400;
+                    if (x > 1200) {
+                        x = 0;
+                        y += 500;
+                    }
+                });
+            }
+            return { nodes, edges };
+        } catch (err) {
+            console.error("Error parsing roles", err);
+            return { nodes: [], edges: [] };
+        }
+    }
 }

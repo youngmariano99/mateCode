@@ -6,11 +6,13 @@ using MateCode.Infrastructure.Persistence;
 using MateCode.Infrastructure.Services;
 using MateCode.Application.Services;
 using MateCode.API.Middlewares;
+using MateCode.API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Controladores
+// Controladores y SignalR
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 
 // Base de Datos PostgreSQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -79,6 +81,9 @@ builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
 builder.Services.AddScoped<IPromptLibraryService, PromptLibraryService>();
 builder.Services.AddScoped<IFormLibraryService, FormLibraryService>();
 builder.Services.AddScoped<IDatabaseSyncService, DatabaseSyncService>();
+builder.Services.AddScoped<IBacklogService, BacklogService>();
+builder.Services.AddScoped<IColabService, ColabService>();
+builder.Services.AddScoped<IOracleService, OracleService>();
 
 var app = builder.Build();
 
@@ -171,5 +176,6 @@ app.UseMiddleware<TenantResolverMiddleware>();
 app.UseMiddleware<MagicLinkMiddleware>();
 
 app.MapControllers();
+app.MapHub<DevHubHub>("/hub/devhub");
 
 app.Run();

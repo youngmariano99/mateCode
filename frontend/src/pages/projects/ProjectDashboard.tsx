@@ -12,7 +12,8 @@ import {
   AlertCircle,
   ArrowRight,
   Copy,
-  BrainCircuit
+  BrainCircuit,
+  Network
 } from 'lucide-react';
 import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
@@ -140,6 +141,15 @@ const ProjectDashboard = () => {
       link: `/projects/${id}/phase-3-implementation`,
       meta: `${summary?.ticketsActivos} Tickets Activos`,
       description: "Gestión visual para que el equipo (y la IA) no se pise. Es el pulso real del proyecto: acá es donde las ideas se convierten en software funcional."
+    },
+    {
+      title: "DevHub Colaborativo",
+      subtitle: "Bugs, ADRs y Pizarras",
+      icon: <Network className="w-6 h-6" />,
+      done: true, // Siempre disponible
+      link: `/projects/${id}/devhub`,
+      meta: "Espacio en Tiempo Real",
+      description: "El punto de encuentro sincrónico del equipo. Tomá decisiones arquitectónicas (ADRs), dibuja diagramas infinitos y reportá bugs al instante integrados con WebSockets."
     }
   ];
 

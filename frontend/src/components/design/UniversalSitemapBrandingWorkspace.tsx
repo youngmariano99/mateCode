@@ -53,35 +53,89 @@ export const UniversalSitemapBrandingWorkspace: React.FC<Props> = ({ initialCode
         onCodeChange(JSON.stringify(state, null, 2));
     }, [state]);
 
+    // Sincronizar desde el Editor hacia el Estado Visual
+    useEffect(() => {
+        try {
+            const parsed = JSON.parse(initialCode);
+            const currentStringified = JSON.stringify(state);
+            const incomingStringified = JSON.stringify(parsed);
+            
+            // Solo actualizar si el contenido estructural es diferente
+            if (currentStringified !== incomingStringified) {
+                setState({
+                    sitemap: parsed.sitemap || DEFAULT_STATE.sitemap,
+                    branding: parsed.branding || DEFAULT_STATE.branding
+                });
+            }
+        } catch (e) {
+            // Ignorar errores de parsing mientras el usuario escribe JSON incompleto
+        }
+    }, [initialCode]);
+
     const exportToMarkdown = () => {
-        let md = `# Design Specification: ${state.sitemap.project_name}\n\n`;
+        let md = `# 🏗️ ESPECIFICACIÓN TÉCNICA DE DISEÑO: ${state.sitemap.project_name.toUpperCase()}\n\n`;
         
-        md += `## 1. Information Architecture (Sitemap)\n`;
-        state.sitemap.pages.forEach(page => {
-            md += `### Page: ${page.name} (${page.route})\n`;
+        md += `> [!IMPORTANT]\n`;
+        md += `> **CONTESTO PARA IA**: Este documento contiene la arquitectura de información y el sistema de branding de un proyecto de software. Utiliza estas especificaciones para cualquier generación de código, UI o contenido relacionado.\n\n`;
+
+        md += `## 1. 🎯 IDENTIDAD Y PROPÓSITO\n`;
+        md += `| Atributo | Valor |\n`;
+        md += `| :--- | :--- |\n`;
+        md += `| **Nombre del Proyecto** | ${state.sitemap.project_name} |\n`;
+        md += `| **Slogan** | ${state.branding.identity.slogan || 'No definido'} |\n`;
+        md += `| **Propósito** | ${state.branding.identity.purpose || 'No definido'} |\n`;
+        md += `| **Personalidad de Marca** | ${state.branding.identity.personality || 'No definida'} |\n\n`;
+
+        md += `## 🎨 2. SISTEMA VISUAL (UI KIT)\n`;
+        md += `### 2.1 Paleta de Colores\n`;
+        md += `| Rol | Código HEX | Aplicación |\n`;
+        md += `| :--- | :--- | :--- |\n`;
+        md += `| **Primario** | \`${state.branding.visuals.primaryHex}\` | Botones principales, headers, acentos de marca |\n`;
+        md += `| **Secundario** | \`${state.branding.visuals.secondaryHex}\` | Elementos de apoyo, hover states |\n`;
+        md += `| **Acento** | \`${state.branding.visuals.accentHex}\` | Notificaciones, estados activos, detalles visuales |\n`;
+        md += `| **Fondo** | \`${state.branding.visuals.backgroundHex}\` | Superficies de contenedores y background general |\n\n`;
+
+        md += `### 2.2 Tipografías y Estilos\n`;
+        md += `- **Fuentes de Títulos**: \`${state.branding.visuals.headingFont}\` (Jerarquía H1-H6)\n`;
+        md += `- **Fuente de Cuerpo**: \`${state.branding.visuals.bodyFont}\` (Párrafos, inputs, etiquetas)\n`;
+        md += `- **Fuente de Datos/Números**: \`${state.branding.visuals.numberFont}\` (Tablas, métricas, código)\n`;
+        md += `- **Estilo de Imágenes**: \`${state.branding.visuals.imageStyle}\` (Guía para generación de assets)\n\n`;
+
+        md += `## 🗣️ 3. VOZ, TONO Y REGLAS\n`;
+        md += `### 3.1 Guía de Comunicación\n`;
+        md += `- **Tono de Voz**: ${state.branding.voice.tone}\n`;
+        md += `- **Permitir Slang**: ${state.branding.voice.slang_allowed ? '✅ SÍ (Uso de modismos e informalidad permitida)' : '❌ NO (Mantener lenguaje técnico/formal)'}\n`;
+        md += `- **Palabras Prohibidas**: ${state.branding.voice.prohibited_words.length > 0 ? state.branding.voice.prohibited_words.join(', ') : 'Ninguna'}\n\n`;
+
+        md += `### 3.2 Restricciones de Diseño (No-Go List)\n`;
+        if (state.branding.restrictions.no_go_list.length > 0) {
+            state.branding.restrictions.no_go_list.forEach(rule => {
+                md += `- 🚫 ${rule}\n`;
+            });
+        } else {
+            md += `*No hay restricciones específicas definidas.*\n`;
+        }
+        md += `\n`;
+
+        md += `## 🗺️ 4. ARQUITECTURA DE INFORMACIÓN (SITEMAP)\n`;
+        state.sitemap.pages.forEach((page, index) => {
+            md += `### ${index + 1}. Página: ${page.name}\n`;
+            md += `- **Ruta/Route**: \`${page.route}\`\n`;
+            md += `- **Secciones Clave**:\n`;
             page.sections.forEach(sec => {
-                md += `- **${sec.title}**: ${sec.description}\n`;
+                md += `  - **${sec.title}**: ${sec.description}\n`;
             });
             md += `\n`;
         });
 
-        md += `## 2. Branding & Identity\n`;
-        md += `### 2.1 Identity\n`;
-        md += `- **Purpose**: ${state.branding.identity.purpose}\n`;
-        md += `- **Slogan**: ${state.branding.identity.slogan}\n`;
-        md += `- **Personality**: ${state.branding.identity.personality}\n\n`;
-
-        md += `### 2.2 Visual System\n`;
-        md += `- **Primary Color**: ${state.branding.visuals.primaryHex}\n`;
-        md += `- **Secondary Color**: ${state.branding.visuals.secondaryHex}\n`;
-        md += `- **Background**: ${state.branding.visuals.backgroundHex}\n`;
-        md += `- **Fonts**: ${state.branding.visuals.headingFont} / ${state.branding.visuals.bodyFont}\n\n`;
+        md += `---\n`;
+        md += `*Documento generado automáticamente por MateCode Oráculo de Diseño - ${new Date().toLocaleDateString()}*`;
 
         const blob = new Blob([md], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Design_Spec_${state.sitemap.project_name}.md`;
+        a.download = `Design_Spec_${state.sitemap.project_name.replace(/\s+/g, '_')}.md`;
         a.click();
     };
 

@@ -9,6 +9,7 @@ interface Props {
 
 export const BrandingStudio: React.FC<Props> = ({ branding, onChange }) => {
     const [activeTab, setActiveTab] = useState<'identity' | 'visuals' | 'voice' | 'rules'>('identity');
+    const [manualFonts, setManualFonts] = useState({ heading: false, body: false, number: false });
 
     const updateIdentity = (field: keyof BrandingProfile['identity'], value: string) => {
         onChange({ ...branding, identity: { ...branding.identity, [field]: value } });
@@ -157,14 +158,14 @@ export const BrandingStudio: React.FC<Props> = ({ branding, onChange }) => {
                         <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-2xl">
                              <div className="flex justify-between items-center mb-6">
                                 <div>
-                                    <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Armonía Cromática (Color Wheel)</h4>
-                                    <p className="text-[9px] text-zinc-500 uppercase font-bold tracking-tighter">Basado en tu color Primario</p>
+                                    <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Armonía Cromática de tu Marca</h4>
+                                    <p className="text-[9px] text-zinc-500 uppercase font-bold tracking-tighter">Visualización real de tu paleta elegida</p>
                                 </div>
-                                <div className="flex gap-2">
-                                    <div style={{ backgroundColor: branding.visuals.primaryHex }} className="w-6 h-6 rounded-full border border-white/20 shadow-xl shadow-emerald-500/20" />
-                                    <div style={{ backgroundColor: branding.visuals.primaryHex, filter: 'hue-rotate(180deg)' }} className="w-6 h-6 rounded-full border border-white/10" />
-                                    <div style={{ backgroundColor: branding.visuals.primaryHex, filter: 'hue-rotate(30deg)' }} className="w-6 h-6 rounded-full border border-white/10" />
-                                    <div style={{ backgroundColor: branding.visuals.primaryHex, filter: 'hue-rotate(-30deg)' }} className="w-6 h-6 rounded-full border border-white/10" />
+                                <div className="flex gap-3">
+                                    <div style={{ backgroundColor: branding.visuals.primaryHex }} className="w-8 h-8 rounded-full border-2 border-white/20 shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all duration-500" title="Primario" />
+                                    <div style={{ backgroundColor: branding.visuals.secondaryHex }} className="w-8 h-8 rounded-full border-2 border-white/10 transition-all duration-500" title="Secundario" />
+                                    <div style={{ backgroundColor: branding.visuals.accentHex }} className="w-8 h-8 rounded-full border-2 border-white/10 transition-all duration-500" title="Acento" />
+                                    <div style={{ backgroundColor: branding.visuals.backgroundHex }} className="w-8 h-8 rounded-full border-2 border-white/10 transition-all duration-500" title="Fondo" />
                                 </div>
                              </div>
                              
@@ -175,20 +176,29 @@ export const BrandingStudio: React.FC<Props> = ({ branding, onChange }) => {
                                     { label: 'Acento', field: 'accentHex' },
                                     { label: 'Fondo', field: 'backgroundHex' },
                                 ].map(color => (
-                                    <div key={color.field} className="space-y-2">
+                                    <div key={color.field} className="space-y-3">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">{color.label}</label>
-                                        <div className="flex gap-2 p-2 bg-zinc-950 rounded-xl border border-zinc-800">
-                                            <input 
-                                                type="color"
-                                                value={branding.visuals[color.field as keyof BrandingProfile['visuals']]}
-                                                onChange={e => updateVisuals(color.field as any, e.target.value)}
-                                                className="w-8 h-8 rounded-lg border-none cursor-pointer bg-transparent"
-                                            />
-                                            <input 
-                                                value={branding.visuals[color.field as keyof BrandingProfile['visuals']]}
-                                                onChange={e => updateVisuals(color.field as any, e.target.value)}
-                                                className="flex-1 bg-transparent text-[10px] text-white font-mono outline-none"
-                                            />
+                                        <div className="flex items-center gap-3 p-3 bg-zinc-950 rounded-2xl border border-zinc-800 hover:border-zinc-700 transition-all group">
+                                            <div className="relative w-10 h-10 shrink-0">
+                                                <input 
+                                                    type="color"
+                                                    value={branding.visuals[color.field as keyof BrandingProfile['visuals']]}
+                                                    onChange={e => updateVisuals(color.field as any, e.target.value)}
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                />
+                                                <div 
+                                                    style={{ backgroundColor: branding.visuals[color.field as keyof BrandingProfile['visuals']] }}
+                                                    className="w-full h-full rounded-xl border border-white/10 shadow-inner group-hover:scale-110 transition-transform"
+                                                />
+                                            </div>
+                                            <div className="flex-1">
+                                                <input 
+                                                    value={branding.visuals[color.field as keyof BrandingProfile['visuals']]}
+                                                    onChange={e => updateVisuals(color.field as any, e.target.value)}
+                                                    className="w-full bg-transparent text-[11px] text-white font-mono outline-none uppercase font-bold"
+                                                />
+                                                <p className="text-[8px] text-zinc-600 font-black uppercase tracking-tighter">HEX CODE</p>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -196,40 +206,39 @@ export const BrandingStudio: React.FC<Props> = ({ branding, onChange }) => {
                         </div>
 
                         <div className="grid grid-cols-3 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Fuentes Títulos</label>
-                                <select 
-                                    value={branding.visuals.headingFont}
-                                    onChange={e => updateVisuals('headingFont', e.target.value)}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-white focus:border-emerald-500 outline-none"
-                                >
-                                    {popularFonts.map(font => <option key={font} value={font}>{font}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Fuentes Cuerpo</label>
-                                <select 
-                                    value={branding.visuals.bodyFont}
-                                    onChange={e => updateVisuals('bodyFont', e.target.value)}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-white focus:border-emerald-500 outline-none"
-                                >
-                                    {popularFonts.map(font => <option key={font} value={font}>{font}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Fuentes Números</label>
-                                <select 
-                                    value={branding.visuals.numberFont}
-                                    onChange={e => updateVisuals('numberFont', e.target.value)}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-white focus:border-emerald-500 outline-none font-mono"
-                                >
-                                    <option value="JetBrains Mono">JetBrains Mono (Tech)</option>
-                                    <option value="Fira Code">Fira Code (Modern)</option>
-                                    <option value="Space Grotesk">Space Grotesk (Neo)</option>
-                                    <option value="Lexend">Lexend (Legible)</option>
-                                    <option value="Inter">Inter (Swiss)</option>
-                                </select>
-                            </div>
+                            {[
+                                { label: 'Fuentes Títulos', field: 'headingFont', stateKey: 'heading' },
+                                { label: 'Fuentes Cuerpo', field: 'bodyFont', stateKey: 'body' },
+                                { label: 'Fuentes Números', field: 'numberFont', stateKey: 'number' },
+                            ].map(font => (
+                                <div key={font.field} className="space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{font.label}</label>
+                                        <button 
+                                            onClick={() => setManualFonts(prev => ({ ...prev, [font.stateKey]: !prev[font.stateKey as keyof typeof manualFonts] }))}
+                                            className={`text-[8px] font-black px-2 py-1 rounded-md transition-all ${manualFonts[font.stateKey as keyof typeof manualFonts] ? 'bg-emerald-500 text-black' : 'bg-zinc-800 text-zinc-500'}`}
+                                        >
+                                            {manualFonts[font.stateKey as keyof typeof manualFonts] ? 'MANUAL ON' : 'USAR MANUAL'}
+                                        </button>
+                                    </div>
+                                    {manualFonts[font.stateKey as keyof typeof manualFonts] ? (
+                                        <input 
+                                            value={branding.visuals[font.field as keyof BrandingProfile['visuals']]}
+                                            onChange={e => updateVisuals(font.field as any, e.target.value)}
+                                            placeholder="Nombre de la fuente..."
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-white focus:border-emerald-500 outline-none animate-in fade-in duration-300"
+                                        />
+                                    ) : (
+                                        <select 
+                                            value={branding.visuals[font.field as keyof BrandingProfile['visuals']]}
+                                            onChange={e => updateVisuals(font.field as any, e.target.value)}
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-white focus:border-emerald-500 outline-none appearance-none cursor-pointer"
+                                        >
+                                            {popularFonts.map(f => <option key={f} value={f}>{f}</option>)}
+                                        </select>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
@@ -255,13 +264,16 @@ export const BrandingStudio: React.FC<Props> = ({ branding, onChange }) => {
                                     className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-white focus:border-emerald-500 outline-none transition-all"
                                 />
                             </div>
-                            <div className="flex items-center gap-3">
-                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">¿Permitir Slang?</label>
+                            <div className="p-4 bg-zinc-950/50 rounded-2xl border border-zinc-800 flex items-center justify-between gap-6">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">¿Permitir Slang?</label>
+                                    <p className="text-[9px] text-zinc-500 italic">Si se activa, la marca usará modismos y un lenguaje más relajado/informal.</p>
+                                </div>
                                 <button 
                                     onClick={() => updateVoice('slang_allowed', !branding.voice.slang_allowed)}
-                                    className={`w-12 h-6 rounded-full transition-all relative ${branding.voice.slang_allowed ? 'bg-emerald-500' : 'bg-zinc-800'}`}
+                                    className={`w-14 h-7 rounded-full transition-all relative shadow-inner ${branding.voice.slang_allowed ? 'bg-emerald-500 shadow-emerald-900/50' : 'bg-zinc-800 shadow-black/50'}`}
                                 >
-                                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${branding.voice.slang_allowed ? 'right-1' : 'left-1'}`} />
+                                    <div className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300 ${branding.voice.slang_allowed ? 'right-1' : 'left-1'}`} />
                                 </button>
                             </div>
                         </div>

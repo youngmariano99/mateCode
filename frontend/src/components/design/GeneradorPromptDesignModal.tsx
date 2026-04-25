@@ -54,9 +54,33 @@ export const GeneradorPromptDesignModal = ({ projectId, diagramType, onClose }: 
                 
                 setTemplate(match);
                 if (match) {
-                    // Cargamos los bloques de la plantilla maestra
-                    setPersona(match.bloquePersona || "Actúa como un Arquitecto de Software Senior y Experto en Diagramación.");
-                    setTarea(match.bloqueTarea || "Generar el diseño técnico detallado basándote en el contexto anterior.");
+                    setPersona(match.bloquePersona || "Actúa como un Arquitecto de Software Senior y Experto en Seguridad y RBAC.");
+                    
+                    let defaultTarea = match.bloqueTarea || "Generar el diseño técnico detallado basándote en el contexto anterior.";
+                    if (diagramType === 'ROLES') {
+                        defaultTarea = `Generar una Matriz de Roles y Permisos en formato JSON estricto (TABLA PLANA). 
+                        El JSON debe tener esta estructura exacta:
+                        {
+                          "roles": [
+                            { "name": "NombreRol", "description": "Breve descripción" }
+                          ],
+                          "permission_matrix": [
+                            { 
+                              "modulo": "NOMBRE_MODULO", 
+                              "permiso": "Descripción de la acción", 
+                              "NombreRol1": "SÍ", 
+                              "NombreRol2": "NO" 
+                            }
+                          ]
+                        }
+                        Reglas: 
+                        1. Cada objeto en 'permission_matrix' es una FILA de la tabla.
+                        2. Debes incluir una columna (llave) por cada rol definido en 'roles'.
+                        3. Los valores deben ser exclusivamente "SÍ" o "NO".
+                        4. Sé extremadamente exhaustivo con las funcionalidades del sistema.`;
+                    }
+                    
+                    setTarea(defaultTarea);
                     
                     // Sincronizamos los switches con las preferencias de la plantilla
                     setCtx({ 

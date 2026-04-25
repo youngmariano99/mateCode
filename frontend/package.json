@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.7.10",
+    "@microsoft/signalr": "^10.0.0",
     "@react-pdf/renderer": "^4.4.1",
     "@supabase/supabase-js": "^2.103.0",
     "@tailwindcss/vite": "^4.2.2",
@@ -25,7 +26,8 @@
     "react-router-dom": "^7.14.1",
     "survey-core": "^2.5.19",
     "survey-react-ui": "^2.5.19",
-    "sweetalert2": "^11.26.24"
+    "sweetalert2": "^11.26.24",
+    "tldraw": "^4.5.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

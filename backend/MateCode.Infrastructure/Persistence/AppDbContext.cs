@@ -17,6 +17,8 @@ namespace MateCode.Infrastructure.Persistence
         public DbSet<PersonaProyecto> PersonasProyecto { get; set; }
         public DbSet<Feature> Features { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
+        public DbSet<Sprint> Sprints { get; set; }
+        public DbSet<MetricaSprint> MetricasSprint { get; set; }
         public DbSet<FeedbackCliente> FeedbackClientes { get; set; }
         public DbSet<PerfilEmpresa> PerfilesEmpresa { get; set; }
         public DbSet<Presupuesto> Presupuestos { get; set; }
@@ -26,6 +28,12 @@ namespace MateCode.Infrastructure.Persistence
         public DbSet<PlantillaPrompt> PlantillasPrompt { get; set; }
         public DbSet<FormularioPlantilla> FormulariosPlantilla { get; set; }
         public DbSet<TecnologiaCatalogo> TecnologiasCatalogo { get; set; }
+
+        // Colab
+        public DbSet<Decision> Decisiones { get; set; }
+        public DbSet<VotoDecision> VotosDecision { get; set; }
+        public DbSet<Bug> Bugs { get; set; }
+        public DbSet<Pizarra> Pizarras { get; set; }
         public DbSet<ProyectoStack> ProyectosStack { get; set; }
         public DbSet<PlantillaStack> PlantillasStack { get; set; }
         public DbSet<EstandarCatalogo> EstandaresCatalogo { get; set; }
@@ -139,11 +147,41 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(t => t.Id).HasColumnName("id");
                 e.Property(t => t.ProyectoId).HasColumnName("proyecto_id");
                 e.Property(t => t.HistoriaId).HasColumnName("historia_id");
+                e.Property(t => t.SprintId).HasColumnName("sprint_id");
+                e.Property(t => t.OrigenHistoriaId).HasColumnName("origen_historia_id");
+                e.Property(t => t.EpicTag).HasColumnName("epic_tag");
+                e.Property(t => t.Prioridad).HasColumnName("prioridad");
+                e.Property(t => t.CriteriosJson).HasColumnName("criterios_json").HasColumnType("jsonb");
+                e.Property(t => t.TareasJson).HasColumnName("tareas_json").HasColumnType("jsonb");
+                e.Property(t => t.FechaInicioReal).HasColumnName("fecha_inicio_real");
+                e.Property(t => t.FechaFinReal).HasColumnName("fecha_fin_real");
                 e.Property(t => t.Tipo).HasColumnName("tipo");
                 e.Property(t => t.Titulo).HasColumnName("titulo");
                 e.Property(t => t.Estado).HasColumnName("estado");
                 e.Property(t => t.ResponsableId).HasColumnName("responsable_id");
                 e.Property(t => t.RangoLexicografico).HasColumnName("rango_lexicografico");
+            });
+
+            modelBuilder.Entity<Sprint>(e => {
+                e.ToTable("sprints", "agil");
+                e.Property(s => s.Id).HasColumnName("id");
+                e.Property(s => s.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(s => s.Nombre).HasColumnName("nombre");
+                e.Property(s => s.Objetivo).HasColumnName("objetivo");
+                e.Property(s => s.FechaInicio).HasColumnName("fecha_inicio");
+                e.Property(s => s.FechaFin).HasColumnName("fecha_fin");
+                e.Property(s => s.Estado).HasColumnName("estado");
+            });
+
+            modelBuilder.Entity<MetricaSprint>(e => {
+                e.ToTable("metricas_sprint", "agil");
+                e.Property(m => m.Id).HasColumnName("id");
+                e.Property(m => m.SprintId).HasColumnName("sprint_id");
+                e.Property(m => m.TicketsCompletados).HasColumnName("tickets_completados");
+                e.Property(m => m.TicketsIncompletos).HasColumnName("tickets_incompletos");
+                e.Property(m => m.PromedioCycleTimeHoras).HasColumnName("promedio_cycle_time_horas");
+                e.Property(m => m.NotasRetrospectiva).HasColumnName("notas_retrospectiva");
+                e.Property(m => m.FechaCierre).HasColumnName("fecha_cierre");
             });
 
             modelBuilder.Entity<FeedbackCliente>(e => {
@@ -263,6 +301,52 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(pe => pe.EstandarId).HasColumnName("estandar_id");
                 e.HasOne(pe => pe.Proyecto).WithMany().HasForeignKey(pe => pe.ProyectoId);
                 e.HasOne(pe => pe.Estandar).WithMany().HasForeignKey(pe => pe.EstandarId);
+            });
+
+            // Colab
+            modelBuilder.Entity<Decision>(e => {
+                e.ToTable("decisiones", "colab");
+                e.Property(d => d.Id).HasColumnName("id");
+                e.Property(d => d.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(d => d.CreadorId).HasColumnName("creador_id");
+                e.Property(d => d.Titulo).HasColumnName("titulo");
+                e.Property(d => d.Descripcion).HasColumnName("descripcion");
+                e.Property(d => d.Estado).HasColumnName("estado");
+                e.Property(d => d.Etiquetas).HasColumnName("etiquetas").HasColumnType("jsonb");
+                e.Property(d => d.ElementosRelacionados).HasColumnName("elementos_relacionados").HasColumnType("jsonb");
+                e.Property(d => d.FechaCreacion).HasColumnName("fecha_creacion");
+                e.Property(d => d.FechaActualizacion).HasColumnName("fecha_actualizacion");
+            });
+
+            modelBuilder.Entity<VotoDecision>(e => {
+                e.ToTable("votos_decision", "colab");
+                e.HasKey(v => new { v.DecisionId, v.UsuarioId });
+                e.Property(v => v.DecisionId).HasColumnName("decision_id");
+                e.Property(v => v.UsuarioId).HasColumnName("usuario_id");
+                e.Property(v => v.EsUpvote).HasColumnName("es_upvote");
+                e.Property(v => v.Fecha).HasColumnName("fecha");
+            });
+
+            modelBuilder.Entity<Bug>(e => {
+                e.ToTable("bugs", "colab");
+                e.Property(b => b.Id).HasColumnName("id");
+                e.Property(b => b.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(b => b.ReportadorId).HasColumnName("reportador_id");
+                e.Property(b => b.Titulo).HasColumnName("titulo");
+                e.Property(b => b.Descripcion).HasColumnName("descripcion");
+                e.Property(b => b.PasosReproduccion).HasColumnName("pasos_reproduccion");
+                e.Property(b => b.Estado).HasColumnName("estado");
+                e.Property(b => b.TicketAsociadoId).HasColumnName("ticket_asociado_id");
+                e.Property(b => b.FechaCreacion).HasColumnName("fecha_creacion");
+            });
+
+            modelBuilder.Entity<Pizarra>(e => {
+                e.ToTable("pizarras", "colab");
+                e.Property(p => p.Id).HasColumnName("id");
+                e.Property(p => p.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(p => p.Nombre).HasColumnName("nombre");
+                e.Property(p => p.DocumentoJson).HasColumnName("documento_json").HasColumnType("jsonb");
+                e.Property(p => p.FechaActualizacion).HasColumnName("fecha_actualizacion");
             });
         }
     }
