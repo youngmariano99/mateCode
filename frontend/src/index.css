@@ -43,4 +43,48 @@
   .glass-card {
     @apply rounded-md border border-[color:var(--border)] bg-[color:var(--card)] shadow-sm;
   }
+
+  /* --- Spatial OS Animations --- */
+  @keyframes pulse-line {
+    0%, 100% { stroke-opacity: 0.4; }
+    50% { stroke-opacity: 0.9; }
+  }
+
+  .animate-pulse-line {
+    animation: pulse-line 3s ease-in-out infinite;
+  }
+
+  @keyframes dash-flow {
+    to { stroke-dashoffset: -40; }
+  }
+
+  .animate-dash-flow {
+    animation: dash-flow 4s linear infinite;
+  }
+
+  @keyframes avatar-pulse {
+    0% { transform: scale(1); stroke-opacity: 0.7; }
+    70% { transform: scale(1.6); stroke-opacity: 0; }
+    100% { transform: scale(1.6); stroke-opacity: 0; }
+  }
+
+  .animate-avatar-pulse {
+    animation: avatar-pulse 2.4s ease-out infinite;
+    transform-box: fill-box;
+  }
+
+  /* Custom scrollbar for neon panels */
+  .neon-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .neon-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.2);
+  }
+  .neon-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+  }
+  .neon-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.2);
+  }
 }

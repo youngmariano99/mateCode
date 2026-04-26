@@ -5,6 +5,7 @@ import { ProjectProvider } from './context/ProjectContext';
 import { PublicLayout } from './layouts/PublicLayout';
 import { GlobalLayout } from './layouts/GlobalLayout';
 import { FocusLayout } from './layouts/FocusLayout';
+import { SpatialLayout } from './layouts/SpatialLayout';
 
 // --------- Vistas Públicas ---------
 import Login from './pages/auth/Login';
@@ -80,6 +81,9 @@ export default function App() {
 
           {/* --- 4. DevHub (Colaboración Tiempo Real) --- */}
           <Route path="/projects/:projectId/devhub" element={<DevHubLayout />} />
+
+          {/* --- 5. Spatial OS (Workspace 2D) --- */}
+          <Route path="/workspace/:workspaceId" element={<SpatialLayout />} />
 
           {/* Fallback General */}
           <Route path="*" element={<Navigate to="/app/dashboard" replace />} />

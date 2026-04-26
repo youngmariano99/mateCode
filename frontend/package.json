@@ -11,15 +11,22 @@
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.7.10",
+    "@iconify/react": "^6.0.2",
     "@microsoft/signalr": "^10.0.0",
     "@react-pdf/renderer": "^4.4.1",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.0",
+    "@react-three/postprocessing": "^3.0.4",
     "@supabase/supabase-js": "^2.103.0",
     "@tailwindcss/vite": "^4.2.2",
     "@types/dagre": "^0.7.54",
+    "@types/three": "^0.184.0",
     "@xyflow/react": "^12.10.2",
     "dagre": "^0.8.5",
+    "framer-motion": "^12.38.0",
     "html-to-image": "^1.11.13",
     "lucide-react": "^1.8.0",
+    "postprocessing": "^6.39.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.72.1",
@@ -27,7 +34,9 @@
     "survey-core": "^2.5.19",
     "survey-react-ui": "^2.5.19",
     "sweetalert2": "^11.26.24",
-    "tldraw": "^4.5.10"
+    "three": "^0.184.0",
+    "tldraw": "^4.5.10",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
