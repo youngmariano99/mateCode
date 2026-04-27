@@ -33,8 +33,12 @@ namespace MateCode.API.Controllers
         [HttpGet("projects/{projectId:guid}/mapa-historias")]
         public async Task<IActionResult> GetMapaHistorias(Guid projectId)
         {
-            var data = await _agileService.GetFullStoryMapAsync(projectId);
-            return Ok(data);
+            try {
+                var data = await _agileService.GetFullStoryMapAsync(projectId);
+                return Ok(data);
+            } catch (Exception ex) {
+                return StatusCode(500, new { message = ex.Message, stack = ex.StackTrace });
+            }
         }
 
         [HttpPost("projects/{projectId:guid}/sincronizar-backlog")]

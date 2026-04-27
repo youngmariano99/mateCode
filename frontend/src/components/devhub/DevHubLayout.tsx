@@ -1,15 +1,15 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import * as signalR from '@microsoft/signalr';
 import { api as apiClient } from '../../lib/apiClient';
 import { 
-    Zap, Bug as BugIcon, Activity, Plus, Link2, Monitor, Code, Users, 
-    Coffee, Layout, Terminal, Microscope, Globe, PenTool, CheckCircle2 
+    Zap, Bug as BugIcon, Activity, Plus, CheckCircle2, PenTool 
 } from 'lucide-react';
 import { CreateDecisionModal } from './CreateDecisionModal';
 import { CreateBugModal } from './CreateBugModal';
 import { VirtualOfficeMap } from './VirtualOfficeMap';
 import { SynchronousMeetingRoom } from './SynchronousMeetingRoom';
+import { usePresence } from '../../hooks/usePresence';
+import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 
 interface UserPresence {
     userId: string;
@@ -39,26 +39,36 @@ interface FeedItem {
 
 export const DevHubLayout: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
-    const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
-    const [users, setUsers] = useState<UserPresence[]>([]);
+    const { setActiveRoom } = useWorkspaceStore();
+    const { 
+        presences, 
+        emergencyMeeting, 
+        currentUser
+    } = usePresence();
+    
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [activeBoards, setActiveBoards] = useState<{ id: string, nombre: string, sala: number }[]>([]);
     
     // UI State
     const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
     const [isBugModalOpen, setIsBugModalOpen] = useState(false);
-    const [meetingEntity, setMeetingEntity] = useState<{ id: string, tipo: 'bug' | 'decision' } | null>(null);
     const [feed, setFeed] = useState<FeedItem[]>([]);
-    const [loading, setLoading] = useState(true);
     const [sidebarTab, setSidebarTab] = useState<'feed' | 'tickets' | 'boards'>('feed');
 
-    // My Presence (Memoized ID to avoid duplicates on re-render)
-    const myId = useMemo(() => Math.random().toString(36).substring(7), []);
-    const [myPresence, setMyPresence] = useState<UserPresence>({
-        userId: myId,
-        nombre: 'Mariano',
+    // Mapear presencias del contexto al formato local para el Mapa
+    const users: UserPresence[] = Object.values(presences).map(p => ({
+        userId: p.userId,
+        nombre: p.nombre,
+        zonaActual: p.zonaActual,
+        actividadActual: p.actividadActual,
+        globoDialogo: p.globoDialogo
+    }));
+
+    const myPresence = presences[currentUser?.id || ''] || {
+        userId: currentUser?.id || 'anon',
+        nombre: currentUser?.nombre || 'Mariano',
         zonaActual: 'pasillo'
-    });
+    };
 
     const loadData = async () => {
         try {
@@ -78,75 +88,13 @@ export const DevHubLayout: React.FC = () => {
             setFeed(combined);
         } catch (error) {
             console.error("Error cargando datos", error);
-        } finally {
-            setLoading(false);
         }
     };
 
     useEffect(() => {
         if (!projectId) return;
         loadData();
-
-        const newConnection = new signalR.HubConnectionBuilder()
-            .withUrl('http://localhost:5241/hub/devhub')
-            .withAutomaticReconnect()
-            .build();
-
-        setConnection(newConnection);
     }, [projectId]);
-
-    useEffect(() => {
-        if (connection) {
-            connection.start()
-                .then(() => {
-                    connection.invoke('JoinProjectGroup', projectId);
-                    connection.invoke('UpdatePresence', projectId, myPresence);
-
-                    connection.on('PresenceUpdated', (presence: UserPresence) => {
-                        if (presence.userId === myId) return; // Filtrar local
-                        setUsers(prev => {
-                            const index = prev.findIndex(u => u.userId === presence.userId);
-                            if (index !== -1) {
-                                const newUsers = [...prev];
-                                newUsers[index] = presence;
-                                return newUsers;
-                            }
-                            return [...prev, presence];
-                        });
-                    });
-
-                    connection.on('EmergencyMeetingCalled', (entidadId: string, tipo: 'bug' | 'decision', creadorId: string) => {
-                        if (window.confirm(`⚠️ Reunión de Emergencia convocada por ${tipo === 'bug' ? 'Bug' : 'Decisión'}. ¿Unirse?`)) {
-                            setMeetingEntity({ id: entidadId, tipo });
-                            setMyPresence(prev => ({ ...prev, zonaActual: 'reunion' }));
-                        }
-                    });
-
-                    connection.on('MeetingEnded', () => {
-                        setMeetingEntity(null);
-                        setMyPresence(prev => ({ ...prev, zonaActual: 'pasillo' }));
-                        loadData();
-                    });
-
-                    connection.on('BoardCreated', (board: { id: string, nombre: string, sala: number }) => {
-                        setActiveBoards(prev => [...prev, board]);
-                    });
-                })
-                .catch(e => console.log('Connection failed: ', e));
-        }
-
-        return () => {
-            if (connection) {
-                connection.invoke('LeaveProjectGroup', projectId).then(() => connection.stop());
-            }
-        };
-    }, [connection, projectId, myId]);
-
-    useEffect(() => {
-        if (connection && connection.state === signalR.HubConnectionState.Connected) {
-            connection.invoke('UpdatePresence', projectId, myPresence);
-        }
-    }, [myPresence, connection]);
 
     const handleCheckIn = (ticket: Ticket) => {
         let zone = 'pasillo';
@@ -157,11 +105,7 @@ export const DevHubLayout: React.FC = () => {
         else if (spec?.includes('qa') || spec?.includes('test')) zone = 'focus_qa';
         else if (spec?.includes('devops') || spec?.includes('infra')) zone = 'focus_devops';
         
-        setMyPresence(prev => ({
-            ...prev,
-            zonaActual: zone,
-            actividadActual: { tipo: 'ticket', id: ticket.id, titulo: ticket.titulo, especialidad: ticket.especialidad }
-        }));
+        setActiveRoom(zone);
     };
 
     const handleCreateBoard = () => {
@@ -171,11 +115,7 @@ export const DevHubLayout: React.FC = () => {
         if (sala > 3) { alert("Todas las salas de pizarra están ocupadas."); return; }
         
         const newBoard = { id: Math.random().toString(36).substring(7), nombre: name, sala };
-        if (connection) {
-            connection.invoke("CreateBoard", projectId, newBoard);
-        }
         setActiveBoards(prev => [...prev, newBoard]);
-        setMyPresence(prev => ({ ...prev, zonaActual: `pizarra_${sala}` }));
     };
 
     return (
@@ -186,7 +126,7 @@ export const DevHubLayout: React.FC = () => {
                 <div className="p-6 flex flex-col gap-6 bg-zinc-950/50">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <Link to={`/projects/${projectId}`} className="w-10 h-10 rounded-2xl bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-all border border-zinc-700">
+                            <Link to={`/app/projects`} className="w-10 h-10 rounded-2xl bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-all border border-zinc-700">
                                 ←
                             </Link>
                             <h1 className="text-lg font-black tracking-tighter uppercase bg-clip-text text-transparent bg-gradient-to-br from-indigo-400 to-cyan-500">Virtual HQ</h1>
@@ -272,7 +212,7 @@ export const DevHubLayout: React.FC = () => {
                             <Activity size={8} className="text-emerald-500" /> {myPresence.zonaActual.replace('_', ' ')}
                         </div>
                     </div>
-                    <button onClick={() => setMyPresence(prev => ({ ...prev, zonaActual: 'pasillo', actividadActual: undefined }))} className="p-2 hover:bg-zinc-900 rounded-lg transition-colors text-zinc-600 hover:text-white">
+                    <button onClick={() => setActiveRoom('pasillo')} className="p-2 hover:bg-zinc-900 rounded-lg transition-colors text-zinc-600 hover:text-white">
                         <CheckCircle2 size={16} />
                     </button>
                 </div>
@@ -285,7 +225,7 @@ export const DevHubLayout: React.FC = () => {
                     activeBoards={activeBoards}
                     onJoinBoard={(id) => {
                         const b = activeBoards.find(x => x.id === id);
-                        if (b) setMyPresence(prev => ({ ...prev, zonaActual: `pizarra_${b.sala}` }));
+                        if (b) setActiveRoom(`pizarra_${b.sala}`);
                     }}
                 />
             </div>
@@ -293,16 +233,10 @@ export const DevHubLayout: React.FC = () => {
             {/* Modals */}
             {isDecisionModalOpen && <CreateDecisionModal projectId={projectId!} onClose={() => setIsDecisionModalOpen(false)} onSuccess={loadData} />}
             {isBugModalOpen && <CreateBugModal projectId={projectId!} onClose={() => setIsBugModalOpen(false)} onSuccess={loadData} />}
-            {meetingEntity && (
-                <SynchronousMeetingRoom 
-                    entidadId={meetingEntity.id} 
-                    tipo={meetingEntity.tipo} 
-                    onClose={() => setMeetingEntity(null)} 
-                    hubConnection={connection}
-                />
+            {emergencyMeeting && (
+                <SynchronousMeetingRoom />
             )}
             
         </div>
     );
 };
-

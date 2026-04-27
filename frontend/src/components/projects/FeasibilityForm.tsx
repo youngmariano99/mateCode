@@ -10,8 +10,14 @@ import { ProjectStandardsAside } from './ProjectStandardsAside';
 import { StackBuilder } from './StackBuilder';
 import ArchitectureBlueprint from '../../pages/projects/components/ArchitectureBlueprint';
 
+import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+
 export const FeasibilityForm = () => {
-  const { id: projectId } = useParams<{ id: string }>();
+  const { id: paramProjectId } = useParams<{ id: string }>();
+  const activeProjectId = useWorkspaceStore(state => state.activeProjectId);
+  
+  const projectId = activeProjectId || paramProjectId;
+  
   const { tenantId } = useProject();
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);

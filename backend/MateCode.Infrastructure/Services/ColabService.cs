@@ -25,11 +25,12 @@ namespace MateCode.Infrastructure.Services
             _context = context;
         }
 
-        public async Task<Decision> CrearDecisionAsync(Guid proyectoId, Guid creadorId, string titulo, string descripcion, string[] etiquetas)
+        public async Task<Decision> CrearDecisionAsync(Guid proyectoId, Guid creadorId, string titulo, string descripcion, string[] etiquetas, Guid? reunionId = null)
         {
             var decision = new Decision
             {
                 ProyectoId = proyectoId,
+                ReunionId = reunionId,
                 CreadorId = creadorId,
                 Titulo = titulo,
                 Descripcion = descripcion,
@@ -168,6 +169,45 @@ namespace MateCode.Infrastructure.Services
                 decision.ElementosRelacionados = JsonSerializer.SerializeToElement(elementos);
                 await _context.SaveChangesAsync();
             }
+        }
+
+        public async Task<Guid> IniciarReunionAsync(Guid proyectoId, Guid creadorId, string titulo, string? descripcion)
+        {
+            var reunion = new Reunion
+            {
+                Id = Guid.NewGuid(),
+                ProyectoId = proyectoId,
+                CreadorId = creadorId,
+                Titulo = titulo,
+                Descripcion = descripcion,
+                FechaInicio = DateTime.UtcNow,
+                ActaJson = JsonSerializer.Deserialize<JsonElement>("{}")
+            };
+
+            _context.Reuniones.Add(reunion);
+            await _context.SaveChangesAsync();
+            return reunion.Id;
+        }
+
+        public async Task FinalizarReunionAsync(Guid reunionId, string actaJson)
+        {
+            var reunion = await _context.Reuniones.FindAsync(reunionId);
+            if (reunion != null)
+            {
+                reunion.ActaJson = JsonSerializer.Deserialize<JsonElement>(actaJson);
+                reunion.FechaFin = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<List<Reunion>> ObtenerReunionesAsync(Guid id)
+        {
+            // Join manual para filtrar por ProyectoId o por el TenantId del Proyecto
+            return await (from r in _context.Reuniones
+                          join p in _context.Proyectos on r.ProyectoId equals p.Id
+                          where r.ProyectoId == id || p.TenantId == id
+                          orderby r.FechaInicio descending
+                          select r).ToListAsync();
         }
     }
 }

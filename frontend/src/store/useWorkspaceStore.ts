@@ -3,10 +3,10 @@ import { create } from 'zustand';
 interface WorkspaceState {
   workspaceId: string | null;
   activeProjectId: string | null;
-  activeRoom: 'idle' | 'reception' | 'library' | 'team' | 'vault' | 'phase00' | 'phase01' | 'phase02' | 'phase03' | 'phase04' | 'server';
+  activeRoom: string;
   setWorkspaceId: (id: string | null) => void;
   setActiveProjectId: (id: string | null) => void;
-  setActiveRoom: (room: WorkspaceState['activeRoom']) => void;
+  setActiveRoom: (room: string) => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({

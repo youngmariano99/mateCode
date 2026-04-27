@@ -60,5 +60,38 @@ namespace MateCode.API.Controllers
             var workspace = await _workspaceService.CreateWorkspaceAsync(userId, req.Nombre);
             return Ok(workspace);
         }
+
+        [HttpGet("invitations")]
+        public async Task<IActionResult> GetInvitations()
+        {
+            var userIdStr = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+
+            var userId = Guid.Parse(userIdStr);
+            var invitations = await _workspaceService.GetPendingInvitationsAsync(userId);
+            return Ok(invitations);
+        }
+
+        [HttpPost("accept/{workspaceId}")]
+        public async Task<IActionResult> Accept(Guid workspaceId)
+        {
+            var userIdStr = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+
+            var userId = Guid.Parse(userIdStr);
+            var success = await _workspaceService.AcceptInvitationAsync(userId, workspaceId);
+            return success ? Ok() : BadRequest("No se pudo aceptar la invitación.");
+        }
+
+        [HttpPost("reject/{workspaceId}")]
+        public async Task<IActionResult> Reject(Guid workspaceId)
+        {
+            var userIdStr = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+
+            var userId = Guid.Parse(userIdStr);
+            var success = await _workspaceService.RejectInvitationAsync(userId, workspaceId);
+            return success ? Ok() : BadRequest("No se pudo rechazar la invitación.");
+        }
     }
 }

@@ -1,6 +1,48 @@
-# HISTORIAL DE CAMBIOS (Registro Operativo)
+# REPORTE DE MIGRACIÓN: SPATIAL OS (Spatial Mapping & Immersive UI)
 
-> **INSTRUCCIÓN ESTRICTA PARA LA IA:** > Todo cambio en el código DEBE registrarse acá usando ÚNICAMENTE el formato de 4 líneas detallado abajo. Las entradas nuevas van arriba. Prohibido escribir explicaciones largas o tutoriales. Sé directo y técnico.
+## 🌌 Visión General
+Hemos iniciado la migración radical hacia **Spatial OS**, transformando la interfaz tradicional de MateCode en un entorno inmersivo basado en un **Mapa Arquitectónico 2D interactivo**. Esta arquitectura permite que todos los módulos de negocio (CRM, Agile, Vault, Team) convivan en un solo lienzo infinito, eliminando la navegación por URLs y recargas de página.
+
+## 🏗️ Arquitectura del Mapa 2D
+*   **Motor Visual:** Implementado en `WorkspaceMap.tsx` usando un sistema de coordenadas espaciales y regiones poligonales.
+*   **Capa de Interacción (Region System):** El mapa detecta la posición del cursor sobre habitaciones específicas (Recepción, Biblioteca, Sala de Equipo, etc.) disparando un sistema de estados reactivos.
+*   **Capa UI (UILayer):** Un sistema de modales inmersivos con diseño *Glassmorphism* que inyecta el módulo correspondiente directamente sobre el mapa, manteniendo el contexto espacial del usuario.
+*   **Control de Estado:** Centralizado en `useWorkspaceStore` (Zustand), gestionando el `activeRoom` y la visibilidad de la capa de interfaz.
+
+---
+
+*   **Fecha:** 2026-04-27
+*   **Módulo/Tarea:** Centro de Mando 2.0: Sala de Guerra & Auditoría Síncrona
+*   **Archivos Tocados:** `SpatialLayout.tsx`, `DevHubLayout.tsx`, `SynchronousMeetingRoom.tsx`, `PresenceContext.tsx`, `ColabService.cs`, `DevHubHub.cs`
+*   **Qué y Por Qué:** (1) **Encuestas Dinámicas:** Implementación de motor de votación real-time (SÍ/NO, Única, Múltiple) con transmisión de resultados y popups de ganador sincronizados. (2) **Auditoría Persistente:** Las actas de reunión ahora se guardan en formato JSONB incluyendo el resultado de cada encuesta y participantes para cumplimiento normativo. (3) **Unificación de Presencia:** Refactorización total de `DevHubLayout.tsx` para usar el `PresenceContext` compartido, eliminando conexiones SignalR duplicadas y sincronizando el mapa 2D con el nuevo Centro de Mando. (4) **UX de Decisión:** Se añadió un historial de decisiones tomadas en vivo dentro de la sala síncrona para evitar pérdida de contexto.
+
+---
+
+*   **Fecha:** 2026-04-26
+*   **Módulo/Tarea:** Migración del Módulo de Equipo (Team Identity 2.0)
+*   **Archivos Tocados:** `TeamWorkspace.tsx`, `WorkspaceMap.tsx`, `TeamController.cs`, `TeamService.cs`
+*   **Qué y Por Qué:** Reingeniería total de la gestión de personas. (1) **Doble Etiquetado:** Implementación de etiquetas de *Proceso* (PO, SM, Dev) y *Técnicas* (Frontend, Backend, etc.) para una clasificación multidimensional. (2) **Acceso Granular:** Selector de proyectos por miembro, permitiendo "encender" o "apagar" la visibilidad de salas para usuarios específicos. (3) **Buscador LoL-Style:** Reemplazo de invitación por email por un buscador global de usuarios registrados en la plataforma.
+
+---
+
+*   **Fecha:** 2026-04-26
+*   **Módulo/Tarea:** Unificación de Bóveda IA (IA Vault Hub)
+*   **Archivos Tocados:** `LibraryWorkspace.tsx`, `PromptLibrary.tsx`, `FormLibrary.tsx`, `StandardLibrary.tsx`, `WorkspaceMap.tsx`
+*   **Qué y Por Qué:** Integración de la biblioteca de conocimiento en la sala `library`. Se creó un Hub unificado con navegación interna por pestañas para gestionar el Oráculo (Prompts), Formularios Estructurados y Estándares de Ingeniería sin salir del entorno inmersivo.
+
+---
+
+*   **Fecha:** 2026-04-26
+*   **Módulo/Tarea:** Migración CRM & Growth Hub a Recepción
+*   **Archivos Tocados:** `CrmWorkspace.tsx`, `LeadInbox.tsx`, `WorkspaceMap.tsx`
+*   **Qué y Por Qué:** El CRM ahora vive en la sala de Recepción. Se eliminaron los contenedores de página fija para adaptar la UI al `UILayer` inmersivo. Se configuró como un módulo de acceso global (Tenant-level) que no requiere proyecto activo para ser visualizado.
+
+---
+
+*   **Fecha:** 2026-04-26
+*   **Módulo/Tarea:** Implementación de Spatial Layout & Autenticación TopBar
+*   **Archivos Tocados:** `SpatialLayout.tsx`, `WorkspaceTopBar.tsx`, `WorkspaceMap.tsx`, `App.tsx`
+*   **Qué y Por Qué:** (1) Creación de la cáscara visual del SO Espacial. (2) Conexión de la TopBar con Supabase para mostrar el nombre del usuario real y selector de proyectos global. (3) Fix de importaciones duplicadas y errores de compilación en el renderizado del mapa.
 
 ---
 
@@ -185,4 +227,5 @@
 **Qué y Por Qué:** Se estableció la arquitectura base, el modelo RLS en PostgreSQL, el enrutamiento con Modo Enfoque y las reglas de diseño para evitar que futuras generaciones de código rompan el proyecto.
 
 ---
+
 *(Las futuras entradas de la IA deben insertarse acá arriba)*

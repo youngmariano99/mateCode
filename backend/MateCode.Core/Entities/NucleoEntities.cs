@@ -25,5 +25,13 @@ namespace MateCode.Core.Entities
         public Guid UsuarioId { get; set; }
         public string EtiquetaRol { get; set; } = string.Empty;
         public JsonElement MatrizPermisos { get; set; }
+        public string EstadoInvitacion { get; set; } = "Pendiente";
+    }
+
+    public class ProyectoMiembro
+    {
+        public Guid ProyectoId { get; set; }
+        public Guid UsuarioId { get; set; }
+        public DateTime FechaAsignacion { get; set; } = DateTime.UtcNow;
     }
 }

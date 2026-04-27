@@ -38,8 +38,15 @@ const DEFAULT_CODES: Record<DiagramType, string> = {
     }, null, 2)
 };
 
+import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+
 export const DiagramWorkspace = () => {
-    const { id: projectId } = useParams();
+    const { id: paramProjectId } = useParams();
+    const activeProjectId = useWorkspaceStore(state => state.activeProjectId);
+    
+    // Prioridad: Store (Spatial) > Params
+    const projectId = activeProjectId || paramProjectId;
+    
     const [activeTab, setActiveTab] = useState<DiagramType>('ERD');
     const [codes, setCodes] = useState<Record<DiagramType, string>>(DEFAULT_CODES);
     const [elements, setElements] = useState<{ nodes: DiagramNode[], edges: DiagramEdge[] }>({ nodes: [], edges: [] });

@@ -20,12 +20,33 @@ namespace MateCode.Infrastructure.Services
             _kanbanService = kanbanService;
         }
 
-        public async Task<IEnumerable<Proyecto>> GetAllProjectsAsync(Guid tenantId)
+        public async Task<IEnumerable<Proyecto>> GetAllProjectsAsync(Guid tenantId, Guid userId)
         {
-            return await _context.Proyectos
-                .Where(p => p.TenantId == tenantId)
-                .OrderByDescending(p => p.FechaCreacion)
-                .ToListAsync();
+            // Verificamos si el usuario es el dueño del espacio
+            var workspace = await _context.EspaciosTrabajo.FindAsync(tenantId);
+            bool isOwner = workspace != null && workspace.PropietarioId == userId;
+
+            if (isOwner)
+            {
+                // El dueño ve todos los proyectos del espacio
+                return await _context.Proyectos
+                    .Where(p => p.TenantId == tenantId)
+                    .OrderByDescending(p => p.FechaCreacion)
+                    .ToListAsync();
+            }
+            else
+            {
+                // Un miembro solo ve los proyectos donde fue explícitamente asignado
+                var assignedProjectIds = await _context.MiembrosProyecto
+                    .Where(mp => mp.UsuarioId == userId)
+                    .Select(mp => mp.ProyectoId)
+                    .ToListAsync();
+
+                return await _context.Proyectos
+                    .Where(p => p.TenantId == tenantId && assignedProjectIds.Contains(p.Id))
+                    .OrderByDescending(p => p.FechaCreacion)
+                    .ToListAsync();
+            }
         }
 
         public async Task<Proyecto> GetProjectByIdAsync(Guid projectId)

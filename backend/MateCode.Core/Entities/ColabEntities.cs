@@ -7,6 +7,7 @@ namespace MateCode.Core.Entities
     {
         public Guid Id { get; set; }
         public Guid ProyectoId { get; set; }
+        public Guid? ReunionId { get; set; }
         public Guid CreadorId { get; set; }
         public string Titulo { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -48,5 +49,40 @@ namespace MateCode.Core.Entities
         public string Nombre { get; set; } = string.Empty;
         public JsonElement DocumentoJson { get; set; }
         public DateTime FechaActualizacion { get; set; } = DateTime.UtcNow;
+    }
+
+    public class Reunion
+    {
+        public Guid Id { get; set; }
+        public Guid ProyectoId { get; set; }
+        public Guid CreadorId { get; set; }
+        public string Titulo { get; set; } = string.Empty;
+        
+        [System.ComponentModel.DataAnnotations.Schema.Column("descripcion")]
+        public string? Descripcion { get; set; }
+        public DateTime FechaInicio { get; set; } = DateTime.UtcNow;
+        public DateTime? FechaFin { get; set; }
+        public JsonElement ActaJson { get; set; }
+    }
+
+    public class MensajeGlobal
+    {
+        public Guid Id { get; set; }
+        public Guid ProyectoId { get; set; }
+        public Guid UsuarioId { get; set; }
+        public string? NombreUsuario { get; set; }
+        public string Contenido { get; set; } = string.Empty;
+        public DateTime Fecha { get; set; } = DateTime.UtcNow;
+    }
+
+    public class LogActividad
+    {
+        public Guid Id { get; set; }
+        public Guid ProyectoId { get; set; }
+        public Guid UsuarioId { get; set; }
+        public string? NombreUsuario { get; set; }
+        public string TipoEvento { get; set; } = string.Empty;
+        public JsonElement? Detalles { get; set; }
+        public DateTime Fecha { get; set; } = DateTime.UtcNow;
     }
 }

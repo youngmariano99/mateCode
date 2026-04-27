@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '../../lib/apiClient';
-import type { Historia } from './types';
 import Swal from 'sweetalert2';
 import { Layout, Box, Sparkles, RefreshCcw, User, X } from 'lucide-react';
 import { CodeEditorPane } from '../design/CodeEditorPane';
+import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+import { ProjectSelectorRequired } from '../shared/ProjectSelectorRequired';
 
 interface StoryMapData {
   proyecto: string;
@@ -12,17 +13,21 @@ interface StoryMapData {
   epics: any[];
 }
 
-export const MapaHistoriasBoard = ({ rawJson, initialData, projectId, onReset }: { 
+export const MapaHistoriasBoard = ({ rawJson, initialData, projectId: propProjectId, onReset }: { 
   rawJson?: string, 
   initialData?: any, 
   projectId?: string, 
   onReset: () => void 
 }) => {
-  const [data, setData] = useState<StoryMapData | null>(null);
+  const activeProjectId = useWorkspaceStore(state => state.activeProjectId);
+  const projectId = propProjectId || activeProjectId;
+
+  const [data, setData] = useState<StoryMapData | null>(initialData || null);
   const [localJson, setLocalJson] = useState(rawJson || "");
   const [selectedHistoria, setSelectedHistoria] = useState<any | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   const boardRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -37,16 +42,36 @@ export const MapaHistoriasBoard = ({ rawJson, initialData, projectId, onReset }:
       setLocalJson(JSON.stringify(initialData, null, 2));
       return;
     }
-    if (!rawJson) return;
-
-    try {
-      const parsed = JSON.parse(rawJson);
-      setData(parsed);
-      setLocalJson(rawJson);
-    } catch (e) {
-      console.error("Error parsing Story Map JSON", e);
+    
+    if (rawJson) {
+      try {
+        const parsed = JSON.parse(rawJson);
+        setData(parsed);
+        setLocalJson(rawJson);
+      } catch (e) {
+        console.error("Error parsing Story Map JSON", e);
+      }
+      return;
     }
-  }, [rawJson, initialData]);
+
+    if (projectId) {
+      setIsLoading(true);
+      api.get(`/Agile/projects/${projectId}/mapa-historias`)
+        .then(res => {
+          if (res && res.epics) {
+            setData(res);
+            setLocalJson(JSON.stringify(res, null, 2));
+          } else {
+            setData(null);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching story map:", err);
+          setData(null);
+        })
+        .finally(() => setIsLoading(false));
+    }
+  }, [rawJson, initialData, projectId]);
 
   const allFeatures = useMemo(() => {
     if (!data) return [];
@@ -58,9 +83,7 @@ export const MapaHistoriasBoard = ({ rawJson, initialData, projectId, onReset }:
     try {
       const parsed = JSON.parse(val);
       setData(parsed);
-    } catch (e) {
-      // Silencioso mientras escribe
-    }
+    } catch (e) {}
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -109,23 +132,33 @@ export const MapaHistoriasBoard = ({ rawJson, initialData, projectId, onReset }:
     }
   };
 
+  if (!projectId) return <ProjectSelectorRequired />;
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <Sparkles size={40} className="text-emerald-500 animate-spin mb-4" />
+        <p className="text-zinc-500 font-black uppercase tracking-widest text-[10px]">Consultando Oráculo...</p>
+      </div>
+    );
+  }
+
   if (!data) return null;
 
   return (
-    <div className="flex flex-col gap-6 w-full h-[calc(100vh-100px)] pb-10">
-      {/* HEADER ESTRATÉGICO */}
-      <div className="flex items-center justify-between glass-card p-6 rounded-3xl border-white/5 bg-zinc-900/40 backdrop-blur-xl shrink-0">
+    <div className="flex flex-col gap-6 w-full h-full pb-10 bg-transparent">
+      <div className="flex items-center justify-between p-8 bg-white/5 backdrop-blur-xl border-b border-white/5 shrink-0">
         <div className="flex items-center gap-6">
-          <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
+          <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 shadow-inner">
             <Layout className="text-emerald-500" size={32} />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-white tracking-tighter uppercase italic">{data.proyecto}</h2>
+            <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic">{data.proyecto}</h2>
             <div className="flex gap-4 mt-2 overflow-x-auto max-w-[400px] no-scrollbar">
                {data.personas.map((p: any) => (
-                 <div key={p.id} className="flex items-center gap-1.5 px-3 py-1 bg-zinc-800/50 rounded-full border border-white/5">
+                 <div key={p.id} className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/5">
                     <User size={10} className="text-emerald-500" />
-                    <span className="text-[10px] font-bold text-zinc-300">{p.nombre}</span>
+                    <span className="text-[9px] font-black text-zinc-400 uppercase">{p.nombre}</span>
                  </div>
                ))}
             </div>
@@ -135,22 +168,21 @@ export const MapaHistoriasBoard = ({ rawJson, initialData, projectId, onReset }:
         <div className="flex gap-4">
           <button 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${isSidebarOpen ? 'bg-emerald-500 text-black border-emerald-400' : 'bg-zinc-800 text-zinc-400 border-white/5'}`}
+            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${isSidebarOpen ? 'bg-emerald-500 text-black border-emerald-400' : 'bg-white/5 text-zinc-400 border-white/5 hover:bg-white/10'}`}
           >
             <Layout size={14} />
             {isSidebarOpen ? "OCULTAR JSON" : "VER JSON"}
           </button>
-          <button onClick={handleReset} className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-white/5 flex items-center gap-2">
+          <button onClick={handleReset} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-zinc-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-white/5 flex items-center gap-2 transition-all">
             <RefreshCcw size={14} /> REINICIAR
           </button>
-          <button onClick={handleSyncBacklog} disabled={isSyncing} className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg flex items-center gap-2">
+          <button onClick={handleSyncBacklog} disabled={isSyncing} className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg flex items-center gap-2 transition-all">
             <Sparkles size={14} /> {isSyncing ? "SINC..." : "SINCRONIZAR"}
           </button>
         </div>
       </div>
 
-      <div className="flex flex-1 gap-6 min-h-0 overflow-hidden">
-          {/* PANEL IZQUIERDO: EDITOR JSON (Plegable) */}
+      <div className="flex flex-1 gap-6 min-h-0 overflow-hidden px-8">
           {isSidebarOpen && (
               <div className="w-[450px] bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden flex flex-col animate-in slide-in-from-left duration-300">
                   <div className="p-4 bg-zinc-900 border-b border-zinc-800 flex justify-between items-center">
@@ -163,7 +195,6 @@ export const MapaHistoriasBoard = ({ rawJson, initialData, projectId, onReset }:
               </div>
           )}
 
-          {/* TABLERO BIDIMENSIONAL */}
           <div 
             ref={boardRef}
             onMouseDown={handleMouseDown}
@@ -176,7 +207,6 @@ export const MapaHistoriasBoard = ({ rawJson, initialData, projectId, onReset }:
               gridAutoRows: 'min-content'
             }}
           >
-            {/* FILA 1: EPICS */}
             <div className="bg-zinc-900/90 p-4 flex items-center justify-center border-b border-zinc-800 sticky left-0 top-0 z-40 backdrop-blur-md">
               <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] vertical-text">Estrategia</span>
             </div>
@@ -190,7 +220,6 @@ export const MapaHistoriasBoard = ({ rawJson, initialData, projectId, onReset }:
               </div>
             ))}
 
-            {/* FILA 2: FEATURES */}
             <div className="bg-zinc-900/90 p-4 flex items-center justify-center border-b border-zinc-800 sticky left-0 top-[100px] z-40 backdrop-blur-md">
               <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] vertical-text">Narrativa</span>
             </div>
@@ -201,7 +230,6 @@ export const MapaHistoriasBoard = ({ rawJson, initialData, projectId, onReset }:
               </div>
             ))}
 
-            {/*Swimlanes Releases */}
             {data.releases.map((rel: any) => (
               <div key={rel.id} className="contents">
                 <div className="bg-zinc-900/80 p-6 border-b border-zinc-800 sticky left-0 z-20 border-r border-zinc-800/50 backdrop-blur-md">

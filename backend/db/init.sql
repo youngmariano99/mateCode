@@ -79,7 +79,8 @@ CREATE TABLE IF NOT EXISTS agil.tickets (
     titulo VARCHAR(255) NOT NULL,
     estado VARCHAR(50) DEFAULT 'Todo',
     responsable_id UUID,
-    rango_lexicografico VARCHAR(50) DEFAULT 'a'
+    rango_lexicografico VARCHAR(50) DEFAULT 'a',
+    especialidad VARCHAR(100)
 );
 
 -- FINANZAS

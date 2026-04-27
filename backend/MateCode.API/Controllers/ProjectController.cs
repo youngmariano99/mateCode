@@ -4,12 +4,13 @@ using System;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace MateCode.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // [Authorize] // Temporalmente desactivado hasta configurar JWT Secret en appsettings.json
+    // [Authorize] 
     public class ProjectController : ControllerBase
     {
         private readonly IProjectService _projectService;
@@ -27,7 +28,20 @@ namespace MateCode.API.Controllers
             var tenantHeader = Request.Headers["X-Tenant-Id"].ToString();
             if (!Guid.TryParse(tenantHeader, out Guid tenantId)) return BadRequest("Invalid Tenant");
 
-            var projects = await _projectService.GetAllProjectsAsync(tenantId);
+            var userIdStr = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // Si no hay token (dev mode), usamos el owner del tenant como fallback para no romper nada
+            Guid userId;
+            if (string.IsNullOrEmpty(userIdStr)) 
+            {
+                // Fallback para desarrollo sin JWT configurado todavía
+                userId = Guid.Empty; 
+            }
+            else 
+            {
+                userId = Guid.Parse(userIdStr);
+            }
+
+            var projects = await _projectService.GetAllProjectsAsync(tenantId, userId);
             return Ok(projects);
         }
         [HttpGet("{id}")]

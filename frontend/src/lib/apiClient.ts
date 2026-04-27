@@ -8,13 +8,19 @@ interface RequestOptions extends RequestInit {
 
 async function getHeaders() {
     const { data: { session } } = await supabase.auth.getSession();
-    const tenantId = localStorage.getItem('mc_current_tenant') || '';
+    const tenantId = localStorage.getItem('mc_current_tenant');
     
-    return {
+    const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token}`,
-        'X-Tenant-Id': tenantId
+        'Authorization': `Bearer ${session?.access_token}`
     };
+
+    // Solo enviamos el tenant si es un valor real y no un placeholder
+    if (tenantId && tenantId !== 'undefined' && tenantId !== 'null' && tenantId.length > 10) {
+        headers['X-Tenant-Id'] = tenantId;
+    }
+    
+    return headers;
 }
 
 export const api = {

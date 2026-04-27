@@ -9,6 +9,7 @@ namespace MateCode.Infrastructure.Persistence
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<EspacioTrabajo> EspaciosTrabajo { get; set; }
         public DbSet<MiembroEspacio> MiembrosEspacio { get; set; }
+        public DbSet<ProyectoMiembro> MiembrosProyecto { get; set; }
         public DbSet<Cliente> Clientes { get; set; }
         public DbSet<Proyecto> Proyectos { get; set; }
         public DbSet<Epica> Epicas { get; set; }
@@ -38,6 +39,9 @@ namespace MateCode.Infrastructure.Persistence
         public DbSet<PlantillaStack> PlantillasStack { get; set; }
         public DbSet<EstandarCatalogo> EstandaresCatalogo { get; set; }
         public DbSet<ProyectoEstandar> ProyectosEstandares { get; set; }
+        public DbSet<Reunion> Reuniones { get; set; }
+        public DbSet<MensajeGlobal> MensajesGlobales { get; set; }
+        public DbSet<LogActividad> LogsActividad { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -68,6 +72,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(me => me.UsuarioId).HasColumnName("usuario_id");
                 e.Property(me => me.EtiquetaRol).HasColumnName("etiqueta_rol");
                 e.Property(me => me.MatrizPermisos).HasColumnName("matriz_permisos").HasColumnType("jsonb");
+                e.Property(me => me.EstadoInvitacion).HasColumnName("estado_invitacion");
             });
 
             modelBuilder.Entity<Cliente>(e => {
@@ -160,6 +165,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(t => t.Estado).HasColumnName("estado");
                 e.Property(t => t.ResponsableId).HasColumnName("responsable_id");
                 e.Property(t => t.RangoLexicografico).HasColumnName("rango_lexicografico");
+                e.Property(t => t.Especialidad).HasColumnName("especialidad");
             });
 
             modelBuilder.Entity<Sprint>(e => {
@@ -308,6 +314,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.ToTable("decisiones", "colab");
                 e.Property(d => d.Id).HasColumnName("id");
                 e.Property(d => d.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(d => d.ReunionId).HasColumnName("reunion_id");
                 e.Property(d => d.CreadorId).HasColumnName("creador_id");
                 e.Property(d => d.Titulo).HasColumnName("titulo");
                 e.Property(d => d.Descripcion).HasColumnName("descripcion");
@@ -347,6 +354,46 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(p => p.Nombre).HasColumnName("nombre");
                 e.Property(p => p.DocumentoJson).HasColumnName("documento_json").HasColumnType("jsonb");
                 e.Property(p => p.FechaActualizacion).HasColumnName("fecha_actualizacion");
+            });
+
+            modelBuilder.Entity<ProyectoMiembro>(e => {
+                e.ToTable("miembros_proyecto", "proyectos");
+                e.HasKey(m => new { m.ProyectoId, m.UsuarioId });
+                e.Property(m => m.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(m => m.UsuarioId).HasColumnName("usuario_id");
+                e.Property(m => m.FechaAsignacion).HasColumnName("fecha_asignacion");
+            });
+
+            modelBuilder.Entity<Reunion>(e => {
+                e.ToTable("reuniones", "colab");
+                e.Property(r => r.Id).HasColumnName("id");
+                e.Property(r => r.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(r => r.CreadorId).HasColumnName("creador_id");
+                e.Property(r => r.Titulo).HasColumnName("titulo");
+                e.Property(r => r.FechaInicio).HasColumnName("fecha_inicio");
+                e.Property(r => r.FechaFin).HasColumnName("fecha_fin");
+                e.Property(r => r.ActaJson).HasColumnName("acta_json").HasColumnType("jsonb");
+            });
+
+            modelBuilder.Entity<MensajeGlobal>(e => {
+                e.ToTable("mensajes_globales", "colab");
+                e.Property(m => m.Id).HasColumnName("id");
+                e.Property(m => m.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(m => m.UsuarioId).HasColumnName("usuario_id");
+                e.Property(m => m.NombreUsuario).HasColumnName("nombre_usuario");
+                e.Property(m => m.Contenido).HasColumnName("contenido");
+                e.Property(m => m.Fecha).HasColumnName("fecha");
+            });
+
+            modelBuilder.Entity<LogActividad>(e => {
+                e.ToTable("log_actividad", "colab");
+                e.Property(l => l.Id).HasColumnName("id");
+                e.Property(l => l.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(l => l.UsuarioId).HasColumnName("usuario_id");
+                e.Property(l => l.NombreUsuario).HasColumnName("nombre_usuario");
+                e.Property(l => l.TipoEvento).HasColumnName("tipo_evento");
+                e.Property(l => l.Detalles).HasColumnName("detalles").HasColumnType("jsonb");
+                e.Property(l => l.Fecha).HasColumnName("fecha");
             });
         }
     }

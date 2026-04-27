@@ -24,7 +24,7 @@ namespace MateCode.API.Controllers
             if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
             var userId = Guid.Parse(userIdStr);
 
-            var decision = await _colabService.CrearDecisionAsync(req.ProyectoId, userId, req.Titulo, req.Descripcion, req.Etiquetas);
+            var decision = await _colabService.CrearDecisionAsync(req.ProyectoId, userId, req.Titulo, req.Descripcion, req.Etiquetas, req.ReunionId);
             return Ok(decision);
         }
 
@@ -99,12 +99,39 @@ namespace MateCode.API.Controllers
             var ticketId = await _colabService.ConvertirBugATicketAsync(id, req.SprintId, (Guid)tenantObj);
             return Ok(new { TicketId = ticketId });
         }
+
+        [HttpPost("meetings/start")]
+        public async Task<IActionResult> StartMeeting([FromBody] MeetingRequest req)
+        {
+            var userIdStr = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            Guid userId = string.IsNullOrEmpty(userIdStr) ? Guid.Empty : Guid.Parse(userIdStr);
+
+            var reunionId = await _colabService.IniciarReunionAsync(req.ProyectoId, userId, req.Titulo, req.Descripcion);
+            return Ok(new { ReunionId = reunionId });
+        }
+
+        [HttpPost("meetings/{id:guid}/end")]
+        public async Task<IActionResult> EndMeeting(Guid id, [FromBody] EndMeetingRequest req)
+        {
+            await _colabService.FinalizarReunionAsync(id, req.ActaJson);
+            return Ok();
+        }
+
+        [HttpGet("meetings/{proyectoId}")]
+        public async Task<IActionResult> GetMeetings(string proyectoId)
+        {
+            if (!Guid.TryParse(proyectoId, out var pId)) return BadRequest("Invalid Project ID format");
+            var reuniones = await _colabService.ObtenerReunionesAsync(pId);
+            return Ok(reuniones);
+        }
     }
 
-    public class DecisionRequest { public Guid ProyectoId { get; set; } public string Titulo { get; set; } public string Descripcion { get; set; } public string[] Etiquetas { get; set; } }
+    public class DecisionRequest { public Guid ProyectoId { get; set; } public Guid? ReunionId { get; set; } public string Titulo { get; set; } public string Descripcion { get; set; } public string[] Etiquetas { get; set; } }
     public class VoteRequest { public bool EsUpvote { get; set; } }
     public class BugRequest { public Guid ProyectoId { get; set; } public string Titulo { get; set; } public string Descripcion { get; set; } public string PasosReproduccion { get; set; } }
     public class ConvertBugRequest { public Guid? SprintId { get; set; } }
     public class AssociateBugRequest { public Guid TicketId { get; set; } }
     public class AssociateDecisionRequest { public string Tipo { get; set; } public Guid ElementoId { get; set; } public string Nombre { get; set; } }
+    public class MeetingRequest { public Guid ProyectoId { get; set; } public string Titulo { get; set; } public string? Descripcion { get; set; } }
+    public class EndMeetingRequest { public string ActaJson { get; set; } = "{}"; }
 }

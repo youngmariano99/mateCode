@@ -27,7 +27,19 @@ namespace MateCode.API.Controllers
             return Ok(members);
         }
 
-        public class InviteRequest { public string Email { get; set; } = string.Empty; }
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchUsers([FromQuery] string q)
+        {
+            var users = await _teamService.SearchUsersAsync(q);
+            return Ok(users);
+        }
+
+        public class InviteRequest 
+        { 
+            public string? Email { get; set; } 
+            public Guid? UsuarioId { get; set; }
+            public string EtiquetaRol { get; set; } = string.Empty;
+        }
 
         [HttpPost("invite")]
         public async Task<IActionResult> InviteMember([FromBody] InviteRequest request)
@@ -36,12 +48,40 @@ namespace MateCode.API.Controllers
                 return Unauthorized("Espacio de trabajo no identificado.");
 
             var tenantId = (Guid)tenantObj;
-            var result = await _teamService.InviteMemberAsync(tenantId, request.Email);
+
+            if (request.UsuarioId.HasValue)
+            {
+                var success = await _teamService.AddMemberToWorkspaceAsync(tenantId, request.UsuarioId.Value, request.EtiquetaRol);
+                if (success) return Ok(new { Message = "Miembro añadido correctamente." });
+                return BadRequest("El usuario ya es miembro o no pudo ser añadido.");
+            }
+
+            if (!string.IsNullOrEmpty(request.Email))
+            {
+                var result = await _teamService.InviteMemberAsync(tenantId, request.Email!);
+                if (result) return Ok(new { Message = "Invitación enviada con éxito." });
+            }
             
-            if (result)
-                return Ok(new { Message = "Invitación enviada con éxito." });
+            return BadRequest("Datos de invitación inválidos.");
+        }
+
+        public class UpdateMemberRequest
+        {
+            public Guid UsuarioId { get; set; }
+            public string EtiquetaRol { get; set; } = string.Empty;
+            public System.Collections.Generic.List<Guid> ProjectIds { get; set; } = new();
+        }
+
+        [HttpPut("member-setup")]
+        public async Task<IActionResult> UpdateMemberSetup([FromBody] UpdateMemberRequest request)
+        {
+            if (!HttpContext.Items.TryGetValue("CurrentTenantId", out var tenantObj) || tenantObj is null)
+                return Unauthorized("Espacio de trabajo no identificado.");
+
+            var tenantId = (Guid)tenantObj;
+            await _teamService.UpdateMemberAccessAsync(tenantId, request.UsuarioId, request.EtiquetaRol, request.ProjectIds);
             
-            return BadRequest("No se pudo enviar la invitación.");
+            return Ok(new { Message = "Configuración de miembro actualizada." });
         }
     }
 }

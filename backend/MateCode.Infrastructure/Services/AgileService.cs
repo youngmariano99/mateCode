@@ -144,7 +144,9 @@ namespace MateCode.Infrastructure.Services
             var epicas = await _context.Epicas.Where(e => e.ProyectoId == projectId).OrderBy(e => e.OrdenPosicion).ToListAsync();
             var stories = await _context.Historias.Where(h => h.ProyectoId == projectId).ToListAsync();
             var epicIds = epicas.Select(e => e.Id).ToList();
-            var features = await _context.Features.Where(f => epicIds.Contains(f.EpicaId)).OrderBy(f => f.OrdenPosicion).ToListAsync();
+            var features = epicIds.Any() 
+                ? await _context.Features.Where(f => epicIds.Contains(f.EpicaId)).OrderBy(f => f.OrdenPosicion).ToListAsync()
+                : new List<Feature>();
             var releases = await _context.Releases.Where(r => r.ProyectoId == projectId).OrderBy(r => r.OrdenPosicion).ToListAsync();
             var personas = await _context.PersonasProyecto.Where(p => p.ProyectoId == projectId).ToListAsync();
             var tickets = await _context.Tickets.Where(t => t.ProyectoId == projectId).ToListAsync();

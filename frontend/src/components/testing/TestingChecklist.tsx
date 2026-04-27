@@ -6,6 +6,8 @@ import { useProject } from '../../context/ProjectContext';
 import { supabase } from '../../lib/supabase';
 import type { Historia } from '../agile/types';
 
+import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+
 interface TestItem extends Historia {
   resultado: 'Pendiente' | 'Pasó' | 'Falló';
 }
@@ -13,7 +15,10 @@ interface TestItem extends Historia {
 export const TestingChecklist = () => {
     const { id: paramProjectId } = useParams<{ id: string }>();
     const { projectId: contextProjectId, tenantId } = useProject();
-    const projectId = paramProjectId || contextProjectId;
+    const activeProjectId = useWorkspaceStore(state => state.activeProjectId);
+    
+    // Prioridad: Store (Spatial) > Context > Params
+    const projectId = activeProjectId || paramProjectId || contextProjectId;
     
     const [items, setItems] = useState<TestItem[]>([]);
     const [loading, setLoading] = useState(true);

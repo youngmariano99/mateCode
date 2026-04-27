@@ -37,13 +37,16 @@ import ProjectDashboard from './pages/projects/ProjectDashboard';
 // --------- DevHub (Colaboración) ---------
 import { DevHubLayout } from './components/devhub/DevHubLayout';
 
+import { PresenceProvider } from './context/PresenceContext';
+
 export default function App() {
   return (
     <ProjectProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* --- 1. Rutas Públicas (Sin Sidebar, Estilo Minimalista) --- */}
-          <Route element={<Outlet />}>
+      <PresenceProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* --- 1. Rutas Públicas (Sin Sidebar, Estilo Minimalista) --- */}
+            <Route element={<Outlet />}>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -89,6 +92,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
-    </ProjectProvider>
-  );
+    </PresenceProvider>
+  </ProjectProvider>
+);
 }
