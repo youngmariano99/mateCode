@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { WorkspaceTopBar } from '../components/layout/WorkspaceTopBar';
 import { WorkspaceMap } from '../components/layout/WorkspaceMap';
+import { MateLoadingScreen } from '../components/layout/MateLoadingScreen';
 import { useProject } from '../context/ProjectContext';
 import { useNavigate } from 'react-router-dom';
 import { 
     AlertTriangle, Users, MessageSquare, 
     Database, Activity, LayoutGrid, Zap, Terminal, 
     History as HistoryIcon, ChevronRight, Rocket,
-    Bug as BugIcon, Lightbulb, Plus, Search, ChevronLeft
+    Bug as BugIcon, Lightbulb, Plus, Search, ChevronLeft,
+    Box, Map as MapIcon
 } from 'lucide-react';
 import { CreateBugModal } from '../components/devhub/CreateBugModal';
 import { CreateDecisionModal } from '../components/devhub/CreateDecisionModal';
@@ -16,6 +18,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useWorkspaceStore } from '../store/useWorkspaceStore';
 import { api } from '../lib/apiClient';
 import Swal from 'sweetalert2';
+
+const SpatialOS = lazy(() => import('../spatial-os/SpatialOS').then(module => ({ default: module.SpatialOS })));
 
 export const SpatialLayout: React.FC = () => {
   const { tenantId, isLoading } = useProject();
@@ -32,6 +36,7 @@ export const SpatialLayout: React.FC = () => {
   const [decisions, setDecisions] = useState<any[]>([]);
   const [isBugModalOpen, setIsBugModalOpen] = useState(false);
   const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
+  const [isSpatialOS, setIsSpatialOS] = useState(false);
 
   // Pagination & Filtering States
   const [meetingSearch, setMeetingSearch] = useState("");
@@ -455,11 +460,41 @@ export const SpatialLayout: React.FC = () => {
 
         {/* --- ÁREA CENTRAL: EL MAPA --- */}
         <main className="flex-1 relative bg-[#07090F] overflow-hidden">
-            <WorkspaceMap />
+            <AnimatePresence mode="wait">
+                {!isSpatialOS ? (
+                    <motion.div 
+                        key="2d-map"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="w-full h-full"
+                    >
+                        <WorkspaceMap />
+                    </motion.div>
+                ) : (
+                    <motion.div 
+                        key="3d-map"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="w-full h-full"
+                    >
+                        <Suspense fallback={<MateLoadingScreen isEmbedded />}>
+                            <SpatialOS />
+                        </Suspense>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             
             {/* Controles de Navegación Flotantes (Visual) */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 p-2 bg-black/60 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl">
-                <button className="p-2 hover:bg-white/10 rounded-xl text-zinc-500 transition-colors"><LayoutGrid size={20} /></button>
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 p-2 bg-black/60 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl z-[100]">
+                <button 
+                    onClick={() => setIsSpatialOS(!isSpatialOS)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest ${isSpatialOS ? 'bg-blue-600 text-white' : 'hover:bg-white/10 text-zinc-500'}`}
+                >
+                    {isSpatialOS ? <MapIcon size={16} /> : <Box size={16} />}
+                    {isSpatialOS ? 'Modo 2D' : 'Spatial OS'}
+                </button>
                 <div className="h-4 w-px bg-white/10" />
                 <div className="flex items-center gap-2 px-4">
                     <button className="text-lg font-black text-white hover:scale-110 transition-transform">−</button>

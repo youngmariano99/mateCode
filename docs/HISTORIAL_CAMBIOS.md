@@ -3,6 +3,13 @@
 ---
 
 *   **Fecha:** 2026-04-27
+*   **Módulo/Tarea:** Migración a Spatial OS 3D (Entorno Inmersivo 1:1)
+*   **Archivos Tocados:** `SpatialOS.tsx`, `Presence.tsx`, `BuildingShell.tsx`, `Lighting.tsx`, `CameraRig.tsx`, `SpatialLayout.tsx`, `manifest.ts`, `rooms/*.tsx`
+*   **Qué y Por Qué:** (1) **Salto Dimensional:** Se ha migrado el prototipo de Lovable a la base de código principal, transformando el plano 2D en una experiencia 3D interactiva de alta fidelidad (R3F). (2) **Fidelidad Arquitectónica:** Réplica exacta de coordenadas, dimensiones y materiales PBR (Physically Based Rendering) para las 9 oficinas. (3) **Presencia 3D Real-time:** Sistema de avatares sincronizados vía SignalR con interpolación suave (lerp) y etiquetas flotantes de cristal. (4) **Arquitectura Híbrida:** Implementación de un sistema de "Vista Dual" (Toggle 2D/3D) con **Lazy Loading** y **Suspense**, optimizando el uso de memoria al cargar el motor 3D solo bajo demanda. (5) **Ambientación Dinámica:** Iluminación cálida, sombras suaves y neones de acento que reaccionan al estado de cada sala.
+
+---
+
+*   **Fecha:** 2026-04-27
 *   **Módulo/Tarea:** Dossier Inteligente & Identidad de Marca (Branding 360)
 *   **Archivos Tocados:** `SpatialLayout.tsx`, `MateLoadingScreen.tsx`, `WorkspaceSelectorPage.tsx`, `favicon.svg`
 *   **Qué y Por Qué:** (1) **Dossier Reactivo:** Se ha dotado a la Sala de Guerra (Dossier) de un cerebro de búsqueda y filtrado. Ahora los usuarios pueden auditar bugs, ideas y actas mediante filtros dinámicos por título, autor y fecha. (2) **Navegación Eficiente:** Implementación de micro-paginación en el panel lateral para mantener una UI limpia y performante, evitando el scroll infinito saturado. (3) **Branding MateCode:** El ecosistema ahora respira MateCode desde el primer segundo. Se integró el cargador de ritual de cebado en la lista de mundos y se estableció el nuevo Favicon de mate 3D para una experiencia de navegador premium. (4) **Z-Index Layering:** Refinamiento final de la física de la bombilla, utilizando recortes de profundidad que eliminan el efecto de transparencia, logrando que la bombilla se vea físicamente enterrada en la yerba.
