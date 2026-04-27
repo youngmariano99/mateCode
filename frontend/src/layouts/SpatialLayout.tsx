@@ -139,25 +139,11 @@ export const SpatialLayout: React.FC = () => {
 
   useEffect(() => {
     if (!isLoading && !tenantId) {
-      navigate('/login');
+      navigate('/workspace-selector');
     }
   }, [tenantId, isLoading, navigate]);
 
-  if (isLoading) {
-    return (
-      <div className="h-screen w-screen bg-[#0B0F1A] flex flex-col items-center justify-center">
-        <div className="relative">
-          <div className="absolute -inset-10 bg-emerald-500/20 blur-3xl rounded-full animate-pulse" />
-          <Sparkles size={60} className="text-emerald-500 animate-spin relative" />
-        </div>
-        <p className="mt-8 text-zinc-500 font-black uppercase tracking-[0.4em] text-xs animate-pulse">
-          Cargando Centro de Mando...
-        </p>
-      </div>
-    );
-  }
-
-  if (!tenantId) return null;
+  if (isLoading || !tenantId) return null;
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#07090F] text-zinc-300 font-sans">

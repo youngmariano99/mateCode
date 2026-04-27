@@ -36,6 +36,7 @@ import ProjectDashboard from './pages/projects/ProjectDashboard';
 
 // --------- DevHub (Colaboración) ---------
 import { DevHubLayout } from './components/devhub/DevHubLayout';
+import { WorkspaceSelectorPage } from './pages/WorkspaceSelectorPage';
 
 import { PresenceProvider } from './context/PresenceContext';
 
@@ -47,7 +48,8 @@ export default function App() {
           <Routes>
             {/* --- 1. Rutas Públicas (Sin Sidebar, Estilo Minimalista) --- */}
             <Route element={<Outlet />}>
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<Navigate to="/workspace-selector" replace />} />
+            <Route path="/workspace-selector" element={<WorkspaceSelectorPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/form/:template_id" element={<FormInjectableView />} />

@@ -1,10 +1,20 @@
 import React from 'react';
 import { LayoutDashboard, Users, Database, LogOut, Briefcase, Rocket, Brain } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
-import { WorkspaceSelector } from '../components/layout/WorkspaceSelector';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useProject } from '../context/ProjectContext';
 
 export const GlobalLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
+  const { tenantId, isLoading } = useProject();
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (!isLoading && !tenantId) {
+      navigate('/workspace-selector');
+    }
+  }, [tenantId, isLoading, navigate]);
+
+  if (isLoading || !tenantId) return null;
 
   const navItems = [
     { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
@@ -48,7 +58,7 @@ export const GlobalLayout = ({ children }: { children: React.ReactNode }) => {
         <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
            <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-md p-3">
               <p className="text-[10px] uppercase font-bold text-zinc-500 dark:text-zinc-500 tracking-widest mb-1">Status</p>
-              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Calentando el agua...</p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Yerba cargada.</p>
            </div>
         </div>
       </aside>
@@ -58,7 +68,13 @@ export const GlobalLayout = ({ children }: { children: React.ReactNode }) => {
         {/* Topbar Modern */}
         <header className="h-16 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center px-6 justify-between shrink-0 shadow-sm shadow-zinc-200/50 dark:shadow-none">
           <div className="flex items-center gap-2">
-            <WorkspaceSelector />
+            <button 
+                onClick={() => navigate('/workspace-selector')}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-xs font-bold text-zinc-700 dark:text-zinc-200 uppercase tracking-widest"
+            >
+                <Briefcase size={14} className="text-emerald-500" />
+                Cambiar Mundo
+            </button>
           </div>
           <button className="flex items-center gap-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
             <LogOut size={16} strokeWidth={1.5} />

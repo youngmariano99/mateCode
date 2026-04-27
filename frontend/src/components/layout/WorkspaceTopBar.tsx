@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { api as apiClient } from '../../lib/apiClient';
-import { ChevronDown, User, Zap, LogOut, Mail } from 'lucide-react';
+import { ChevronDown, User, Zap, LogOut, Mail, Briefcase } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
@@ -134,17 +134,17 @@ export const WorkspaceTopBar: React.FC = () => {
 
         <div className="h-8 w-px bg-white/10 mx-2" />
 
-        {/* SELECTOR DE ESPACIO DE TRABAJO */}
-        <div className="relative group">
-            <select
-                value={workspaceId || ''}
-                onChange={(e) => setWorkspaceId(e.target.value)}
-                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[10px] font-black text-zinc-300 uppercase tracking-widest focus:outline-none focus:border-emerald-500/40 hover:bg-white/10 transition-all cursor-pointer min-w-[180px] appearance-none"
-            >
-                {workspaces.map(ws => <option key={ws.id} value={ws.id} className="bg-zinc-950">{ws.nombre}</option>)}
-            </select>
-            <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
-        </div>
+        {/* BOTÓN DE CAMBIO DE MUNDO */}
+        <button 
+            onClick={() => navigate('/workspace-selector')}
+            className="group flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-2 hover:bg-white/10 transition-all cursor-pointer"
+        >
+            <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-black transition-colors">
+                <Briefcase size={12} />
+            </div>
+            <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">Cambiar Mundo</span>
+            <ChevronDown size={12} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+        </button>
       </div>
 
       {/* Centro: Selector de Proyecto Activo */}
