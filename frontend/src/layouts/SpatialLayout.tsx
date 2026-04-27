@@ -4,10 +4,13 @@ import { WorkspaceMap } from '../components/layout/WorkspaceMap';
 import { useProject } from '../context/ProjectContext';
 import { useNavigate } from 'react-router-dom';
 import { 
-    Sparkles, AlertTriangle, Users, MessageSquare, 
+    AlertTriangle, Users, MessageSquare, 
     Database, Activity, LayoutGrid, Zap, Terminal, 
-    History as HistoryIcon, ChevronRight, Rocket
+    History as HistoryIcon, ChevronRight, Rocket,
+    Bug as BugIcon, Lightbulb, Plus, Search, ChevronLeft
 } from 'lucide-react';
+import { CreateBugModal } from '../components/devhub/CreateBugModal';
+import { CreateDecisionModal } from '../components/devhub/CreateDecisionModal';
 import { usePresence } from '../context/PresenceContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWorkspaceStore } from '../store/useWorkspaceStore';
@@ -16,15 +19,31 @@ import Swal from 'sweetalert2';
 
 export const SpatialLayout: React.FC = () => {
   const { tenantId, isLoading } = useProject();
-  const { workspaceId } = useWorkspaceStore();
+  const { workspaceId, setActiveRoom } = useWorkspaceStore();
   const { 
     emergencyMeeting, presences, globalChat, activityLogs, sendGlobalMessage 
   } = usePresence();
-  const { setActiveRoom } = useWorkspaceStore();
+  
   const [showOverlay, setShowOverlay] = useState(false);
   const [leftTab, setLeftTab] = useState<'chat' | 'context'>('chat');
   const [messageText, setMessageText] = useState("");
   const [meetingsHistory, setMeetingsHistory] = useState<any[]>([]);
+  const [bugs, setBugs] = useState<any[]>([]);
+  const [decisions, setDecisions] = useState<any[]>([]);
+  const [isBugModalOpen, setIsBugModalOpen] = useState(false);
+  const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
+
+  // Pagination & Filtering States
+  const [meetingSearch, setMeetingSearch] = useState("");
+  const [bugSearch, setBugSearch] = useState("");
+  const [decisionSearch, setDecisionSearch] = useState("");
+  
+  const [meetingPage, setMeetingPage] = useState(0);
+  const [bugPage, setBugPage] = useState(0);
+  const [decisionPage, setDecisionPage] = useState(0);
+  
+  const PAGE_SIZE = 3;
+
   const navigate = useNavigate();
 
   const isValidUUID = (id: string) => {
@@ -42,11 +61,18 @@ export const SpatialLayout: React.FC = () => {
   }, [emergencyMeeting]);
 
   useEffect(() => {
-    // Usamos el workspaceId del store que es el UUID real
     const targetId = workspaceId && isValidUUID(workspaceId) ? workspaceId : (tenantId && isValidUUID(tenantId) ? tenantId : null);
     
     if (targetId && leftTab === 'context') {
-        api.get(`colab/meetings/${targetId}`).then(res => setMeetingsHistory(res as any[]));
+        Promise.all([
+            api.get(`colab/meetings/${targetId}`),
+            api.get(`colab/bugs/${targetId}`),
+            api.get(`colab/decisions/${targetId}`)
+        ]).then(([meetings, projectBugs, projectDecisions]) => {
+            setMeetingsHistory(meetings as any[]);
+            setBugs(projectBugs as any[]);
+            setDecisions(projectDecisions as any[]);
+        });
     }
   }, [tenantId, workspaceId, leftTab]);
 
@@ -54,6 +80,22 @@ export const SpatialLayout: React.FC = () => {
       if (!messageText.trim()) return;
       sendGlobalMessage(messageText);
       setMessageText("");
+  };
+  
+  // Helpers de Filtrado y Paginación
+  const filterList = (list: any[], search: string) => {
+      if (!search) return list;
+      const s = search.toLowerCase();
+      return list.filter(item => 
+          (item.titulo || "").toLowerCase().includes(s) || 
+          (item.nombreUsuario || "").toLowerCase().includes(s) ||
+          (item.fechaInicio || item.fechaCreacion || "").toLowerCase().includes(s)
+      );
+  };
+
+  const paginate = (list: any[], page: number) => {
+      const start = page * PAGE_SIZE;
+      return list.slice(start, start + PAGE_SIZE);
   };
 
   const handleViewMeeting = (meeting: any) => {
@@ -211,14 +253,124 @@ export const SpatialLayout: React.FC = () => {
                     </div>
                 ) : (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                        {/* SECCIÓN DE BUGS (Placeholder por ahora, pero con estilo) */}
+                        {/* SECCIÓN DE BUGS */}
                         <section className="space-y-4">
-                            <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] flex items-center gap-2 px-1">
-                                <AlertTriangle size={12} className="text-amber-500" /> Alertas de Bloqueo
-                            </h4>
-                            <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl opacity-50 italic">
-                                <p className="text-[10px] text-amber-200/50">Escaneando dependencias críticas...</p>
+                            <div className="flex items-center justify-between px-1">
+                                <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                                    <BugIcon size={12} className="text-red-500" /> Alertas de Bloqueo
+                                </h4>
+                                <div className="flex items-center gap-1">
+                                    <button 
+                                        onClick={() => setIsBugModalOpen(true)}
+                                        className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-500/50 hover:text-red-500 transition-all"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
+                                </div>
                             </div>
+
+                            {/* Filtro de Bugs */}
+                            <div className="px-1">
+                                <div className="relative">
+                                    <Search size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="Filtrar por nombre o usuario..."
+                                        value={bugSearch}
+                                        onChange={(e) => { setBugSearch(e.target.value); setBugPage(0); }}
+                                        className="w-full bg-black/40 border border-white/5 rounded-xl py-2 pl-8 pr-4 text-[9px] text-zinc-400 focus:outline-none focus:border-red-500/30 transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                {filterList(bugs, bugSearch).length === 0 ? (
+                                    <div className="p-4 bg-zinc-900/50 border border-white/5 rounded-2xl opacity-50 italic">
+                                        <p className="text-[10px] text-zinc-500">No hay coincidencias.</p>
+                                    </div>
+                                ) : (
+                                    paginate(filterList(bugs, bugSearch), bugPage).map(bug => (
+                                        <div key={bug.id} className="p-3 bg-red-500/5 border border-red-500/10 rounded-xl flex items-center justify-between group">
+                                            <div className="flex flex-col gap-0.5 overflow-hidden">
+                                                <span className="text-[10px] font-bold text-zinc-200 truncate">{bug.titulo}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[8px] text-red-500/70 font-black uppercase tracking-tighter">{bug.estado}</span>
+                                                    <span className="text-[8px] text-zinc-600 font-bold truncate">@{bug.nombreUsuario || 'anon'}</span>
+                                                </div>
+                                            </div>
+                                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Paginación Bugs */}
+                            {filterList(bugs, bugSearch).length > PAGE_SIZE && (
+                                <div className="flex items-center justify-center gap-4 pt-1">
+                                    <button disabled={bugPage === 0} onClick={() => setBugPage(p => p - 1)} className="text-zinc-600 hover:text-white disabled:opacity-20"><ChevronLeft size={14}/></button>
+                                    <span className="text-[9px] font-black text-zinc-700 uppercase">{bugPage + 1} / {Math.ceil(filterList(bugs, bugSearch).length / PAGE_SIZE)}</span>
+                                    <button disabled={(bugPage + 1) * PAGE_SIZE >= filterList(bugs, bugSearch).length} onClick={() => setBugPage(p => p + 1)} className="text-zinc-600 hover:text-white disabled:opacity-20"><ChevronRight size={14}/></button>
+                                </div>
+                            )}
+                        </section>
+
+                        {/* SECCIÓN DE IDEAS / DECISIONES */}
+                        <section className="space-y-4">
+                            <div className="flex items-center justify-between px-1">
+                                <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                                    <Lightbulb size={12} className="text-amber-500" /> Banco de Ideas
+                                </h4>
+                                <button 
+                                    onClick={() => setIsDecisionModalOpen(true)}
+                                    className="p-1.5 hover:bg-amber-500/10 rounded-lg text-amber-500/50 hover:text-amber-500 transition-all"
+                                >
+                                    <Plus size={14} />
+                                </button>
+                            </div>
+
+                            {/* Filtro de Ideas */}
+                            <div className="px-1">
+                                <div className="relative">
+                                    <Search size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="Filtrar ideas o autores..."
+                                        value={decisionSearch}
+                                        onChange={(e) => { setDecisionSearch(e.target.value); setDecisionPage(0); }}
+                                        className="w-full bg-black/40 border border-white/5 rounded-xl py-2 pl-8 pr-4 text-[9px] text-zinc-400 focus:outline-none focus:border-amber-500/30 transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                {filterList(decisions, decisionSearch).length === 0 ? (
+                                    <div className="p-4 bg-zinc-900/50 border border-white/5 rounded-2xl opacity-50 italic">
+                                        <p className="text-[10px] text-zinc-500">Sin propuestas coincidentes.</p>
+                                    </div>
+                                ) : (
+                                    paginate(filterList(decisions, decisionSearch), decisionPage).map(idea => (
+                                        <div key={idea.id} className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl flex items-center justify-between hover:bg-amber-500/10 transition-all cursor-default group">
+                                            <div className="flex flex-col gap-0.5 overflow-hidden">
+                                                <span className="text-[10px] font-bold text-zinc-300 truncate">{idea.titulo}</span>
+                                                <span className="text-[8px] text-zinc-600 font-bold truncate">@{idea.nombreUsuario || 'anon'}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <span className="text-[9px] font-black text-amber-500">{idea.score || 0}</span>
+                                                <Zap size={10} className="text-amber-500" />
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Paginación Ideas */}
+                            {filterList(decisions, decisionSearch).length > PAGE_SIZE && (
+                                <div className="flex items-center justify-center gap-4 pt-1">
+                                    <button disabled={decisionPage === 0} onClick={() => setDecisionPage(p => p - 1)} className="text-zinc-600 hover:text-white disabled:opacity-20"><ChevronLeft size={14}/></button>
+                                    <span className="text-[9px] font-black text-zinc-700 uppercase">{decisionPage + 1} / {Math.ceil(filterList(decisions, decisionSearch).length / PAGE_SIZE)}</span>
+                                    <button disabled={(decisionPage + 1) * PAGE_SIZE >= filterList(decisions, decisionSearch).length} onClick={() => setDecisionPage(p => p + 1)} className="text-zinc-600 hover:text-white disabled:opacity-20"><ChevronRight size={14}/></button>
+                                </div>
+                            )}
                         </section>
 
                         {/* SECCIÓN DE REUNIONES DINÁMICA */}
@@ -226,13 +378,28 @@ export const SpatialLayout: React.FC = () => {
                             <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] flex items-center gap-2 px-1">
                                 <HistoryIcon size={12} className="text-blue-500" /> Dossier de Actas
                             </h4>
+
+                            {/* Filtro de Actas */}
+                            <div className="px-1">
+                                <div className="relative">
+                                    <Search size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="Buscar actas por tema o host..."
+                                        value={meetingSearch}
+                                        onChange={(e) => { setMeetingSearch(e.target.value); setMeetingPage(0); }}
+                                        className="w-full bg-black/40 border border-white/5 rounded-xl py-2 pl-8 pr-4 text-[9px] text-zinc-400 focus:outline-none focus:border-blue-500/30 transition-all"
+                                    />
+                                </div>
+                            </div>
+
                             <div className="space-y-3">
-                                {meetingsHistory.length === 0 ? (
-                                    <div className="p-6 bg-white/5 border border-white/5 rounded-2xl text-center">
-                                        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">No hay registros</p>
+                                {filterList(meetingsHistory, meetingSearch).length === 0 ? (
+                                    <div className="p-6 bg-white/5 border border-white/5 rounded-2xl text-center opacity-50 italic">
+                                        <p className="text-[10px] text-zinc-500 uppercase">Sin registros coincidentes</p>
                                     </div>
                                 ) : (
-                                    meetingsHistory.map((meeting) => (
+                                    paginate(filterList(meetingsHistory, meetingSearch), meetingPage).map((meeting) => (
                                         <div 
                                             key={meeting.id}
                                             onClick={() => handleViewMeeting(meeting)}
@@ -243,9 +410,12 @@ export const SpatialLayout: React.FC = () => {
                                                 <ChevronRight size={14} className="text-zinc-700 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
                                             </div>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[9px] font-black text-zinc-600 uppercase tracking-tighter">
-                                                    {new Date(meeting.fechaInicio).toLocaleDateString()}
-                                                </span>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span className="text-[9px] font-black text-zinc-600 uppercase tracking-tighter">
+                                                        {new Date(meeting.fechaInicio).toLocaleDateString()}
+                                                    </span>
+                                                    <span className="text-[8px] text-blue-500/50 font-bold italic">Host: {meeting.nombreUsuario || 'anon'}</span>
+                                                </div>
                                                 <div className="flex -space-x-1">
                                                     {[1,2,3].map(i => <div key={i} className="w-4 h-4 rounded-full border border-zinc-950 bg-zinc-800" />)}
                                                 </div>
@@ -254,6 +424,15 @@ export const SpatialLayout: React.FC = () => {
                                     ))
                                 )}
                             </div>
+
+                            {/* Paginación Actas */}
+                            {filterList(meetingsHistory, meetingSearch).length > PAGE_SIZE && (
+                                <div className="flex items-center justify-center gap-4 pt-1">
+                                    <button disabled={meetingPage === 0} onClick={() => setMeetingPage(p => p - 1)} className="text-zinc-600 hover:text-white disabled:opacity-20"><ChevronLeft size={14}/></button>
+                                    <span className="text-[9px] font-black text-zinc-700 uppercase">{meetingPage + 1} / {Math.ceil(filterList(meetingsHistory, meetingSearch).length / PAGE_SIZE)}</span>
+                                    <button disabled={(meetingPage + 1) * PAGE_SIZE >= filterList(meetingsHistory, meetingSearch).length} onClick={() => setMeetingPage(p => p + 1)} className="text-zinc-600 hover:text-white disabled:opacity-20"><ChevronRight size={14}/></button>
+                                </div>
+                            )}
                         </section>
                     </div>
                 )}
@@ -365,6 +544,30 @@ export const SpatialLayout: React.FC = () => {
         </aside>
 
       </div>
+
+      {/* Modals de Reporte */}
+      {isBugModalOpen && (
+          <CreateBugModal 
+              projectId={workspaceId || tenantId!} 
+              onClose={() => setIsBugModalOpen(false)} 
+              onSuccess={() => {
+                  setIsBugModalOpen(false);
+                  // Recargar datos
+                  api.get(`colab/bugs/${workspaceId || tenantId}`).then(res => setBugs(res as any[]));
+              }} 
+          />
+      )}
+
+      {isDecisionModalOpen && (
+          <CreateDecisionModal 
+              projectId={workspaceId || tenantId!} 
+              onClose={() => setIsDecisionModalOpen(false)} 
+              onSuccess={() => {
+                  setIsDecisionModalOpen(false);
+                  api.get(`colab/decisions/${workspaceId || tenantId}`).then(res => setDecisions(res as any[]));
+              }} 
+          />
+      )}
 
       {/* Alerta de Emergencia Global (Overlay) */}
       <AnimatePresence>

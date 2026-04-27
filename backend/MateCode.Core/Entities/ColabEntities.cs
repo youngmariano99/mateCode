@@ -19,6 +19,9 @@ namespace MateCode.Core.Entities
         
         [System.ComponentModel.DataAnnotations.Schema.NotMapped]
         public int Score { get; set; }
+        
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public string? NombreUsuario { get; set; }
     }
 
     public class VotoDecision
@@ -40,6 +43,9 @@ namespace MateCode.Core.Entities
         public string Estado { get; set; } = "Abierto";
         public Guid? TicketAsociadoId { get; set; }
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public string? NombreUsuario { get; set; }
     }
 
     public class Pizarra
@@ -63,6 +69,9 @@ namespace MateCode.Core.Entities
         public DateTime FechaInicio { get; set; } = DateTime.UtcNow;
         public DateTime? FechaFin { get; set; }
         public JsonElement ActaJson { get; set; }
+        
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public string? NombreUsuario { get; set; }
     }
 
     public class MensajeGlobal

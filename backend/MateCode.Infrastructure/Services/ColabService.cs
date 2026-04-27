@@ -44,10 +44,24 @@ namespace MateCode.Infrastructure.Services
 
         public async Task<List<Decision>> ObtenerDecisionesAsync(Guid proyectoId)
         {
-            var decisiones = await _context.Decisiones
-                .Where(d => d.ProyectoId == proyectoId)
-                .OrderByDescending(d => d.FechaCreacion)
-                .ToListAsync();
+            var decisiones = await (from d in _context.Decisiones
+                                   join u in _context.Usuarios on d.CreadorId equals u.Id
+                                   where d.ProyectoId == proyectoId
+                                   orderby d.FechaCreacion descending
+                                   select new Decision {
+                                       Id = d.Id,
+                                       ProyectoId = d.ProyectoId,
+                                       ReunionId = d.ReunionId,
+                                       CreadorId = d.CreadorId,
+                                       Titulo = d.Titulo,
+                                       Descripcion = d.Descripcion,
+                                       Estado = d.Estado,
+                                       Etiquetas = d.Etiquetas,
+                                       ElementosRelacionados = d.ElementosRelacionados,
+                                       FechaCreacion = d.FechaCreacion,
+                                       FechaActualizacion = d.FechaActualizacion,
+                                       NombreUsuario = u.NombreCompleto
+                                   }).ToListAsync();
 
             var decisionIds = decisiones.Select(d => d.Id).ToList();
             if (decisionIds.Any())
@@ -101,10 +115,22 @@ namespace MateCode.Infrastructure.Services
 
         public async Task<List<Bug>> ObtenerBugsAsync(Guid proyectoId)
         {
-            return await _context.Bugs
-                .Where(b => b.ProyectoId == proyectoId)
-                .OrderByDescending(b => b.FechaCreacion)
-                .ToListAsync();
+            return await (from b in _context.Bugs
+                          join u in _context.Usuarios on b.ReportadorId equals u.Id
+                          where b.ProyectoId == proyectoId
+                          orderby b.FechaCreacion descending
+                          select new Bug {
+                              Id = b.Id,
+                              ProyectoId = b.ProyectoId,
+                              ReportadorId = b.ReportadorId,
+                              Titulo = b.Titulo,
+                              Descripcion = b.Descripcion,
+                              PasosReproduccion = b.PasosReproduccion,
+                              Estado = b.Estado,
+                              TicketAsociadoId = b.TicketAsociadoId,
+                              FechaCreacion = b.FechaCreacion,
+                              NombreUsuario = u.NombreCompleto
+                          }).ToListAsync();
         }
 
         public async Task<Guid> ConvertirBugATicketAsync(Guid bugId, Guid? sprintId, Guid tenantId)
@@ -205,9 +231,20 @@ namespace MateCode.Infrastructure.Services
             // Join manual para filtrar por ProyectoId o por el TenantId del Proyecto
             return await (from r in _context.Reuniones
                           join p in _context.Proyectos on r.ProyectoId equals p.Id
+                          join u in _context.Usuarios on r.CreadorId equals u.Id
                           where r.ProyectoId == id || p.TenantId == id
                           orderby r.FechaInicio descending
-                          select r).ToListAsync();
+                          select new Reunion {
+                              Id = r.Id,
+                              ProyectoId = r.ProyectoId,
+                              CreadorId = r.CreadorId,
+                              Titulo = r.Titulo,
+                              Descripcion = r.Descripcion,
+                              FechaInicio = r.FechaInicio,
+                              FechaFin = r.FechaFin,
+                              ActaJson = r.ActaJson,
+                              NombreUsuario = u.NombreCompleto
+                          }).ToListAsync();
         }
     }
 }

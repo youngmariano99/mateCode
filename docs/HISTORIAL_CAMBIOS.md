@@ -1,5 +1,14 @@
 # REPORTE DE MIGRACIÓN: SPATIAL OS (Spatial Mapping & Immersive UI)
 
+---
+
+*   **Fecha:** 2026-04-27
+*   **Módulo/Tarea:** Dossier Inteligente & Identidad de Marca (Branding 360)
+*   **Archivos Tocados:** `SpatialLayout.tsx`, `MateLoadingScreen.tsx`, `WorkspaceSelectorPage.tsx`, `favicon.svg`
+*   **Qué y Por Qué:** (1) **Dossier Reactivo:** Se ha dotado a la Sala de Guerra (Dossier) de un cerebro de búsqueda y filtrado. Ahora los usuarios pueden auditar bugs, ideas y actas mediante filtros dinámicos por título, autor y fecha. (2) **Navegación Eficiente:** Implementación de micro-paginación en el panel lateral para mantener una UI limpia y performante, evitando el scroll infinito saturado. (3) **Branding MateCode:** El ecosistema ahora respira MateCode desde el primer segundo. Se integró el cargador de ritual de cebado en la lista de mundos y se estableció el nuevo Favicon de mate 3D para una experiencia de navegador premium. (4) **Z-Index Layering:** Refinamiento final de la física de la bombilla, utilizando recortes de profundidad que eliminan el efecto de transparencia, logrando que la bombilla se vea físicamente enterrada en la yerba.
+
+---
+
 ## 🌌 Visión General
 Hemos iniciado la migración radical hacia **Spatial OS**, transformando la interfaz tradicional de MateCode en un entorno inmersivo basado en un **Mapa Arquitectónico 2D interactivo**. Esta arquitectura permite que todos los módulos de negocio (CRM, Agile, Vault, Team) convivan en un solo lienzo infinito, eliminando la navegación por URLs y recargas de página.
 
@@ -8,6 +17,11 @@ Hemos iniciado la migración radical hacia **Spatial OS**, transformando la inte
 *   **Capa de Interacción (Region System):** El mapa detecta la posición del cursor sobre habitaciones específicas (Recepción, Biblioteca, Sala de Equipo, etc.) disparando un sistema de estados reactivos.
 *   **Capa UI (UILayer):** Un sistema de modales inmersivos con diseño *Glassmorphism* que inyecta el módulo correspondiente directamente sobre el mapa, manteniendo el contexto espacial del usuario.
 *   **Control de Estado:** Centralizado en `useWorkspaceStore` (Zustand), gestionando el `activeRoom` y la visibilidad de la capa de interfaz.
+
+*   **Fecha:** 2026-04-27
+*   **Módulo/Tarea:** Ritual de Carga Hiperrealista (PBR Loading System) & Refinamiento de Ecosistema
+*   **Archivos Tocados:** `MateLoadingScreen.tsx`, `SpatialLayout.tsx`, `WorkspaceMap.tsx`
+*   **Qué y Por Qué:** (1) **Cebando Datos:** Implementación de una pantalla de carga premium con estética de "fotografía de producto". Se utilizaron técnicas de **PBR (Physically Based Rendering) sobre SVG** mediante filtros `feTurbulence` para simular texturas de metal martillado y madera de calabaza. (2) **Física de Fluidos:** Sistema de vertido sincronizado con capas intercaladas; el agua fluye desde el pico del termo y se "sumerge" físicamente detrás de la virola y la bombilla para un efecto de profundidad real. (3) **Restauración de Fidelidad:** Recuperación del diseño original de la bombilla con gradientes de acero inoxidable, integrando un `clipPath` dinámico que oculta la parte sumergida, eliminando transparencias indeseadas. (4) **Atmósfera Cinematográfica:** Fondo de bokeh dinámico y consola de logs técnicos que narran la hidratación del ADN del proyecto.
 
 ---
 
