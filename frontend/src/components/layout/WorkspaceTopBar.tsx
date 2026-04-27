@@ -88,8 +88,10 @@ export const WorkspaceTopBar: React.FC = () => {
 
   // Cargar Proyectos del Espacio Seleccionado
   useEffect(() => {
+    const isIdValid = (id: string | null) => id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+
     const fetchProjects = async () => {
-      if (!workspaceId || !isTenantReady) return;
+      if (!isIdValid(workspaceId) || !isTenantReady) return;
 
       try {
         const data = await apiClient.get('/Project');
@@ -108,7 +110,7 @@ export const WorkspaceTopBar: React.FC = () => {
     if (isTenantReady) {
         fetchProjects();
     }
-  }, [workspaceId, isTenantReady, setActiveProjectId, activeProjectId]);
+  }, [workspaceId, isTenantReady, activeProjectId, setActiveProjectId]);
 
   const handleAcceptInvite = async (wId: string) => {
     try {
