@@ -18,6 +18,7 @@
  */
 import { useState } from "react";
 import { Canvas } from "@react-three/fiber";
+import { Lock, Unlock } from "lucide-react";
 import { ROOMS } from "./manifest";
 import { Lighting } from "./Lighting";
 import { BuildingShell } from "./BuildingShell";
@@ -52,6 +53,7 @@ const DETAILED_ROOMS: Record<string, React.FC> = {
 
 export function SpatialOS() {
   const [mode, setMode] = useState<ViewMode>("isometric");
+  const [isLocked, setIsLocked] = useState(true);
 
   return (
     <div className="relative h-screen w-screen bg-[#05070b]">
@@ -72,7 +74,7 @@ export function SpatialOS() {
           return <RoomShell key={room.id} room={room} />;
         })}
         <Presence />
-        <CameraRig mode={mode} />
+        <CameraRig mode={mode} locked={isLocked} />
       </Canvas>
 
       {/* Overlay UI */}
@@ -90,26 +92,44 @@ export function SpatialOS() {
             </div>
           </div>
 
-          <div className="flex gap-2 rounded-xl border border-white/10 bg-black/40 p-1.5 backdrop-blur-md">
+          <div className="flex items-center gap-2">
+            <div className="flex gap-2 rounded-xl border border-white/10 bg-black/40 p-1.5 backdrop-blur-md">
+              <button
+                onClick={() => setMode("top")}
+                className={`rounded-lg px-4 py-2 text-xs font-medium transition ${
+                  mode === "top"
+                    ? "bg-white text-black"
+                    : "text-white/70 hover:bg-white/10"
+                }`}
+              >
+                2D · Plano
+              </button>
+              <button
+                onClick={() => setMode("isometric")}
+                className={`rounded-lg px-4 py-2 text-xs font-medium transition ${
+                  mode === "isometric"
+                    ? "bg-white text-black"
+                    : "text-white/70 hover:bg-white/10"
+                }`}
+              >
+                3D · Isométrico
+              </button>
+            </div>
+
             <button
-              onClick={() => setMode("top")}
-              className={`rounded-lg px-4 py-2 text-xs font-medium transition ${
+              onClick={() => setIsLocked((v) => !v)}
+              disabled={mode === "top"}
+              title={mode === "top" ? "La vista 2D está siempre fija" : undefined}
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium backdrop-blur-md transition ${
                 mode === "top"
-                  ? "bg-white text-black"
-                  : "text-white/70 hover:bg-white/10"
+                  ? "cursor-not-allowed border-white/5 bg-black/30 text-white/30"
+                  : isLocked
+                    ? "border-white/10 bg-black/40 text-white/80 hover:bg-white/10"
+                    : "border-emerald-400/40 bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/25 shadow-[0_0_20px_rgba(52,211,153,0.15)]"
               }`}
             >
-              2D · Plano
-            </button>
-            <button
-              onClick={() => setMode("isometric")}
-              className={`rounded-lg px-4 py-2 text-xs font-medium transition ${
-                mode === "isometric"
-                  ? "bg-white text-black"
-                  : "text-white/70 hover:bg-white/10"
-              }`}
-            >
-              3D · Isométrico
+              {isLocked ? <Lock size={14} /> : <Unlock size={14} />}
+              <span>{isLocked ? "Cámara Bloqueada" : "Navegación Libre"}</span>
             </button>
           </div>
         </header>

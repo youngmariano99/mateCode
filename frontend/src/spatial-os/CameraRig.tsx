@@ -27,25 +27,48 @@ const PRESETS: Record<ViewMode, { pos: THREE.Vector3; target: THREE.Vector3 }> =
   },
 };
 
-export function CameraRig({ mode }: { mode: ViewMode }) {
+interface CameraRigProps {
+  mode: ViewMode;
+  locked: boolean;
+}
+
+export function CameraRig({ mode, locked }: CameraRigProps) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
   const targetPos = useRef(PRESETS[mode].pos.clone());
   const targetLook = useRef(PRESETS[mode].target.clone());
   const currentLook = useRef(PRESETS[mode].target.clone());
+  const transitioningRef = useRef(false);
 
   useEffect(() => {
     targetPos.current.copy(PRESETS[mode].pos);
     targetLook.current.copy(PRESETS[mode].target);
+    transitioningRef.current = true;
+    const t = setTimeout(() => {
+      transitioningRef.current = false;
+    }, 700);
+    return () => clearTimeout(t);
   }, [mode]);
 
+  // 2D top view always behaves as a fixed locked blueprint (no orbit allowed).
+  const effectiveLocked = locked || mode === "top";
+
   useFrame(() => {
-    camera.position.lerp(targetPos.current, 0.18);
-    currentLook.current.lerp(targetLook.current, 0.18);
-    camera.lookAt(currentLook.current);
+    const shouldDrive = effectiveLocked || transitioningRef.current;
+
+    if (shouldDrive) {
+      camera.position.lerp(targetPos.current, 0.18);
+      currentLook.current.lerp(targetLook.current, 0.18);
+      camera.lookAt(currentLook.current);
+      if (controlsRef.current) {
+        controlsRef.current.target.copy(currentLook.current);
+      }
+    }
+
     if (controlsRef.current) {
-      controlsRef.current.target.copy(currentLook.current);
-      controlsRef.current.enabled = mode === "isometric";
+      // Enable user navigation only in 3D when unlocked and not transitioning.
+      controlsRef.current.enabled =
+        mode === "isometric" && !locked && !transitioningRef.current;
       controlsRef.current.update();
     }
   });
