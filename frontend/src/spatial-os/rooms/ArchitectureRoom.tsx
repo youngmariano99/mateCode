@@ -8,7 +8,7 @@
 import { getRoom } from "../manifest";
 import { RoomShell } from "../primitives/RoomShell";
 
-const room = getRoom("architecture")!;
+const room = getRoom("phase02")!;
 
 function DraftingTable({ position, rotation = 0 }: { position: [number, number, number]; rotation?: number }) {
   return (

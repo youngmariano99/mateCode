@@ -2,10 +2,6 @@
  * SpatialOS.tsx
  * ---------------------------------------------------------------------------
  *  Top-level scene composition + UI overlay for the camera mode toggle.
- *  This is the ONLY file the host app needs to import to mount the experience:
- *
- *    import { SpatialOS } from "@/spatial-os/SpatialOS";
- *    <SpatialOS />
  * ---------------------------------------------------------------------------
  */
 import { useState } from "react";
@@ -27,23 +23,29 @@ import { StrategyRoom } from "./rooms/StrategyRoom";
 import { ArchitectureRoom } from "./rooms/ArchitectureRoom";
 import { LobbyRoom } from "./rooms/LobbyRoom";
 import { Presence } from "./Presence";
+import { SpatialOverlay } from "./components/SpatialOverlay";
+import { useWorkspaceStore } from "../store/useWorkspaceStore";
+import { usePresence } from "../hooks/usePresence";
 
+// Map IDs to components. Note: IDs now match the global store (phase00, phase01, etc.)
 const DETAILED_ROOMS: Record<string, React.FC> = {
   reception: ReceptionRoom,
   library: LibraryRoom,
-  devhub: DevHubRoom,
-  servers: ServersRoom,
+  phase03: DevHubRoom,
+  server: ServersRoom,
   team: TeamRoom,
   vault: VaultRoom,
-  "dna-lab": DnaLabRoom,
-  strategy: StrategyRoom,
-  architecture: ArchitectureRoom,
+  phase00: DnaLabRoom,
+  phase01: StrategyRoom,
+  phase02: ArchitectureRoom,
   lobby: LobbyRoom,
 };
 
 export function SpatialOS() {
   const [mode, setMode] = useState<ViewMode>("isometric");
   const [isLocked, setIsLocked] = useState(true);
+  const { setActiveRoom } = useWorkspaceStore();
+  const { emergencyMeeting } = usePresence();
 
   return (
     <div className="relative h-screen w-screen bg-[#05070b]">
@@ -57,27 +59,43 @@ export function SpatialOS() {
         <fog attach="fog" args={["#05070b", 60, 140]} />
         <Lighting />
         <BuildingShell />
+        
         {ROOMS.map((room) => {
           const Detailed = DETAILED_ROOMS[room.id];
-          if (Detailed) return <Detailed key={room.id} />;
-          return <RoomShell key={room.id} room={room} />;
+          return (
+            <group 
+              key={room.id} 
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveRoom(room.id as any);
+              }}
+              onPointerOver={() => (document.body.style.cursor = "pointer")}
+              onPointerOut={() => (document.body.style.cursor = "auto")}
+            >
+              {Detailed ? <Detailed /> : <RoomShell room={room} />}
+            </group>
+          );
         })}
+
         <Presence />
         <CameraRig mode={mode} locked={isLocked} />
       </Canvas>
 
-      {/* Overlay UI */}
+      {/* Shared Logic Overlay */}
+      <SpatialOverlay emergencyMeeting={emergencyMeeting} />
+
+      {/* UI Controls */}
       <div className="pointer-events-none absolute inset-0 flex flex-col p-6">
         <header className="pointer-events-auto flex items-start justify-between">
           <div className="rounded-xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-md">
             <div className="text-[10px] uppercase tracking-[0.25em] text-white/50">
-              Spatial OS · v0.1
+              Spatial OS · v0.2
             </div>
             <h1 className="mt-1 text-lg font-semibold text-white">
               Workspace Floor Plan
             </h1>
             <div className="mt-0.5 text-xs text-white/60">
-              {ROOMS.length} salas · 2 alas
+              {ROOMS.length} áreas activas · 2 alas
             </div>
           </div>
 
@@ -128,8 +146,8 @@ export function SpatialOS() {
             <div className="text-[10px] uppercase tracking-[0.25em] text-white/50">
               Leyenda
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-white/80">
-              {ROOMS.slice(0, 10).map((r) => (
+            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-white/80 max-h-[120px] overflow-y-auto">
+              {ROOMS.map((r) => (
                 <div key={r.id} className="flex items-center gap-2">
                   <span
                     className="h-2 w-2 rounded-full"
@@ -142,7 +160,7 @@ export function SpatialOS() {
           </div>
           <div className="pointer-events-auto rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[11px] text-white/60 backdrop-blur-md">
             {mode === "isometric"
-              ? "Arrastra para orbitar · scroll para zoom"
+              ? "Click en oficina para entrar · Arrastra para orbitar"
               : "Vista cenital fija"}
           </div>
         </div>

@@ -40,9 +40,9 @@ export interface RoomManifest {
 
 export const BUILDING = {
   bounds: {
-    // West edge extended from -22 → -30 to host the Lobby / Spawn Point.
+    // West edge extended to -30 for Lobby, East extended to 42 for Phases 4 & 5.
     minX: -30,
-    maxX: 22,
+    maxX: 42,
     minZ: -16,
     maxZ: 16,
   },
@@ -51,14 +51,8 @@ export const BUILDING = {
   corridor: {
     z: 0,
     width: 3.5,
-    /**
-     * Corridor X extents. Decoupled from bounds so a full-depth room (e.g. the
-     * Lobby) can occupy the west end of the building without the corridor
-     * floor/walls poking into it. The corridor now starts at x = -22 (east
-     * edge of the Lobby) and runs to the east perimeter.
-     */
     minX: -22,
-    maxX: 22,
+    maxX: 42,
   },
 } as const;
 
@@ -128,10 +122,32 @@ export const ROOMS: RoomManifest[] = [
     floor: "metal",
     doors: [{ side: "south", offset: -2, width: 1.4 }],
   },
+  {
+    id: "phase04",
+    name: "Laboratorio QA",
+    subtitle: "Fase 4 · Testing",
+    wing: "admin",
+    position: [27, 0, ADMIN_Z],
+    size: [10, 3, WING_DEPTH],
+    accent: "#f97316",
+    floor: "porcelain",
+    doors: [{ side: "south", offset: 0, width: 1.6 }],
+  },
+  {
+    id: "phase05",
+    name: "Zona de Lanzamiento",
+    subtitle: "Fase 5 · Deployment",
+    wing: "admin",
+    position: [37, 0, ADMIN_Z],
+    size: [10, 3, WING_DEPTH],
+    accent: "#06b6d4",
+    floor: "glossy",
+    doors: [{ side: "south", offset: 0, width: 1.6 }],
+  },
 
   // ---------------- PRODUCTION WING (south, positive Z) ----------------
   {
-    id: "dna-lab",
+    id: "phase00",
     name: "Laboratorio de ADN",
     subtitle: "Fase 0 · Stack & Restricciones",
     wing: "production",
@@ -142,7 +158,7 @@ export const ROOMS: RoomManifest[] = [
     doors: [{ side: "north", offset: 3, width: 1.6 }],
   },
   {
-    id: "strategy",
+    id: "phase01",
     name: "Sala de Estrategia",
     subtitle: "Fase 1 · User Story Mapping",
     wing: "production",
@@ -154,7 +170,7 @@ export const ROOMS: RoomManifest[] = [
     doors: [{ side: "north", offset: 0, width: 1.6 }],
   },
   {
-    id: "architecture",
+    id: "phase02",
     name: "Estudio de Arquitectura",
     subtitle: "Fase 2 · ERD & UML",
     wing: "production",
@@ -165,7 +181,7 @@ export const ROOMS: RoomManifest[] = [
     doors: [{ side: "north", offset: 0, width: 1.6 }],
   },
   {
-    id: "devhub",
+    id: "phase03",
     name: "Centro de Mando DevHub",
     subtitle: "Fase 3 · Desarrollo",
     wing: "production",
@@ -176,7 +192,7 @@ export const ROOMS: RoomManifest[] = [
     doors: [{ side: "north", offset: -3, width: 1.6 }],
   },
   {
-    id: "servers",
+    id: "server",
     name: "Cuarto de Servidores",
     subtitle: "Infraestructura",
     wing: "production",

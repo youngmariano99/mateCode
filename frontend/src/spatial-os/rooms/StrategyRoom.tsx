@@ -8,7 +8,7 @@
 import { getRoom } from "../manifest";
 import { RoomShell } from "../primitives/RoomShell";
 
-const room = getRoom("strategy")!;
+const room = getRoom("phase01")!;
 
 function ExecChair({ position, rotation = 0 }: { position: [number, number, number]; rotation?: number }) {
   return (

@@ -9,7 +9,7 @@
 import { getRoom } from "../manifest";
 import { RoomShell } from "../primitives/RoomShell";
 
-const room = getRoom("devhub")!;
+const room = getRoom("phase03")!;
 
 function Monitor({ position, rotation = 0 }: { position: [number, number, number]; rotation?: number }) {
   return (

@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { getRoom } from "../manifest";
 import { RoomShell } from "../primitives/RoomShell";
 
-const room = getRoom("servers")!;
+const room = getRoom("server")!;
 
 function Rack({ position, seed }: { position: [number, number, number]; seed: number }) {
   const ledsRef = useRef<THREE.Group>(null);

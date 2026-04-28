@@ -13,11 +13,6 @@ import * as THREE from "three";
 import { Avatar } from "./components/Avatar";
 
 const ZONE_MAPPING: Record<string, string> = {
-  phase00: "dna-lab",
-  phase01: "strategy",
-  phase02: "architecture",
-  phase03: "devhub",
-  server: "servers",
   reunion: "reception",
   lobby: "lobby",
   spawn: "lobby",

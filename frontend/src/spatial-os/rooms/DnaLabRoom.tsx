@@ -8,7 +8,7 @@
 import { getRoom } from "../manifest";
 import { RoomShell } from "../primitives/RoomShell";
 
-const room = getRoom("dna-lab")!;
+const room = getRoom("phase00")!;
 
 function LabBench({ position, length = 4 }: { position: [number, number, number]; length?: number }) {
   return (
