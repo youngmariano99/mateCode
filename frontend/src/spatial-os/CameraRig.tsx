@@ -1,12 +1,15 @@
 /**
  * CameraRig.tsx
  * ---------------------------------------------------------------------------
- *  Smoothly interpolates the camera between two presets:
- *    - "top"        → orthographic-like top-down 2D blueprint view
- *    - "isometric"  → 2.5D / 3D corporate isometric perspective
+ *  Smoothly interpolates the camera between two presets and arbitrates control
+ *  between SCRIPTED motion (lerp to a preset) and FREE user navigation
+ *  (OrbitControls). This is the only place camera state is driven.
  *
- *  We use a perspective camera and animate position + lookAt in useFrame.
- *  OrbitControls is disabled while transitioning, then re-enabled in iso mode.
+ *  ──────────────────────────────────────────────────────────────────────────
+ *  PROPS
+ *  ──────────────────────────────────────────────────────────────────────────
+ *  - mode  : "top" | "isometric"
+ *  - locked : boolean
  * ---------------------------------------------------------------------------
  */
 import { useEffect, useRef } from "react";
@@ -50,7 +53,6 @@ export function CameraRig({ mode, locked }: CameraRigProps) {
     return () => clearTimeout(t);
   }, [mode]);
 
-  // 2D top view always behaves as a fixed locked blueprint (no orbit allowed).
   const effectiveLocked = locked || mode === "top";
 
   useFrame(() => {
@@ -66,7 +68,6 @@ export function CameraRig({ mode, locked }: CameraRigProps) {
     }
 
     if (controlsRef.current) {
-      // Enable user navigation only in 3D when unlocked and not transitioning.
       controlsRef.current.enabled =
         mode === "isometric" && !locked && !transitioningRef.current;
       controlsRef.current.update();
@@ -82,8 +83,8 @@ export function CameraRig({ mode, locked }: CameraRigProps) {
       enableDamping
       dampingFactor={0.05}
       maxPolarAngle={Math.PI / 2 - 0.05}
-      minDistance={10}
-      maxDistance={70}
+      minDistance={6}
+      maxDistance={90}
     />
   );
 }

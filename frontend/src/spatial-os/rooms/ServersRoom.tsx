@@ -1,11 +1,3 @@
-/**
- * ServersRoom.tsx — PRODUCTION · Cuarto de Servidores (Infraestructura)
- * ---------------------------------------------------------------------------
- *  Tech grid floor (handled by manifest floor: 'grid'), tall dark racks with
- *  blinking LEDs, central monitoring console with multiple screens.
- *  Accent: electric blue.
- * ---------------------------------------------------------------------------
- */
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
@@ -29,13 +21,13 @@ function Rack({ position, seed }: { position: [number, number, number]; seed: nu
   return (
     <group position={position}>
       <mesh position={[0, 1.1, 0]} castShadow>
-        <boxGeometry args={[0.8, 2.2, 0.6]} />
+        <boxGeometry args={[0.7, 2.2, 0.55]} />
         <meshStandardMaterial color="#0e1116" roughness={0.4} metalness={0.6} />
       </mesh>
       <group ref={ledsRef}>
         {Array.from({ length: 8 }).map((_, i) => (
-          <mesh key={i} position={[0, 0.3 + i * 0.22, 0.31]}>
-            <boxGeometry args={[0.5, 0.04, 0.02]} />
+          <mesh key={i} position={[0, 0.3 + i * 0.22, 0.29]}>
+            <boxGeometry args={[0.45, 0.04, 0.02]} />
             <meshStandardMaterial color={room.accent} emissive={room.accent} emissiveIntensity={1.2} />
           </mesh>
         ))}
@@ -45,29 +37,29 @@ function Rack({ position, seed }: { position: [number, number, number]; seed: nu
 }
 
 export function ServersRoom() {
+  const rackZs = [-5.5, -3.7, -1.9, 1.9, 3.7, 5.5];
   return (
     <RoomShell room={room}>
-      {/* Two parallel rows of racks */}
-      {[-2.5, -1.5, -0.5, 0.5, 1.5, 2.5].map((x, i) => (
-        <Rack key={`r1-${i}`} position={[x, 0, -1.3]} seed={i} />
+      {rackZs.map((z, i) => (
+        <Rack key={`w-${i}`} position={[-1.1, 0, z]} seed={i} />
       ))}
-      {[-2.5, -1.5, -0.5, 0.5, 1.5, 2.5].map((x, i) => (
-        <Rack key={`r2-${i}`} position={[x, 0, 1.3]} seed={i + 10} />
+      {rackZs.map((z, i) => (
+        <Rack key={`e-${i}`} position={[1.1, 0, z]} seed={i + 10} />
       ))}
 
-      {/* Central monitoring console (against east wall) */}
-      <mesh position={[3.4, 0.5, 0]} castShadow>
-        <boxGeometry args={[0.5, 1, 1.6]} />
+      {/* Monitoring console */}
+      <mesh position={[0, 0.5, 6.4]} castShadow>
+        <boxGeometry args={[1.6, 1, 0.5]} />
         <meshStandardMaterial color="#1a1f29" roughness={0.5} />
       </mesh>
-      {[-0.5, 0, 0.5].map((z, i) => (
-        <mesh key={i} position={[3.15, 1.2, z]} rotation={[0, -Math.PI / 2, 0]}>
+      {[-0.5, 0, 0.5].map((x, i) => (
+        <mesh key={i} position={[x, 1.2, 6.15]}>
           <boxGeometry args={[0.45, 0.3, 0.04]} />
           <meshStandardMaterial color="#000" emissive={room.accent} emissiveIntensity={0.7} />
         </mesh>
       ))}
 
-      <pointLight position={[0, 2.5, 0]} color={room.accent} intensity={1} distance={8} />
+      <pointLight position={[0, 2.5, 0]} color={room.accent} intensity={1} distance={10} />
     </RoomShell>
   );
 }

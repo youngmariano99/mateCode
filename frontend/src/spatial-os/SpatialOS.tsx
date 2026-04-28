@@ -6,14 +6,6 @@
  *
  *    import { SpatialOS } from "@/spatial-os/SpatialOS";
  *    <SpatialOS />
- *
- *  Architecture:
- *    - <Canvas /> (R3F)
- *      - <Lighting />
- *      - <BuildingShell />     // outer ground, corridor, perimeter
- *      - {ROOMS.map(...)}      // detailed rooms render their own RoomShell;
- *                              // remaining rooms render as labeled shells.
- *      - <CameraRig />         // smooth interpolation between view modes.
  * ---------------------------------------------------------------------------
  */
 import { useState } from "react";
@@ -33,12 +25,9 @@ import { VaultRoom } from "./rooms/VaultRoom";
 import { DnaLabRoom } from "./rooms/DnaLabRoom";
 import { StrategyRoom } from "./rooms/StrategyRoom";
 import { ArchitectureRoom } from "./rooms/ArchitectureRoom";
+import { LobbyRoom } from "./rooms/LobbyRoom";
 import { Presence } from "./Presence";
 
-/**
- * Map of room.id → detailed component. Rooms not in this map render as a
- * walled, labeled, accent-lit shell (placeholder ready for furniture).
- */
 const DETAILED_ROOMS: Record<string, React.FC> = {
   reception: ReceptionRoom,
   library: LibraryRoom,
@@ -49,6 +38,7 @@ const DETAILED_ROOMS: Record<string, React.FC> = {
   "dna-lab": DnaLabRoom,
   strategy: StrategyRoom,
   architecture: ArchitectureRoom,
+  lobby: LobbyRoom,
 };
 
 export function SpatialOS() {
@@ -70,7 +60,6 @@ export function SpatialOS() {
         {ROOMS.map((room) => {
           const Detailed = DETAILED_ROOMS[room.id];
           if (Detailed) return <Detailed key={room.id} />;
-          // Fallback: render as labeled empty shell.
           return <RoomShell key={room.id} room={room} />;
         })}
         <Presence />
@@ -125,7 +114,7 @@ export function SpatialOS() {
                   ? "cursor-not-allowed border-white/5 bg-black/30 text-white/30"
                   : isLocked
                     ? "border-white/10 bg-black/40 text-white/80 hover:bg-white/10"
-                    : "border-emerald-400/40 bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/25 shadow-[0_0_20px_rgba(52,211,153,0.15)]"
+                    : "border-emerald-400/40 bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/25"
               }`}
             >
               {isLocked ? <Lock size={14} /> : <Unlock size={14} />}
@@ -140,7 +129,7 @@ export function SpatialOS() {
               Leyenda
             </div>
             <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-white/80">
-              {ROOMS.slice(0, 8).map((r) => (
+              {ROOMS.slice(0, 10).map((r) => (
                 <div key={r.id} className="flex items-center gap-2">
                   <span
                     className="h-2 w-2 rounded-full"
