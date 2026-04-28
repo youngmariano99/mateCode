@@ -17,6 +17,7 @@ import { usePresence } from '../context/PresenceContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWorkspaceStore } from '../store/useWorkspaceStore';
 import { api } from '../lib/apiClient';
+import Swal from 'sweetalert2';
 
 const SpatialOS = lazy(() => import('../spatial-os/SpatialOS').then(m => ({ default: m.SpatialOS })));
 
@@ -81,6 +82,41 @@ export const SpatialLayout: React.FC = () => {
         api.get(`colab/decisions/${targetId}`).then(res => setDecisions(res as any[])).catch(() => setDecisions([]));
     }
   }, [workspaceId, tenantId]);
+
+  const openMeetingDetail = (m: any) => {
+      Swal.fire({
+          title: `<h2 style="color: #fff; font-family: Inter, sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: -0.05em; font-style: italic;">ACTA DE REUNIÓN</h2>`,
+          html: `
+              <div style="text-align: left; padding: 10px;">
+                  <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                          <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 6px; font-size: 9px; font-weight: 900; text-transform: uppercase;">REGISTRO OFICIAL</span>
+                          <span style="color: #64748b; font-size: 10px; font-weight: 700;">${new Date(m.fechaCreacion).toLocaleString()}</span>
+                      </div>
+                      <h4 style="color: #fff; margin: 0; font-size: 18px; font-weight: 800; text-transform: uppercase; line-height: 1.2;">${m.titulo}</h4>
+                      <p style="color: #94a3b8; font-size: 12px; margin-top: 10px; line-height: 1.6;">${m.descripcion || 'Sin descripción adicional.'}</p>
+                  </div>
+                  
+                  <div style="display: flex; align-items: center; gap: 12px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
+                      <div style="width: 32px; height: 32px; border-radius: 10px; background: #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; color: white;">${m.creadorNombre?.[0] || 'U'}</div>
+                      <div>
+                          <p style="margin: 0; color: #4b5563; font-size: 8px; font-weight: 900; text-transform: uppercase; tracking: 0.1em;">Organizado por</p>
+                          <p style="margin: 0; color: #fff; font-size: 11px; font-weight: 700;">${m.creadorNombre || 'Usuario del Sistema'}</p>
+                      </div>
+                  </div>
+              </div>
+          `,
+          background: '#09090b',
+          color: '#fff',
+          confirmButtonText: 'ENTENDIDO',
+          confirmButtonColor: '#10b981',
+          width: '500px',
+          customClass: {
+              popup: 'rounded-[40px] border border-white/5 backdrop-blur-2xl shadow-2xl',
+              confirmButton: 'rounded-xl px-10 font-black text-[10px] uppercase tracking-widest'
+          }
+      });
+  };
 
   const handleSendGlobal = () => {
       if (!messageText.trim()) return;
@@ -284,8 +320,12 @@ export const SpatialLayout: React.FC = () => {
                                     <div className="space-y-4">
                                         <input value={meetingSearch} onChange={e => setMeetingSearch(e.target.value)} placeholder="Buscar acta..." className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-[10px]" />
                                         {filteredMeetings.slice(meetingPage * PAGE_SIZE, (meetingPage + 1) * PAGE_SIZE).map((m, i) => (
-                                            <div key={i} className="p-5 bg-white/5 border border-white/5 rounded-[2rem]">
-                                                <h5 className="text-[12px] font-black text-white uppercase mb-2">{m.titulo}</h5>
+                                            <div 
+                                                key={i} 
+                                                onClick={() => openMeetingDetail(m)}
+                                                className="p-5 bg-white/5 border border-white/5 rounded-[2rem] hover:border-emerald-500/40 hover:bg-white/[0.07] transition-all cursor-pointer group active:scale-[0.98]"
+                                            >
+                                                <h5 className="text-[12px] font-black text-white uppercase mb-2 group-hover:text-emerald-400 transition-colors">{m.titulo}</h5>
                                                 <p className="text-[10px] text-zinc-500 italic">"{m.descripcion || 'Sin descripción'}"</p>
                                             </div>
                                         ))}

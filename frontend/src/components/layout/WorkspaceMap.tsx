@@ -15,6 +15,7 @@ import { TeamWorkspace } from '../team/TeamWorkspace';
 import { FeasibilityForm } from '../projects/FeasibilityForm';
 import { TestingChecklist } from '../testing/TestingChecklist';
 import { SynchronousMeetingRoom } from '../devhub/SynchronousMeetingRoom';
+import { DevHubWorkspace } from '../devhub/DevHubWorkspace';
 import { usePresence } from '../../hooks/usePresence';
 
 // --- THEME ---
@@ -248,7 +249,7 @@ const UILayer = ({ emergencyMeeting }: { emergencyMeeting: any }) => {
       case 'phase00': return <FeasibilityForm />;
       case 'phase01': return <MapaHistoriasBoard onReset={() => {}} />;
       case 'phase02': return <DiagramWorkspace />;
-      case 'phase03': return <ActiveSprintBoard onSprintClosed={() => setActiveRoom('idle')} />;
+      case 'phase03': return <DevHubWorkspace />;
       case 'reunion': return <SynchronousMeetingRoom />;
       case 'phase04': return <TestingChecklist />;
       default: return (

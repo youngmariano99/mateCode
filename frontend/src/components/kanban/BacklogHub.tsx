@@ -119,83 +119,80 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
   };
 
   return (
-    <div className="flex flex-col h-full bg-zinc-900 text-zinc-100 p-6 rounded-lg border border-zinc-800">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-semibold font-sans">Backlog Hub</h2>
-          <p className="text-zinc-400 text-sm mt-1">Selecciona tickets para planificar tu próxima iteración.</p>
-        </div>
+    <div className="flex flex-col h-full bg-transparent text-zinc-100 p-8">
+      {/* Action Bar (Refined) */}
+      <div className="flex justify-end items-center gap-4 mb-8">
         <div className="flex gap-3">
           <button 
             onClick={handleGenerarPrompt}
-            className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-emerald-400 px-4 py-2 rounded-md transition-colors border border-zinc-700 font-medium"
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-emerald-400 px-5 py-2.5 rounded-xl transition-all border border-white/5 text-[10px] font-black uppercase tracking-widest"
           >
-            <BrainCircuit size={18} />
+            <BrainCircuit size={16} />
             Generar Prompt
           </button>
           <button 
             onClick={handleExportarEstado}
-            className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-amber-400 px-4 py-2 rounded-md transition-colors border border-zinc-700 font-medium"
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-amber-400 px-5 py-2.5 rounded-xl transition-all border border-white/5 text-[10px] font-black uppercase tracking-widest"
           >
-            <FileJson size={18} />
-            Exportar Estado (IA)
+            <FileJson size={16} />
+            Exportar Estado
           </button>
           <button 
             onClick={() => setShowImport(true)}
-            className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 px-4 py-2 rounded-md transition-colors border border-zinc-700"
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-zinc-100 px-5 py-2.5 rounded-xl transition-all border border-white/5 text-[10px] font-black uppercase tracking-widest"
           >
-            <Download size={18} />
-            Importar JSON
+            <Download size={16} />
+            Importar
           </button>
           <button 
             onClick={() => setShowSprintModal(true)}
             disabled={selectedTickets.size === 0}
-            className={`flex items-center gap-2 px-5 py-2 rounded-md font-semibold transition-colors ${
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl ${
               selectedTickets.size > 0 
-                ? 'bg-emerald-500 hover:bg-emerald-400 text-zinc-900' 
-                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20' 
+                : 'bg-white/5 text-zinc-600 cursor-not-allowed border border-white/5'
             }`}
           >
-            <Play size={18} fill="currentColor" />
+            <Play size={16} fill="currentColor" />
             Iniciar Sprint ({selectedTickets.size})
           </button>
         </div>
       </div>
 
-      {/* BARRA DE FILTROS */}
+      {/* FILTERS (Spatial style) */}
       {tickets.length > 0 && (
-        <div className="flex gap-4 mb-4 bg-zinc-800/50 p-3 rounded-lg border border-zinc-700">
+        <div className="flex gap-4 mb-6 bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-md">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-2.5 text-zinc-500" size={18} />
+            <Search className="absolute left-4 top-3 text-zinc-500" size={16} />
             <input 
               type="text" 
-              placeholder="Buscar tickets..." 
+              placeholder="Filtrar por título..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-md py-2 pl-10 pr-4 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-2.5 pl-12 pr-4 text-[11px] text-zinc-100 focus:outline-none focus:border-emerald-500/50 transition-all uppercase tracking-widest"
             />
           </div>
-          <div className="w-48 relative">
-            <Filter className="absolute left-3 top-2.5 text-zinc-500" size={16} />
+          <div className="w-56 relative">
+            <Filter className="absolute left-4 top-3 text-zinc-500" size={14} />
             <select 
               value={epicFilter}
               onChange={(e) => setEpicFilter(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-md py-2 pl-9 pr-4 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 appearance-none"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-[10px] font-black text-zinc-400 focus:outline-none focus:border-emerald-500/50 appearance-none uppercase tracking-widest"
             >
-              <option value="">Todas las Épicas</option>
+              <option value="">Épica: Todas</option>
               {Array.from(new Set(tickets.map(t => t.epicTag).filter(Boolean))).map(epic => (
                 <option key={epic} value={epic}>{epic}</option>
               ))}
             </select>
           </div>
-          <div className="w-48 relative">
-            <Filter className="absolute left-3 top-2.5 text-zinc-500" size={16} />
+          <div className="w-56 relative">
+            <Filter className="absolute left-4 top-3 text-zinc-500" size={14} />
             <select 
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-md py-2 pl-9 pr-4 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 appearance-none"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-[10px] font-black text-zinc-400 focus:outline-none focus:border-emerald-500/50 appearance-none uppercase tracking-widest"
             >
-              <option value="">Cualquier Prioridad</option>
+              <option value="">Prioridad: Cualquiera</option>
               <option value="MVP">MVP</option>
               <option value="Mejora">Mejora</option>
               <option value="Escala">Escala</option>
@@ -204,7 +201,7 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
         {(() => {
           const filteredTickets = tickets.filter(t => {
             const matchesSearch = t.titulo.toLowerCase().includes(searchTerm.toLowerCase());
@@ -215,47 +212,49 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
 
           if (tickets.length === 0) {
             return (
-              <div className="flex flex-col items-center justify-center h-64 text-zinc-500 border border-dashed border-zinc-700 rounded-lg bg-zinc-800/50">
-                <BrainCircuit size={48} className="mb-4 opacity-50 text-emerald-500" />
-                <p>El backlog está vacío.</p>
-                <p className="text-sm">Generá un prompt para que la IA proponga historias técnicas.</p>
+              <div className="flex flex-col items-center justify-center h-80 text-zinc-500 border-2 border-dashed border-white/5 rounded-[3rem] bg-white/[0.02]">
+                <BrainCircuit size={60} className="mb-6 opacity-20 text-emerald-500 animate-pulse" />
+                <p className="text-xl font-black uppercase tracking-[0.2em]">El backlog está en blanco</p>
+                <p className="text-[10px] uppercase font-bold text-zinc-600 mt-2">Usa la IA para generar el primer set de historias</p>
               </div>
             );
           }
 
           if (filteredTickets.length === 0) {
             return (
-              <div className="flex flex-col items-center justify-center h-32 text-zinc-500 border border-dashed border-zinc-700 rounded-lg bg-zinc-800/20">
-                <p>No hay tickets que coincidan con los filtros.</p>
+              <div className="flex flex-col items-center justify-center h-40 text-zinc-500 border border-dashed border-white/5 rounded-[2rem] bg-white/[0.01]">
+                <p className="text-[10px] font-black uppercase tracking-widest">Sin resultados para el filtro actual</p>
               </div>
             );
           }
 
           return (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {filteredTickets.map(ticket => (
                 <div 
                   key={ticket.id} 
                   onClick={() => toggleSelect(ticket.id)}
-                  className={`flex items-center p-4 rounded-lg border cursor-pointer transition-colors ${
+                  className={`flex items-center p-6 rounded-[2rem] border-2 cursor-pointer transition-all active:scale-[0.98] ${
                     selectedTickets.has(ticket.id) 
-                      ? 'bg-emerald-500/10 border-emerald-500/50' 
-                      : 'bg-zinc-800 border-zinc-700 hover:border-zinc-500'
+                      ? 'bg-emerald-500/10 border-emerald-500/30 shadow-lg shadow-emerald-900/10' 
+                      : 'bg-white/[0.03] border-white/5 hover:border-white/20 hover:bg-white/[0.05]'
                   }`}
                 >
-                  <div className="mr-4 text-emerald-500">
-                    {selectedTickets.has(ticket.id) ? <CheckSquare size={20} /> : <Square size={20} className="text-zinc-500" />}
+                  <div className="mr-6">
+                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center border transition-all ${selectedTickets.has(ticket.id) ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/10 text-transparent'}`}>
+                        <CheckSquare size={14} />
+                    </div>
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-zinc-100">{ticket.titulo}</h4>
-                    <div className="flex gap-2 mt-2 text-xs">
-                      <span className="bg-zinc-700 text-zinc-300 px-2 py-1 rounded">
+                    <h4 className="text-sm font-bold text-zinc-100 uppercase tracking-tight leading-tight">{ticket.titulo}</h4>
+                    <div className="flex gap-3 mt-3">
+                      <span className="bg-white/5 border border-white/5 text-zinc-500 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest">
                         {ticket.epicTag || 'Sin Épica'}
                       </span>
-                      <span className={`px-2 py-1 rounded font-medium ${
-                        ticket.prioridad === 'MVP' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700 text-zinc-300'
+                      <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${
+                        ticket.prioridad === 'MVP' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-white/5 border-white/5 text-zinc-600'
                       }`}>
-                        {ticket.prioridad || 'Normal'}
+                        {ticket.prioridad || 'Prioridad normal'}
                       </span>
                     </div>
                   </div>
