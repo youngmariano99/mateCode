@@ -24,6 +24,9 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
 COPY --from=build /out .
 
+# Configuración para evitar error de inotify en Linux/Docker
+ENV DOTNET_USE_POLLING_FILE_WATCHER=true
+
 # Configuración de puerto dinámica para Render
 # Render inyecta la variable de entorno PORT automáticamente
 ENV ASPNETCORE_URLS=http://+:8080
