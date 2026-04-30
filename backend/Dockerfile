@@ -10,7 +10,7 @@ WORKDIR /app
 COPY *.sln .
 COPY MateCode.API/*.csproj ./MateCode.API/
 COPY MateCode.Application/*.csproj ./MateCode.Application/
-COPY MateCode.Domain/*.csproj ./MateCode.Domain/
+COPY MateCode.Core/*.csproj ./MateCode.Core/
 COPY MateCode.Infrastructure/*.csproj ./MateCode.Infrastructure/
 RUN dotnet restore
 
