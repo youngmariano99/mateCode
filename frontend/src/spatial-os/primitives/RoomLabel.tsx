@@ -7,10 +7,15 @@
  */
 import { Html } from "@react-three/drei";
 import type { RoomManifest } from "../manifest";
+import { useWorkspaceStore } from "../../store/useWorkspaceStore";
 
 export function RoomLabel({ room }: { room: RoomManifest }) {
+  const { activeRoom } = useWorkspaceStore();
   const [x, , z] = room.position;
   const y = room.size[1] + 0.6;
+
+  if (activeRoom !== 'idle') return null;
+
   return (
     <Html
       position={[x, y, z]}

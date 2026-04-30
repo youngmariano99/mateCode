@@ -53,13 +53,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             }
         };
     });
-// Configuración Severa CORS
+// Configuración Dinámica de CORS
 builder.Services.AddCors(options =>
 {
+    var originsConfig = builder.Configuration["AllowedOrigins"];
+    var allowedOrigins = !string.IsNullOrEmpty(originsConfig)
+        ? originsConfig.Split(',', StringSplitOptions.RemoveEmptyEntries)
+        : new[] { "http://localhost:5173", "http://localhost:3000" };
+
     options.AddPolicy("AllowFrontend",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173", "http://localhost:3000")
+            policy.WithOrigins(allowedOrigins)
                   .AllowAnyHeader()
                   .AllowAnyMethod()
                   .AllowCredentials();
@@ -177,5 +182,8 @@ app.UseMiddleware<MagicLinkMiddleware>();
 
 app.MapControllers();
 app.MapHub<DevHubHub>("/hub/devhub");
+
+// Health check para el "Cold Start" de Render
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 
 app.Run();

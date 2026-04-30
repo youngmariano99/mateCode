@@ -44,7 +44,7 @@ const DETAILED_ROOMS: Record<string, React.FC> = {
 export function SpatialOS() {
   const [mode, setMode] = useState<ViewMode>("isometric");
   const [isLocked, setIsLocked] = useState(true);
-  const { setActiveRoom } = useWorkspaceStore();
+  const { activeRoom, setActiveRoom } = useWorkspaceStore();
   const { emergencyMeeting } = usePresence();
 
   return (
@@ -58,113 +58,114 @@ export function SpatialOS() {
         <color attach="background" args={["#05070b"]} />
         <fog attach="fog" args={["#05070b", 60, 140]} />
         <Lighting />
-        <BuildingShell />
         
-        {ROOMS.map((room) => {
-          const Detailed = DETAILED_ROOMS[room.id];
-          return (
-            <group 
-              key={room.id} 
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveRoom(room.id as any);
-              }}
-              onPointerOver={() => (document.body.style.cursor = "pointer")}
-              onPointerOut={() => (document.body.style.cursor = "auto")}
-            >
-              {Detailed ? <Detailed /> : <RoomShell room={room} />}
-            </group>
-          );
-        })}
+        {/* SCENE FREEZE OPTIMIZATION */}
+        <group visible={activeRoom === 'idle'}>
+          <BuildingShell />
+          {ROOMS.map((room) => {
+            const Detailed = DETAILED_ROOMS[room.id];
+            return (
+              <group 
+                key={room.id} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveRoom(room.id as any);
+                }}
+                onPointerOver={() => (document.body.style.cursor = "pointer")}
+                onPointerOut={() => (document.body.style.cursor = "auto")}
+              >
+                {Detailed ? <Detailed /> : <RoomShell room={room} />}
+              </group>
+            );
+          })}
+          <Presence />
+        </group>
 
-        <Presence />
         <CameraRig mode={mode} locked={isLocked} />
       </Canvas>
 
       {/* Shared Logic Overlay */}
       <SpatialOverlay emergencyMeeting={emergencyMeeting} />
 
-      {/* UI Controls */}
-      <div className="pointer-events-none absolute inset-0 flex flex-col p-6">
-        <header className="pointer-events-auto flex items-start justify-between">
-          <div className="rounded-xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-md">
-            <div className="text-[10px] uppercase tracking-[0.25em] text-white/50">
-              Spatial OS · v0.2
+      {/* UI Controls - Only visible when not in a room */}
+      {activeRoom === 'idle' && (
+        <div className="pointer-events-none absolute inset-0 flex flex-col p-6">
+          <header className="pointer-events-auto flex items-start justify-between">
+            <div className="rounded-xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-md">
+              <div className="text-[10px] uppercase tracking-[0.25em] text-white/50">
+                Spatial OS · v0.2
+              </div>
+              <h1 className="mt-1 text-lg font-semibold text-white">
+                Workspace Floor Plan
+              </h1>
+              <div className="mt-0.5 text-xs text-white/60">
+                {ROOMS.length} áreas activas · 2 alas
+              </div>
             </div>
-            <h1 className="mt-1 text-lg font-semibold text-white">
-              Workspace Floor Plan
-            </h1>
-            <div className="mt-0.5 text-xs text-white/60">
-              {ROOMS.length} áreas activas · 2 alas
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex gap-2 rounded-xl border border-white/10 bg-black/40 p-1.5 backdrop-blur-md">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-2 rounded-xl border border-white/10 bg-black/40 p-1.5 backdrop-blur-md">
+                <button
+                  onClick={() => setMode("top")}
+                  className={`rounded-lg px-4 py-2 text-xs font-medium transition ${
+                    mode === "top" ? "bg-white text-black" : "text-white/70 hover:bg-white/10"
+                  }`}
+                >
+                  2D · Plano
+                </button>
+                <button
+                  onClick={() => setMode("isometric")}
+                  className={`rounded-lg px-4 py-2 text-xs font-medium transition ${
+                    mode === "isometric" ? "bg-white text-black" : "text-white/70 hover:bg-white/10"
+                  }`}
+                >
+                  3D · Isométrico
+                </button>
+              </div>
+
               <button
-                onClick={() => setMode("top")}
-                className={`rounded-lg px-4 py-2 text-xs font-medium transition ${
+                onClick={() => setIsLocked((v) => !v)}
+                disabled={mode === "top"}
+                title={mode === "top" ? "La vista 2D está siempre fija" : undefined}
+                className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium backdrop-blur-md transition ${
                   mode === "top"
-                    ? "bg-white text-black"
-                    : "text-white/70 hover:bg-white/10"
+                    ? "cursor-not-allowed border-white/5 bg-black/30 text-white/30"
+                    : isLocked
+                      ? "border-white/10 bg-black/40 text-white/80 hover:bg-white/10"
+                      : "border-emerald-400/40 bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/25"
                 }`}
               >
-                2D · Plano
-              </button>
-              <button
-                onClick={() => setMode("isometric")}
-                className={`rounded-lg px-4 py-2 text-xs font-medium transition ${
-                  mode === "isometric"
-                    ? "bg-white text-black"
-                    : "text-white/70 hover:bg-white/10"
-                }`}
-              >
-                3D · Isométrico
+                {isLocked ? <Lock size={14} /> : <Unlock size={14} />}
+                <span>{isLocked ? "Cámara Bloqueada" : "Navegación Libre"}</span>
               </button>
             </div>
+          </header>
 
-            <button
-              onClick={() => setIsLocked((v) => !v)}
-              disabled={mode === "top"}
-              title={mode === "top" ? "La vista 2D está siempre fija" : undefined}
-              className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium backdrop-blur-md transition ${
-                mode === "top"
-                  ? "cursor-not-allowed border-white/5 bg-black/30 text-white/30"
-                  : isLocked
-                    ? "border-white/10 bg-black/40 text-white/80 hover:bg-white/10"
-                    : "border-emerald-400/40 bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/25"
-              }`}
-            >
-              {isLocked ? <Lock size={14} /> : <Unlock size={14} />}
-              <span>{isLocked ? "Cámara Bloqueada" : "Navegación Libre"}</span>
-            </button>
-          </div>
-        </header>
-
-        <div className="mt-auto flex items-end justify-between">
-          <div className="pointer-events-auto rounded-xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-md">
-            <div className="text-[10px] uppercase tracking-[0.25em] text-white/50">
-              Leyenda
+          <div className="mt-auto flex items-end justify-between">
+            <div className="pointer-events-auto rounded-xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-md">
+              <div className="text-[10px] uppercase tracking-[0.25em] text-white/50">
+                Leyenda
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-white/80 max-h-[120px] overflow-y-auto">
+                {ROOMS.map((r) => (
+                  <div key={r.id} className="flex items-center gap-2">
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ background: r.accent, boxShadow: `0 0 8px ${r.accent}` }}
+                    />
+                    <span className="truncate">{r.name}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-white/80 max-h-[120px] overflow-y-auto">
-              {ROOMS.map((r) => (
-                <div key={r.id} className="flex items-center gap-2">
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ background: r.accent, boxShadow: `0 0 8px ${r.accent}` }}
-                  />
-                  <span className="truncate">{r.name}</span>
-                </div>
-              ))}
+            <div className="pointer-events-auto rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[11px] text-white/60 backdrop-blur-md">
+              {mode === "isometric"
+                ? "Click en oficina para entrar · Arrastra para orbitar"
+                : "Vista cenital fija"}
             </div>
-          </div>
-          <div className="pointer-events-auto rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[11px] text-white/60 backdrop-blur-md">
-            {mode === "isometric"
-              ? "Click en oficina para entrar · Arrastra para orbitar"
-              : "Vista cenital fija"}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

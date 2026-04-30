@@ -15,6 +15,7 @@ import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
+import { useWorkspaceStore } from "../../store/useWorkspaceStore";
 
 export interface AvatarProps {
   /** World position where the pin's tip lands on the floor. Drive from backend. */
@@ -29,6 +30,7 @@ const PIN_HEIGHT = 2.4; // meters above floor where the crystal floats
 const LABEL_HEIGHT = 3.5; // above the 3m wall height so labels never get clipped
 
 export function Avatar({ position, name, color = "#3b82f6" }: AvatarProps) {
+  const { activeRoom } = useWorkspaceStore();
   const crystalRef = useRef<THREE.Group>(null);
   const haloRef = useRef<THREE.Mesh>(null);
   const xrayRef = useRef<THREE.Mesh>(null);
@@ -93,19 +95,21 @@ export function Avatar({ position, name, color = "#3b82f6" }: AvatarProps) {
         <meshBasicMaterial color={color} transparent opacity={0.35} side={THREE.BackSide} depthTest={false} depthWrite={false} toneMapped={false} />
       </mesh>
 
-      {/* Floating label */}
-      <Html position={[0, LABEL_HEIGHT, 0]} center distanceFactor={9} zIndexRange={[100, 0]} style={{ pointerEvents: "none" }}>
-        <div style={{
-          display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 999,
-          background: "rgba(5, 7, 11, 0.82)", border: `1px solid ${color}`, color: "#fff",
-          font: "600 11px/1 -apple-system, system-ui, sans-serif", letterSpacing: 0.3,
-          whiteSpace: "nowrap", boxShadow: `0 0 14px ${color}66`, backdropFilter: "blur(6px)",
-          textShadow: `0 0 6px ${color}88`
-        }}>
-          <span style={{ width: 6, height: 6, borderRadius: 999, background: color, boxShadow: `0 0 8px ${color}` }} />
-          {name}
-        </div>
-      </Html>
+      {/* Floating label — Only rendered when idle to avoid bleeding through modals */}
+      {activeRoom === 'idle' && (
+        <Html position={[0, LABEL_HEIGHT, 0]} center distanceFactor={9} zIndexRange={[100, 0]} style={{ pointerEvents: "none" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 999,
+            background: "rgba(5, 7, 11, 0.82)", border: `1px solid ${color}`, color: "#fff",
+            font: "600 11px/1 -apple-system, system-ui, sans-serif", letterSpacing: 0.3,
+            whiteSpace: "nowrap", boxShadow: `0 0 14px ${color}66`, backdropFilter: "blur(6px)",
+            textShadow: `0 0 6px ${color}88`
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: 999, background: color, boxShadow: `0 0 8px ${color}` }} />
+            {name}
+          </div>
+        </Html>
+      )}
     </group>
   );
 }

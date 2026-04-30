@@ -17,6 +17,7 @@ const ZONE_MAPPING: Record<string, string> = {
   lobby: "lobby",
   spawn: "lobby",
   desconocido: "lobby",
+  idle: "lobby",
 };
 
 function LerpedAvatar({ 
