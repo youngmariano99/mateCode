@@ -73,7 +73,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 function BackendGuard({ children }: { children: React.ReactNode }) {
   const [isReady, setIsReady] = useState(false);
   const [msgIndex, setMsgIndex] = useState(0);
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
+  const API_BASE = import.meta.env.VITE_API_URL || 'https://matecode.onrender.com';
 
   const COLD_START_MESSAGES = [
     "Despertando el servidor...",

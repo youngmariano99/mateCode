@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://matecode.onrender.com';
 
 interface RequestOptions extends RequestInit {
     params?: Record<string, string>;

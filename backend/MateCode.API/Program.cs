@@ -59,7 +59,11 @@ builder.Services.AddCors(options =>
     var originsConfig = builder.Configuration["AllowedOrigins"];
     var allowedOrigins = !string.IsNullOrEmpty(originsConfig)
         ? originsConfig.Split(',', StringSplitOptions.RemoveEmptyEntries)
-        : new[] { "http://localhost:5173", "http://localhost:3000" };
+        : new[] { 
+            "http://localhost:5173", 
+            "http://localhost:3000", 
+            "https://matecodes.netlify.app" // 👈 Fallback de producción
+          };
 
     options.AddPolicy("AllowFrontend",
         policy =>
@@ -180,10 +184,11 @@ app.UseAuthorization();
 app.UseMiddleware<TenantResolverMiddleware>();
 app.UseMiddleware<MagicLinkMiddleware>();
 
-app.MapControllers();
-app.MapHub<DevHubHub>("/hub/devhub");
+app.MapControllers().RequireCors("AllowFrontend");
+app.MapHub<DevHubHub>("/hub/devhub").RequireCors("AllowFrontend");
 
 // Health check para el "Cold Start" de Render
-app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
+   .RequireCors("AllowFrontend");
 
 app.Run();
