@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Linq;
+using System.Collections.Generic;
 using MateCode.Infrastructure.Persistence;
 using MateCode.Infrastructure.Services;
 using MateCode.Application.Services;
@@ -57,13 +59,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddCors(options =>
 {
     var originsConfig = builder.Configuration["AllowedOrigins"];
-    var allowedOrigins = !string.IsNullOrEmpty(originsConfig)
-        ? originsConfig.Split(',', StringSplitOptions.RemoveEmptyEntries)
-        : new[] { 
-            "http://localhost:5173", 
-            "http://localhost:3000", 
-            "https://matecodes.netlify.app" // 👈 Fallback de producción
-          };
+    var allowedOriginsList = new List<string> { 
+        "http://localhost:5173", 
+        "http://localhost:3000", 
+        "https://matecodes.netlify.app" 
+    };
+
+    if (!string.IsNullOrEmpty(originsConfig))
+    {
+        allowedOriginsList.AddRange(originsConfig.Split(',', StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    var allowedOrigins = allowedOriginsList.Distinct().ToArray();
 
     options.AddPolicy("AllowFrontend",
         policy =>
