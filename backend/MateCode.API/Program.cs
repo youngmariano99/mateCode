@@ -76,6 +76,7 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy.WithOrigins(allowedOrigins)
+                  .WithHeaders("Content-Type", "Authorization", "X-Tenant-Id")
                   .AllowAnyHeader()
                   .AllowAnyMethod()
                   .AllowCredentials();

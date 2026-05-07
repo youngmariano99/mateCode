@@ -92,6 +92,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(p => p.TenantId).HasColumnName("tenant_id");
                 e.Property(p => p.ClienteId).HasColumnName("cliente_id");
                 e.Property(p => p.Nombre).HasColumnName("nombre");
+                e.Property(p => p.Descripcion).HasColumnName("descripcion");
                 e.Property(p => p.FaseActual).HasColumnName("fase_actual");
                 e.Property(p => p.FechaCreacion).HasColumnName("fecha_creacion");
                 e.Property(p => p.ContextoJson).HasColumnName("contexto_json").HasColumnType("jsonb");
