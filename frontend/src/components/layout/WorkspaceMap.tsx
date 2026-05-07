@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { 
   ZoomIn, ZoomOut, Siren, Maximize2, MousePointer2, Plus, Minus,
-  Database, Code2, Users, Lock, Kanban, Sparkles, Box, X, ShieldAlert
+  Database, Code2, Users, Lock, Kanban, Sparkles, Box, X, ShieldAlert, Rocket
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
@@ -12,6 +12,7 @@ import { Map2D, type MapUser } from '../spatial/Map2D';
 import { ROOMS as BLUEPRINT_ROOMS } from '../spatial/rooms';
 import { DynamicWorkspace, type WorkspaceViewMode } from '../spatial/DynamicWorkspace';
 import { FloatingScratchpad } from '../spatial/FloatingScratchpad';
+import { ProjectModal } from '../projects/ProjectModal';
 
 // Existing Logic Imports
 import { usePresence } from '../../hooks/usePresence';
@@ -54,9 +55,10 @@ const QUICK_SWITCH_ITEMS = [
 ];
 
 export const WorkspaceMap: React.FC = () => {
-  const { activeRoom, setActiveRoom, activeProjectId } = useWorkspaceStore();
+  const { activeRoom, setActiveRoom, activeProjectId, projects } = useWorkspaceStore();
   const { presences, emergencyMeeting, callEmergencyMeeting } = usePresence();
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceViewMode>("windowed");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Mapeo de metadata de la sala activa para el Workspace
   const activeBlueprintId = ROOM_ID_MAP[activeRoom] || activeRoom;
@@ -115,6 +117,9 @@ export const WorkspaceMap: React.FC = () => {
 
   const presenceCount = Object.keys(presences).length;
 
+  // Lógica de Estado Vacío: Si no hay proyectos, mostramos bienvenida
+  const showEmptyState = projects.length === 0;
+
   const renderModule = () => {
     if (activeRoom === 'reception') return <CrmWorkspace />;
     if (activeRoom === 'library') return <LibraryWorkspace />;
@@ -143,37 +148,61 @@ export const WorkspaceMap: React.FC = () => {
       {/* Header */}
       <header className="px-8 py-5 border-b border-slate-800 flex items-center justify-between bg-slate-900 z-50">
         <div>
-          <h1 className="text-sm tracking-[0.4em] text-slate-400 font-medium">SPATIAL OS · BLUEPRINT</h1>
-          <p className="text-xs text-slate-500 mt-1 tracking-wider">COMPLEX 01 — TOP-DOWN ARCHITECTURAL VIEW</p>
+          <h1 className="text-sm tracking-[0.4em] text-slate-400 font-medium uppercase italic">Spatial OS · Blueprint</h1>
+          <p className="text-[10px] text-slate-500 mt-1 tracking-widest font-bold uppercase">Complex 01 — Top-Down View</p>
         </div>
         <div className="flex items-center gap-3 text-xs text-slate-500">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="tracking-widest">LIVE · {presenceCount} PRESENT</span>
+          <span className="tracking-[0.2em] font-black uppercase text-[10px]">{presenceCount} Operativos en línea</span>
         </div>
       </header>
 
-      {/* Main Map Content - HIDDEN when workspace is maximized */}
-      <main className={`flex-1 p-6 bg-slate-900 transition-opacity duration-300 ${isMaximized ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-        <div className="relative w-full h-full rounded-lg border border-slate-800 overflow-hidden shadow-2xl bg-slate-950">
-          <TransformWrapper initialScale={1} centerOnInit minScale={0.4} maxScale={4} limitToBounds={false}>
-            {({ zoomIn, zoomOut, resetTransform }) => (
-              <>
-                <TransformComponent wrapperClass="!w-full !h-full" contentClass="w-full h-full">
-                  <Map2D users={mapUsers} onRoomClick={(room) => setActiveRoom((REVERSE_ROOM_ID_MAP[room.id] || room.id) as any)} />
-                </TransformComponent>
-                <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-                  <button onClick={() => zoomIn()} className="w-9 h-9 grid place-items-center rounded-md border border-slate-700/80 bg-slate-950/85 text-slate-300 hover:text-white transition-all"><Plus size={18} /></button>
-                  <button onClick={() => zoomOut()} className="w-9 h-9 grid place-items-center rounded-md border border-slate-700/80 bg-slate-950/85 text-slate-300 hover:text-white transition-all"><Minus size={18} /></button>
-                  <button onClick={() => resetTransform()} className="w-9 h-9 grid place-items-center rounded-md border border-slate-700/80 bg-slate-950/85 text-slate-300 hover:text-white transition-all"><Maximize2 size={18} /></button>
-                </div>
-              </>
-            )}
-          </TransformWrapper>
+      {/* Main Content */}
+      <main className={`flex-1 p-6 bg-slate-900 transition-all duration-700 ${isMaximized ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+        <div className="relative w-full h-full rounded-[2.5rem] border border-white/5 overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] bg-slate-950">
+          
+          {showEmptyState ? (
+            /* PANTALLA DE BIENVENIDA (EMPTY STATE) */
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center bg-gradient-to-b from-slate-950 to-[#0B0F1A]">
+              <div className="w-24 h-24 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mb-8 animate-bounce shadow-[0_0_50px_rgba(16,185,129,0.1)]">
+                <Rocket size={48} />
+              </div>
+              <h2 className="text-5xl font-black text-white uppercase tracking-tighter italic mb-4">
+                El lienzo está <span className="text-emerald-500">en blanco</span>
+              </h2>
+              <p className="text-zinc-500 max-w-lg text-lg font-medium leading-relaxed mb-10 uppercase tracking-widest text-[11px]">
+                Tu Espacio de Trabajo está virgen. Despega tu primer proyecto para comenzar la secuencia de desarrollo.
+              </p>
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="group flex items-center gap-4 bg-emerald-600 hover:bg-emerald-500 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all shadow-[0_20px_50px_rgba(16,185,129,0.3)] hover:scale-105 active:scale-95"
+              >
+                <Plus size={20} strokeWidth={3} />
+                Construir mi primer proyecto
+              </button>
+            </div>
+          ) : (
+            /* EL MAPA NORMAL */
+            <TransformWrapper initialScale={1} centerOnInit minScale={0.4} maxScale={4} limitToBounds={false}>
+              {({ zoomIn, zoomOut, resetTransform }) => (
+                <>
+                  <TransformComponent wrapperClass="!w-full !h-full" contentClass="w-full h-full">
+                    <Map2D users={mapUsers} onRoomClick={(room) => setActiveRoom((REVERSE_ROOM_ID_MAP[room.id] || room.id) as any)} />
+                  </TransformComponent>
+                  <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+                    <button onClick={() => zoomIn()} className="w-9 h-9 grid place-items-center rounded-md border border-slate-700/80 bg-slate-950/85 text-slate-300 hover:text-white transition-all"><Plus size={18} /></button>
+                    <button onClick={() => zoomOut()} className="w-9 h-9 grid place-items-center rounded-md border border-slate-700/80 bg-slate-950/85 text-slate-300 hover:text-white transition-all"><Minus size={18} /></button>
+                    <button onClick={() => resetTransform()} className="w-9 h-9 grid place-items-center rounded-md border border-slate-700/80 bg-slate-950/85 text-slate-300 hover:text-white transition-all"><Maximize2 size={18} /></button>
+                  </div>
+                </>
+              )}
+            </TransformWrapper>
+          )}
         </div>
       </main>
 
       {/* Emergency Button */}
-      {!isMaximized && (
+      {!isMaximized && !showEmptyState && (
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50">
           <button onClick={handleCallEmergency} className="flex items-center gap-3 px-8 py-3 bg-red-600/90 hover:bg-red-500 text-white rounded-full font-black text-[10px] uppercase tracking-widest transition-all shadow-2xl border border-red-400/20">
             <Siren size={18} className="animate-pulse" /> CONVOCAR REUNIÓN DE GUERRA
@@ -196,6 +225,15 @@ export const WorkspaceMap: React.FC = () => {
       </DynamicWorkspace>
 
       <FloatingScratchpad />
+
+      {/* Project Modal for Creating Projects */}
+      <ProjectModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => {
+            // El TopBar ya tiene un listener que recargará los proyectos
+        }}
+      />
 
       {/* Emergency Meeting Alert */}
       {emergencyMeeting && activeRoom !== 'reunion' && (

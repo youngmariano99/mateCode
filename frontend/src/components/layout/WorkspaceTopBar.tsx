@@ -1,33 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { api as apiClient } from '../../lib/apiClient';
-import { ChevronDown, User, Zap, LogOut, Mail, Briefcase } from 'lucide-react';
+import { ChevronDown, User, Zap, LogOut, Mail, Briefcase, Plus, Pencil, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-
-interface Project {
-  id: string;
-  nombre: string;
-}
-
-interface Workspace {
-  id: string;
-  nombre: string;
-}
-
-interface Invitation {
-  workspaceId: string;
-  workspaceNombre: string;
-  rolInvitado: string;
-}
+import { ProjectModal } from '../projects/ProjectModal';
+import Swal from 'sweetalert2';
 
 export const WorkspaceTopBar: React.FC = () => {
-  const { activeProjectId, setActiveProjectId, workspaceId, setWorkspaceId } = useWorkspaceStore();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const { 
+    activeProjectId, 
+    setActiveProjectId, 
+    workspaceId, 
+    setWorkspaceId,
+    projects,
+    setProjects
+  } = useWorkspaceStore();
+  
+  const [workspaces, setWorkspaces] = useState<any[]>([]);
+  const [invitations, setInvitations] = useState<any[]>([]);
   const [showInvites, setShowInvites] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,21 +36,19 @@ export const WorkspaceTopBar: React.FC = () => {
     navigate('/login');
   };
 
-  // Cargar Espacios de Trabajo e Invitaciones
   const fetchWorkspacesData = async () => {
     try {
       const [wsData, invitesData] = await Promise.all([
         apiClient.get('/Workspace'),
         apiClient.get('/Workspace/invitations')
       ]);
-      setWorkspaces(wsData as Workspace[]);
-      setInvitations(invitesData as Invitation[]);
+      setWorkspaces(wsData as any[]);
+      setInvitations(invitesData as any[]);
 
       const savedWs = localStorage.getItem('mc_current_tenant');
-      const workspacesList = wsData as Workspace[];
+      const workspacesList = wsData as any[];
 
       if (workspacesList.length > 0) {
-        // Si hay un espacio guardado y sigue siendo válido, lo usamos
         if (savedWs && workspacesList.some(w => w.id === savedWs)) {
             setWorkspaceId(savedWs);
         } else {
@@ -73,44 +66,76 @@ export const WorkspaceTopBar: React.FC = () => {
 
   const [isTenantReady, setIsTenantReady] = useState(false);
 
-  // Sincronizar con LocalStorage para que el apiClient tenga el Header correcto
   useEffect(() => {
     if (workspaceId && workspaceId !== 'undefined' && workspaceId !== 'null' && workspaceId.length > 10) {
-        setIsTenantReady(false); // Bloqueamos peticiones mientras cambiamos
+        setIsTenantReady(false);
         localStorage.setItem('mc_current_tenant', workspaceId);
         setProjects([]);
-        // Damos un respiro al sistema para asegurar el guardado
         setTimeout(() => setIsTenantReady(true), 50);
     } else {
         setIsTenantReady(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, setProjects]);
 
-  // Cargar Proyectos del Espacio Seleccionado
-  useEffect(() => {
+  const fetchProjects = async () => {
     const isIdValid = (id: string | null) => id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+    if (!isIdValid(workspaceId) || !isTenantReady) return;
 
-    const fetchProjects = async () => {
-      if (!isIdValid(workspaceId) || !isTenantReady) return;
-
-      try {
-        const data = await apiClient.get('/Project');
-        const projectsData = data as Project[];
-        setProjects(projectsData);
-        
-        if (projectsData.length > 0 && !activeProjectId) {
-          setActiveProjectId(projectsData[0].id);
-        }
-      } catch (error) {
-        console.error("Error fetching projects", error);
-        setProjects([]);
+    try {
+      const data = await apiClient.get('/Project');
+      const projectsData = data as any[];
+      setProjects(projectsData);
+      
+      if (projectsData.length > 0 && !activeProjectId) {
+        setActiveProjectId(projectsData[0].id);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching projects", error);
+      setProjects([]);
+    }
+  };
 
+  useEffect(() => {
     if (isTenantReady) {
         fetchProjects();
     }
   }, [workspaceId, isTenantReady, activeProjectId, setActiveProjectId]);
+
+  const handleDeleteProject = async () => {
+    if (!activeProjectId) return;
+    const project = projects.find(p => p.id === activeProjectId);
+    
+    const result = await Swal.fire({
+      title: '¿Eliminar Proyecto?',
+      text: `Esta acción borrará permanentemente "${project?.nombre}" y toda su información.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#27272a',
+      confirmButtonText: 'SÍ, ELIMINAR',
+      cancelButtonText: 'CANCELAR',
+      background: '#09090b',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await apiClient.delete(`/Project/${activeProjectId}`);
+        setActiveProjectId(null);
+        fetchProjects();
+        Swal.fire({
+          icon: 'success',
+          title: 'Proyecto eliminado',
+          background: '#09090b',
+          color: '#fff',
+          showConfirmButton: false,
+          timer: 1500
+        });
+      } catch (e) {
+        Swal.fire('Error', 'No se pudo eliminar el proyecto', 'error');
+      }
+    }
+  };
 
   const handleAcceptInvite = async (wId: string) => {
     try {
@@ -121,50 +146,78 @@ export const WorkspaceTopBar: React.FC = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-20 bg-[#0B0F1A]/90 backdrop-blur-2xl border-b border-white/5 flex items-center justify-between px-8 z-[100] shadow-2xl">
-      {/* Lado Izquierdo: Logo & Workspace Selector */}
-      <div className="flex items-center gap-8">
-        <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border border-emerald-500/30 rounded-xl flex items-center justify-center shadow-lg group hover:scale-105 transition-all">
-                <Zap size={20} className="text-emerald-400 fill-emerald-400/20" />
-            </div>
-            <div className="flex flex-col">
-                <span className="text-sm font-black tracking-[0.2em] text-white uppercase italic leading-none">MateCode</span>
-                <span className="text-[8px] font-bold text-emerald-500/60 uppercase tracking-[0.3em]">Spatial OS</span>
-            </div>
-        </div>
+    <>
+      <header className="fixed top-0 left-0 right-0 h-20 bg-[#0B0F1A]/90 backdrop-blur-2xl border-b border-white/5 flex items-center justify-between px-8 z-[100] shadow-2xl">
+        {/* Lado Izquierdo: Logo & Workspace Selector */}
+        <div className="flex items-center gap-8">
+          <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border border-emerald-500/30 rounded-xl flex items-center justify-center shadow-lg group hover:scale-105 transition-all">
+                  <Zap size={20} className="text-emerald-400 fill-emerald-400/20" />
+              </div>
+              <div className="flex flex-col">
+                  <span className="text-sm font-black tracking-[0.2em] text-white uppercase italic leading-none">MateCode</span>
+                  <span className="text-[8px] font-bold text-emerald-500/60 uppercase tracking-[0.3em]">Spatial OS</span>
+              </div>
+          </div>
 
-        <div className="h-8 w-px bg-white/10 mx-2" />
+          <div className="h-8 w-px bg-white/10 mx-2" />
 
-        {/* BOTÓN DE CAMBIO DE MUNDO */}
-        <button 
-            onClick={() => navigate('/workspace-selector')}
-            className="group flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-2 hover:bg-white/10 transition-all cursor-pointer"
-        >
-            <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-black transition-colors">
-                <Briefcase size={12} />
-            </div>
-            <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">Cambiar Mundo</span>
-            <ChevronDown size={12} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
-        </button>
-      </div>
-
-      {/* Centro: Selector de Proyecto Activo */}
-      <div className="flex-1 max-w-sm">
-        <div className="relative group">
-          <select
-            value={activeProjectId || ''}
-            onChange={(e) => setActiveProjectId(e.target.value)}
-            className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-2xl px-6 py-2.5 text-xs font-black text-emerald-500 appearance-none focus:outline-none focus:border-emerald-500/50 hover:bg-emerald-500/10 transition-all cursor-pointer uppercase tracking-widest text-center"
+          {/* BOTÓN DE CAMBIO DE MUNDO */}
+          <button 
+              onClick={() => navigate('/workspace-selector')}
+              className="group flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-2 hover:bg-white/10 transition-all cursor-pointer"
           >
-            {projects.length > 0 ? (
-              projects.map((p) => <option key={p.id} value={p.id} className="bg-zinc-950 text-white">{p.nombre}</option>)
-            ) : (
-              <option>Cargando Proyectos...</option>
-            )}
-          </select>
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-black transition-colors">
+                  <Briefcase size={12} />
+              </div>
+              <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">Cambiar Mundo</span>
+              <ChevronDown size={12} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+          </button>
         </div>
-      </div>
+
+        {/* Centro: Selector de Proyecto Activo + CRUD Buttons */}
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => { setProjectToEdit(null); setIsModalOpen(true); }}
+            className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center hover:bg-emerald-500 hover:text-black transition-all shadow-lg"
+            title="Nuevo Proyecto"
+          >
+            <Plus size={18} strokeWidth={3} />
+          </button>
+
+          <div className="relative group w-64">
+            <select
+              value={activeProjectId || ''}
+              onChange={(e) => setActiveProjectId(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-2.5 text-xs font-black text-white appearance-none focus:outline-none focus:border-emerald-500/50 hover:bg-white/10 transition-all cursor-pointer uppercase tracking-widest text-center shadow-inner"
+            >
+              {projects.length > 0 ? (
+                projects.map((p) => <option key={p.id} value={p.id} className="bg-zinc-950 text-white">{p.nombre}</option>)
+              ) : (
+                <option value="">SIN PROYECTOS</option>
+              )}
+            </select>
+          </div>
+
+          {activeProjectId && (
+            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
+              <button 
+                onClick={() => { setProjectToEdit(projects.find(p => p.id === activeProjectId)); setIsModalOpen(true); }}
+                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-zinc-400 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all shadow-md"
+                title="Editar Proyecto"
+              >
+                <Pencil size={16} />
+              </button>
+              <button 
+                onClick={handleDeleteProject}
+                className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500/70 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-md"
+                title="Eliminar Proyecto"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          )}
+        </div>
 
       {/* Lado Derecho: Invitaciones, Avatar & Logout */}
       <div className="flex items-center gap-6">
