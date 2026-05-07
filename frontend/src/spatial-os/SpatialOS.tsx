@@ -26,6 +26,7 @@ import { Presence } from "./Presence";
 import { SpatialOverlay } from "./components/SpatialOverlay";
 import { useWorkspaceStore } from "../store/useWorkspaceStore";
 import { usePresence } from "../hooks/usePresence";
+import type { WorkspaceViewMode } from "../components/spatial/DynamicWorkspace";
 
 // Map IDs to components. Note: IDs now match the global store (phase00, phase01, etc.)
 const DETAILED_ROOMS: Record<string, React.FC> = {
@@ -44,8 +45,14 @@ const DETAILED_ROOMS: Record<string, React.FC> = {
 export function SpatialOS() {
   const [mode, setMode] = useState<ViewMode>("isometric");
   const [isLocked, setIsLocked] = useState(true);
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceViewMode>("windowed");
   const { activeRoom, setActiveRoom } = useWorkspaceStore();
   const { emergencyMeeting } = usePresence();
+
+  // SCENE HIDING: Ocultamos el mapa 3D solo cuando el workspace está MAXIMIZADO.
+  // En 'windowed' o 'drawer', lo dejamos visible para el efecto de blur/vidrio.
+  const isWorkspaceOpen = activeRoom !== 'idle';
+  const shouldHideScene = isWorkspaceOpen && workspaceMode === 'maximized';
 
   return (
     <div className="relative h-screen w-screen bg-[#05070b]">
@@ -59,8 +66,8 @@ export function SpatialOS() {
         <fog attach="fog" args={["#05070b", 60, 140]} />
         <Lighting />
         
-        {/* SCENE FREEZE OPTIMIZATION */}
-        <group visible={activeRoom === 'idle'}>
+        {/* OPTIMIZACIÓN DE GPU: Scene Hiding inteligente */}
+        <group visible={!shouldHideScene}>
           <BuildingShell />
           {ROOMS.map((room) => {
             const Detailed = DETAILED_ROOMS[room.id];
@@ -85,7 +92,10 @@ export function SpatialOS() {
       </Canvas>
 
       {/* Shared Logic Overlay */}
-      <SpatialOverlay emergencyMeeting={emergencyMeeting} />
+      <SpatialOverlay 
+        emergencyMeeting={emergencyMeeting} 
+        onViewModeChange={setWorkspaceMode}
+      />
 
       {/* UI Controls - Only visible when not in a room */}
       {activeRoom === 'idle' && (
