@@ -162,6 +162,10 @@ using (var scope = app.Services.CreateScope())
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_stack' AND column_name = 'activo') THEN
                     ALTER TABLE boveda.plantillas_stack ADD COLUMN activo BOOLEAN DEFAULT TRUE;
                 END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'proyectos' AND table_name = 'proyectos' AND column_name = 'descripcion') THEN
+                    ALTER TABLE proyectos.proyectos ADD COLUMN descripcion TEXT DEFAULT '';
+                END IF;
+
                 -- Infraestructura de Prompts Modulares
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'bloque_persona') THEN
                     ALTER TABLE boveda.plantillas_prompt ADD COLUMN bloque_persona TEXT DEFAULT '';

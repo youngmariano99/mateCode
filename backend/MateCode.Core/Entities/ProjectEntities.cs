@@ -21,6 +21,7 @@ namespace MateCode.Core.Entities
         public Guid TenantId { get; set; }
         public Guid? ClienteId { get; set; }
         public string Nombre { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
         public JsonElement ContextoJson { get; set; }
         public string FaseActual { get; set; } = "Fase 0 - Factibilidad";
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;

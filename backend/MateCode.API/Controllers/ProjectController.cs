@@ -58,14 +58,34 @@ namespace MateCode.API.Controllers
             var tenantHeader = Request.Headers["X-Tenant-Id"].ToString();
             if (!Guid.TryParse(tenantHeader, out Guid tenantId)) return BadRequest("Invalid Tenant");
 
-            var name = body.GetProperty("Nombre").GetString() ?? "Nuevo Proyecto";
+            // Leemos con PascalCase (backend style)
+            var name = body.TryGetProperty("Nombre", out var nProp) ? nProp.GetString() : "Nuevo Proyecto";
+            var description = body.TryGetProperty("Descripcion", out var dProp) ? dProp.GetString() : "";
+            
             Guid? templateId = null;
             if (body.TryGetProperty("PlantillaStackId", out var tId) && tId.ValueKind != JsonValueKind.Null) {
                 if (Guid.TryParse(tId.GetString(), out var gId)) templateId = gId;
             }
 
-            var project = await _projectService.CreateProjectAsync(tenantId, name, templateId);
+            var project = await _projectService.CreateProjectAsync(tenantId, name ?? "Proyecto", description ?? "", templateId);
             return Ok(project);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(Guid id, [FromBody] JsonElement body)
+        {
+            var name = body.TryGetProperty("Nombre", out var nProp) ? nProp.GetString() : "Proyecto";
+            var description = body.TryGetProperty("Descripcion", out var dProp) ? dProp.GetString() : "";
+
+            await _projectService.UpdateProjectAsync(id, name ?? "Proyecto", description ?? "");
+            return Ok(new { message = "Proyecto actualizado con éxito" });
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            await _projectService.DeleteProjectAsync(id);
+            return Ok(new { message = "Proyecto eliminado" });
         }
 
         [HttpPut("{id}/feasibility")]

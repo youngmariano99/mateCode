@@ -55,13 +55,14 @@ namespace MateCode.Infrastructure.Services
                 .FirstOrDefaultAsync(p => p.Id == projectId);
         }
 
-        public async Task<Proyecto> CreateProjectAsync(Guid tenantId, string name, Guid? plantillaStackId = null)
+        public async Task<Proyecto> CreateProjectAsync(Guid tenantId, string name, string description = "", Guid? plantillaStackId = null)
         {
             var proyecto = new Proyecto
             {
                 Id = Guid.NewGuid(),
                 TenantId = tenantId,
                 Nombre = name,
+                Descripcion = description,
                 FaseActual = "Fase 0 - Factibilidad",
                 FechaCreacion = DateTime.UtcNow,
                 ContextoJson = JsonSerializer.Deserialize<JsonElement>("{}")
@@ -99,6 +100,27 @@ namespace MateCode.Infrastructure.Services
             await _kanbanService.InitializeDefaultColumnsAsync(proyecto.Id, tenantId);
 
             return proyecto;
+        }
+
+        public async Task UpdateProjectAsync(Guid projectId, string name, string description)
+        {
+            var project = await _context.Proyectos.FindAsync(projectId);
+            if (project != null)
+            {
+                project.Nombre = name;
+                project.Descripcion = description;
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task DeleteProjectAsync(Guid projectId)
+        {
+            var project = await _context.Proyectos.FindAsync(projectId);
+            if (project != null)
+            {
+                _context.Proyectos.Remove(project);
+                await _context.SaveChangesAsync();
+            }
         }
 
         public async Task UpdateProjectFeasibilityAsync(Guid projectId, Guid tenantId, JsonElement feasibilityData)

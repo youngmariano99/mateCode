@@ -38,7 +38,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     setLoading(true);
     try {
       if (projectToEdit) {
-        await api.put(`/Project/${projectToEdit.id}`, { nombre, descripcion });
+        await api.put(`/Project/${projectToEdit.id}`, { Nombre: nombre, Descripcion: descripcion });
         Swal.fire({
           toast: true,
           position: 'top-end',
@@ -50,7 +50,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           color: '#fff'
         });
       } else {
-        await api.post('/Project', { nombre, descripcion });
+        await api.post('/Project', { Nombre: nombre, Descripcion: descripcion });
         Swal.fire({
           toast: true,
           position: 'top-end',
