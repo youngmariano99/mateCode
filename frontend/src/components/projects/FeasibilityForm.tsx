@@ -58,11 +58,11 @@ export const FeasibilityForm = () => {
 
   const generateAIPrompt = () => {
     let prompt = "";
-    const projectName = "Proyecto"; // Podríamos traerlo del context si estuviera disponible
+    const projectName = "Proyecto"; 
 
     if (activeTab === 'engineering') {
-        const questions = (adnTemplate?.configuracionJson || []).map((q: any) => `- ${q.pregunta} (ID: ${q.etiquetaSemantica})`).join('\n');
-        prompt = `Actúa como Product Manager Senior. Para el proyecto "${projectName}", responde este cuestionario para entender el problema de forma técnica y profunda.\n\nPREGUNTAS:\n${questions}\n\nRESPONDE ÚNICAMENTE CON UN JSON PLANO: {"ID": "respuesta_detallada"}`;
+        const questions = (adnTemplate?.configuracionJson || []).map((q: any, i: number) => `- ${q.pregunta} (REF_ID: ${q.etiquetaSemantica || q.etiqueta_semantica}##${i})`).join('\n');
+        prompt = `Actúa como Product Manager Senior. Para el proyecto "${projectName}", responde este cuestionario técnico.\n\nPREGUNTAS:\n${questions}\n\nREGLA CRÍTICA: Responde con un JSON donde cada clave sea el REF_ID exacto (ej. tag##index) y el valor sea tu respuesta.\n\nJSON ESPERADO: {"etiqueta##indice": "respuesta"}`;
     } else if (activeTab === 'stack') {
         const context = JSON.stringify(adnData);
         prompt = `Actúa como Arquitecto de Software. Basado en este contexto del problema:\n${context}\n\nSugiere el STACK TECNOLÓGICO ideal (Front, Back, DB, Infra). Explica el porqué.\n\nRESPONDE ÚNICAMENTE CON UN JSON: {"plataforma": "...", "backend": "...", "frontend": "...", "bdd": "...", "infra": "..."}`;
@@ -72,17 +72,17 @@ export const FeasibilityForm = () => {
     }
 
     navigator.clipboard.writeText(prompt);
-    Swal.fire({ title: '✨ Guía Copiada', text: 'Prompt copiado al portapapeles.', icon: 'success', background: '#18181b', color: '#fff' });
+    Swal.fire({ title: '🚀 Prompt Granular Copiado', text: 'Listo para inyección individual.', icon: 'success', background: '#18181b', color: '#fff' });
   };
 
   const handleImportJson = async () => {
     try {
         const data = JSON.parse(importJson);
         if (activeTab === 'engineering') {
-            setAdnData(data);
+            // Unimos con lo que ya existe para no borrar si el JSON es parcial
+            setAdnData({ ...adnData, ...data });
             Swal.fire({ title: 'ADN Inyectado', icon: 'success', background: '#18181b', color: '#fff' });
         } else {
-            // Para stack y blueprint, como son componentes complejos, mostramos el JSON para que el usuario sepa qué poner o implementamos inyección directa si el componente lo permite
             await Swal.fire({ title: 'Sugerencias de IA', text: 'La IA sugiere usar estos datos. Cópialos y aplícalos en el constructor.', icon: 'info', background: '#18181b', color: '#fff' });
         }
         setImportJson('');
@@ -207,18 +207,21 @@ export const FeasibilityForm = () => {
                                     <button onClick={() => setShowAdnSelector(true)} className="p-5 bg-zinc-900 border border-zinc-800 text-zinc-500 rounded-2xl hover:text-emerald-400 transition-all hover:rotate-180 duration-500"><RefreshCw size={24} /></button>
                                 </div>
                                 <div className="space-y-8">
-                                    {(adnTemplate.configuracionJson || []).map((q: any, i: number) => (
-                                        <div key={i} className="space-y-4">
-                                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">{q.pregunta}</label>
-                                            <textarea 
-                                                value={adnData?.[q.etiquetaSemantica || q.etiqueta_semantica] || ''} 
-                                                onChange={e => setAdnData({ ...adnData, [q.etiquetaSemantica || q.etiqueta_semantica]: e.target.value })} 
-                                                rows={4} 
-                                                placeholder={`Detalla aquí sobre ${q.etiquetaSemantica}...`}
-                                                className="w-full bg-zinc-950 border border-zinc-800 rounded-[2rem] p-6 text-sm text-zinc-200 outline-none focus:border-emerald-500/50 transition-all resize-none font-medium shadow-inner" 
-                                            />
-                                        </div>
-                                    ))}
+                                    {(adnTemplate.configuracionJson || []).map((q: any, i: number) => {
+                                        const uniqueKey = `${q.etiquetaSemantica || q.etiqueta_semantica}##${i}`;
+                                        return (
+                                            <div key={i} className="space-y-4">
+                                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">{q.pregunta}</label>
+                                                <textarea 
+                                                    value={adnData?.[uniqueKey] || ''} 
+                                                    onChange={e => setAdnData({ ...adnData, [uniqueKey]: e.target.value })} 
+                                                    rows={4} 
+                                                    placeholder={`Detalla aquí sobre ${q.etiquetaSemantica}...`}
+                                                    className="w-full bg-zinc-950 border border-zinc-800 rounded-[2rem] p-6 text-sm text-zinc-200 outline-none focus:border-emerald-500/50 transition-all resize-none font-medium shadow-inner" 
+                                                />
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                                 <button disabled={isSaving} onClick={updateAdn} className="w-full py-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-xs tracking-[0.2em] rounded-[2rem] transition-all flex justify-center items-center gap-3 shadow-2xl shadow-emerald-500/20">{isSaving ? <Loader2 className="animate-spin" /> : 'Consolidar Entendimiento'}</button>
                             </div>
