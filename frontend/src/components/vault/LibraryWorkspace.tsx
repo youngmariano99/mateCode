@@ -2,17 +2,21 @@ import React, { useState } from 'react';
 import { PromptLibrary } from '../../pages/vault/PromptLibrary';
 import { FormLibrary } from '../../pages/vault/FormLibrary';
 import { StandardLibrary } from '../../pages/vault/StandardLibrary';
-import { BookOpen, Sparkles, FileText, ShieldCheck, LayoutGrid, X } from 'lucide-react';
+import { BookOpen, Sparkles, FileText, ShieldCheck, LayoutGrid, Database } from 'lucide-react';
+import { VaultTechCatalog } from './VaultTechCatalog';
+import { VaultStackTemplates } from './VaultStackTemplates';
 
-type LibraryTab = 'prompts' | 'forms' | 'standards';
+type LibraryTab = 'prompts' | 'forms' | 'standards' | 'catalog' | 'stacks';
 
 export const LibraryWorkspace: React.FC = () => {
   const [activeTab, setActiveTab] = useState<LibraryTab>('prompts');
 
   const tabs = [
-    { id: 'prompts', label: 'Oráculo (Prompts)', icon: Sparkles, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { id: 'prompts', label: 'IA (Oráculo)', icon: Sparkles, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
     { id: 'forms', label: 'Formularios', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-500/10' },
     { id: 'standards', label: 'Estándares', icon: ShieldCheck, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+    { id: 'catalog', label: 'Glosario Tech', icon: Database, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+    { id: 'stacks', label: 'Arquitecturas', icon: LayoutGrid, color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
   ];
 
   const renderContent = () => {
@@ -20,6 +24,8 @@ export const LibraryWorkspace: React.FC = () => {
       case 'prompts': return <PromptLibrary />;
       case 'forms': return <FormLibrary />;
       case 'standards': return <StandardLibrary />;
+      case 'catalog': return <VaultTechCatalog />;
+      case 'stacks': return <VaultStackTemplates />;
       default: return null;
     }
   };

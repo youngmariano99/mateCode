@@ -53,21 +53,21 @@ namespace MateCode.Application.Services
 
         public async Task<string> GetMasterDesignPromptAsync(Proyecto project, IEnumerable<Historia> stories, string diagramType)
         {
-            var adn = project?.ContextoJson.ToString() ?? "{}";
+            var adn = project?.ContextoJson.ValueKind != JsonValueKind.Undefined ? project.ContextoJson.ToString() : "{}";
             var stack = await _projectService.GetProjectStackAsync(project?.Id ?? Guid.Empty);
             var standards = await _projectService.GetProjectStandardsAsync(project?.Id ?? Guid.Empty);
             var storyMap = await _agileService.GetFullStoryMapAsync(project?.Id ?? Guid.Empty);
             
             return DesignPromptBuilder.BuildMasterPrompt(
-                project, adn, 
+                project!, adn, 
                 string.Join(", ", stack.Select(s => s.Tecnologia?.Nombre)),
                 string.Join(", ", standards.Select(s => s.Nombre)),
                 storyMap, diagramType);
         }
 
-        public async Task<string> GenerarPromptContextual(Guid templateId, Guid projectId, Guid? ticketId, Guid tenantId, bool? overrideAdn = null, bool? overrideBdd = null, bool? overrideStack = null, string? overridePersona = null, string? overrideTarea = null)
+        public async Task<string> GenerarPromptContextual(Guid templateId, Guid projectId, Guid? ticketId, Guid tenantId, Guid userId, bool? overrideAdn = null, bool? overrideBdd = null, bool? overrideStack = null, string? overridePersona = null, string? overrideTarea = null)
         {
-            var template = await _promptLibrary.GetTemplateByIdAsync(templateId, tenantId);
+            var template = await _promptLibrary.GetTemplateByIdAsync(templateId, tenantId, userId);
             if (template == null) return "Plantilla no encontrada.";
 
             var project = await _projectService.GetProjectByIdAsync(projectId);
@@ -88,7 +88,6 @@ namespace MateCode.Application.Services
 
             var sb = new StringBuilder();
             
-            // Flags para evitar duplicidad si el usuario ya usó placeholders en su plantilla
             bool adnUsed = false;
             bool bddUsed = false;
             bool stackUsed = false;
@@ -116,12 +115,11 @@ namespace MateCode.Application.Services
             if (tareaRaw.Contains("{STACK_AQUI}")) { tareaRaw = tareaRaw.Replace("{STACK_AQUI}", stackFormatted); stackUsed = true; }
             if (tareaRaw.Contains("{PERSONAS_AQUI}")) { tareaRaw = tareaRaw.Replace("{PERSONAS_AQUI}", personasFormatted); personasUsed = true; }
 
-            // Solo agregamos el encabezado si la tarea no parece tener uno propio
             if (!tareaRaw.Trim().StartsWith("#")) sb.AppendLine("### OBJETIVO:");
             sb.AppendLine(tareaRaw);
             sb.AppendLine();
 
-            // 3. [Contexto] (Solo lo marcado Y que NO haya sido usado ya en placeholders)
+            // 3. [Contexto]
             bool hasContext = (overrideAdn ?? template.InyectaAdn) && !adnUsed || 
                              (overrideStack ?? template.InyectaStack) && !stackUsed || 
                              (overrideBdd ?? template.InyectaBdd) && (!bddUsed || !personasUsed) || 
@@ -166,28 +164,17 @@ namespace MateCode.Application.Services
                 }
             }
 
-            // 4. [Formato ideal] (Reglas estrictas del Backend)
+            // 4. [Formato ideal]
             sb.AppendLine("### REGLAS DE FORMATO Y SALIDA (ESTRICTO):");
             
-            var diagramType = string.IsNullOrEmpty(template.TipoDiagrama) ? "General" : template.TipoDiagrama;
-            switch (diagramType.ToUpper())
-            {
-                case "ERD":
-                    DesignPromptBuilder.AddErdInstructions(sb);
-                    break;
-                case "SITEMAP":
-                    DesignPromptBuilder.AddSitemapInstructions(sb);
-                    break;
-                case "UML":
-                    DesignPromptBuilder.AddUmlInstructions(sb);
-                    break;
-                case "ROLES":
-                    DesignPromptBuilder.AddRolesInstructions(sb);
-                    break;
-                default:
-                    sb.AppendLine("Devolver la respuesta en un formato estructurado y técnico acorde al tipo de diagrama.");
-                    break;
-            }
+            string diagramType = string.IsNullOrEmpty(template.TipoDiagrama) ? "General" : template.TipoDiagrama;
+            string typeUpper = diagramType.ToUpper();
+
+            if (typeUpper == "ERD") DesignPromptBuilder.AddErdInstructions(sb);
+            else if (typeUpper == "SITEMAP") DesignPromptBuilder.AddSitemapInstructions(sb);
+            else if (typeUpper == "UML") DesignPromptBuilder.AddUmlInstructions(sb);
+            else if (typeUpper == "ROLES") DesignPromptBuilder.AddRolesInstructions(sb);
+            else sb.AppendLine("Devolver la respuesta en un formato estructurado y técnico acorde al tipo de diagrama.");
 
             sb.AppendLine();
             sb.AppendLine("IMPORTANTE: Devolvé ÚNICAMENTE el código en crudo, sin bloques de markdown (```) ni explicaciones.");
@@ -195,9 +182,9 @@ namespace MateCode.Application.Services
             return sb.ToString();
         }
 
-        public async Task<string> GenerarPromptBrainstormingAsync(string idea, Guid formularioId, Guid tenantId)
+        public async Task<string> GenerarPromptBrainstormingAsync(string idea, Guid formularioId, Guid tenantId, Guid userId)
         {
-            var form = await _formLibrary.GetFormByIdAsync(formularioId, tenantId);
+            var form = await _formLibrary.GetFormByIdAsync(formularioId, tenantId, userId);
             if (form == null) return "Error: Formulario no encontrado.";
 
             using var doc = JsonDocument.Parse(form.ConfiguracionJson.GetRawText());
@@ -215,8 +202,11 @@ namespace MateCode.Application.Services
             var stories = await _agileService.GetStoriesByProjectAsync(projectId);
             var tickets = await _agileService.GetTicketsByProjectAsync(projectId);
 
+            string adnText = project?.ContextoJson.ValueKind != JsonValueKind.Null && project?.ContextoJson.ValueKind != JsonValueKind.Undefined 
+                ? project.ContextoJson.GetRawText() : "Sin ADN";
+
             return ContextPromptBuilder.BuildGlobalContextPrompt(
-                project, project?.ContextoJson.ValueKind != JsonValueKind.Null ? project.ContextoJson.GetRawText() : "Sin ADN",
+                project!, adnText,
                 string.Join(", ", stack.Select(s => s.Tecnologia?.Nombre)),
                 string.Join("\n", standards.Select(s => $"- {s.Nombre}")),
                 string.Join("\n", stories.Select(s => $"- {s.Titulo}")),
@@ -230,8 +220,11 @@ namespace MateCode.Application.Services
             var stack = await _projectService.GetProjectStackAsync(projectId);
             var standards = await _projectService.GetProjectStandardsAsync(projectId);
 
+            string adnText = project?.ContextoJson.ValueKind != JsonValueKind.Null && project?.ContextoJson.ValueKind != JsonValueKind.Undefined 
+                ? project.ContextoJson.GetRawText() : "Sin ADN";
+
             return AgilePromptBuilder.BuildPhase1Prompt(
-                project, project?.ContextoJson.ValueKind != JsonValueKind.Null ? project.ContextoJson.GetRawText() : "Sin ADN",
+                project!, adnText,
                 string.Join(", ", stack.Select(s => s.Tecnologia?.Nombre)),
                 string.Join("\n", standards.Select(s => s.Nombre))
             );

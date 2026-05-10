@@ -210,6 +210,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(ps => ps.Nombre).HasColumnName("nombre");
                 e.Property(ps => ps.Descripcion).HasColumnName("descripcion");
                 e.Property(ps => ps.TecnologiasIdsJson).HasColumnName("tecnologias_ids_json").HasColumnType("jsonb");
+                e.Property(ps => ps.CreadorId).HasColumnName("creador_id");
                 e.Property(ps => ps.FechaCreacion).HasColumnName("fecha_creacion");
             });
 
@@ -277,6 +278,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(p => p.InyectaBdd).HasColumnName("inyecta_bdd");
                 e.Property(p => p.InyectaTicket).HasColumnName("inyecta_ticket");
                 e.Property(p => p.InyectaBlueprint).HasColumnName("inyecta_blueprint");
+                e.Property(p => p.CreadorId).HasColumnName("creador_id");
                 e.Property(p => p.FechaCreacion).HasColumnName("fecha_creacion");
             });
 
@@ -287,6 +289,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(f => f.Nombre).HasColumnName("nombre");
                 e.Property(f => f.Tipo).HasColumnName("tipo");
                 e.Property(f => f.ConfiguracionJson).HasColumnName("configuracion_json").HasColumnType("jsonb");
+                e.Property(f => f.CreadorId).HasColumnName("creador_id");
                 e.Property(f => f.FechaCreacion).HasColumnName("fecha_creacion");
             });
 
@@ -298,6 +301,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(ec => ec.Nombre).HasColumnName("nombre");
                 e.Property(ec => ec.DescripcionDidactica).HasColumnName("descripcion_didactica");
                 e.Property(ec => ec.ColorHex).HasColumnName("color_hex");
+                e.Property(ec => ec.CreadorId).HasColumnName("creador_id");
                 e.Property(ec => ec.EliminadoEn).HasColumnName("eliminado_en");
             });
 

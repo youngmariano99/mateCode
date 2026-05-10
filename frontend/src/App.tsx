@@ -23,6 +23,8 @@ import Portfolio from './pages/portfolio/Portfolio';
 import { PromptLibrary } from './pages/vault/PromptLibrary';
 import { FormLibrary } from './pages/vault/FormLibrary';
 import { StandardLibrary } from './pages/vault/StandardLibrary';
+import { BlueprintWizard } from './pages/vault/BlueprintWizard';
+import { ProjectFactory } from './pages/vault/ProjectFactory';
 
 // --------- Vistas del Taller (Fases) ---------
 import Phase0Feasibility from './pages/projects/Phase0Feasibility';
@@ -150,6 +152,8 @@ export default function App() {
                   <Route path="/app/vault/prompts" element={<PromptLibrary />} />
                   <Route path="/app/vault/forms" element={<FormLibrary />} />
                   <Route path="/app/vault/standards" element={<StandardLibrary />} />
+                  <Route path="/app/projects/blueprint" element={<BlueprintWizard />} />
+                  <Route path="/app/projects/factory" element={<ProjectFactory />} />
                   <Route path="/app/portfolio" element={<Portfolio />} />
                 </Route>
 

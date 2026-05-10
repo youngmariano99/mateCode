@@ -10,6 +10,7 @@ namespace MateCode.Core.Entities
         public string Nombre { get; set; } = string.Empty;
         public string Tipo { get; set; } = "lead"; // lead, idea_propia
         public JsonElement ConfiguracionJson { get; set; }
+        public Guid? CreadorId { get; set; }
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
     }
 }

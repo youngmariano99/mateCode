@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Security.Claims;
 
 namespace MateCode.API.Controllers
 {
@@ -20,14 +21,21 @@ namespace MateCode.API.Controllers
             _context = context;
         }
 
+        private Guid GetUserId()
+        {
+            var userIdStr = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return string.IsNullOrEmpty(userIdStr) ? Guid.Empty : Guid.Parse(userIdStr);
+        }
+
         /// <summary>
-        /// Obtiene el catálogo completo de estándares disponibles (Globales + Tenant).
+        /// Obtiene el catálogo completo de estándares disponibles (Globales + Tenant + Personales).
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetCatalog([FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
         {
+            var userId = GetUserId();
             var catalog = await _context.EstandaresCatalogo
-                .Where(e => (e.EspacioTrabajoId == null || e.EspacioTrabajoId == tenantId) && e.Activo)
+                .Where(e => (e.EspacioTrabajoId == null || e.EspacioTrabajoId == tenantId || e.CreadorId == userId) && e.Activo)
                 .OrderBy(e => e.Categoria)
                 .ThenBy(e => e.Nombre)
                 .ToListAsync();
@@ -46,6 +54,7 @@ namespace MateCode.API.Controllers
 
             estandar.Id = Guid.NewGuid();
             estandar.EspacioTrabajoId = tenantId;
+            estandar.CreadorId = GetUserId();
             estandar.EliminadoEn = null;
             estandar.Activo = true;
 
@@ -61,7 +70,11 @@ namespace MateCode.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var standard = await _context.EstandaresCatalogo.FindAsync(id);
+            var userId = GetUserId();
+            var tenantHeader = Request.Headers["X-Tenant-Id"].ToString();
+            Guid.TryParse(tenantHeader, out Guid tenantId);
+
+            var standard = await _context.EstandaresCatalogo.FirstOrDefaultAsync(e => e.Id == id && (e.EspacioTrabajoId == tenantId || e.CreadorId == userId));
             if (standard == null) return NotFound();
 
             standard.Activo = false;
@@ -77,7 +90,11 @@ namespace MateCode.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] EstandarCatalogo model)
         {
-            var estandar = await _context.EstandaresCatalogo.FindAsync(id);
+            var userId = GetUserId();
+            var tenantHeader = Request.Headers["X-Tenant-Id"].ToString();
+            Guid.TryParse(tenantHeader, out Guid tenantId);
+
+            var estandar = await _context.EstandaresCatalogo.FirstOrDefaultAsync(e => e.Id == id && (e.EspacioTrabajoId == tenantId || e.CreadorId == userId));
             if (estandar == null) return NotFound();
 
             estandar.Nombre = model.Nombre;

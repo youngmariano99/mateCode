@@ -20,6 +20,8 @@ export const GlobalLayout = ({ children }: { children: React.ReactNode }) => {
     { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
     { label: 'CRM & Leads', path: '/app/crm/leads', icon: Briefcase },
     { label: 'Mis Proyectos', path: '/app/projects', icon: Rocket },
+    { label: 'Smart Blueprint', path: '/app/projects/blueprint', icon: Brain },
+    { label: 'La Fábrica', path: '/app/projects/factory', icon: Briefcase },
     { label: 'Mi Equipo', path: '/app/team', icon: Users },
     { label: 'La Bóveda', path: '/app/vault', icon: Database },
     { label: 'Biblioteca Prompts', path: '/app/vault/prompts', icon: Brain },

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "60qGIMNptDE=",
+  "dgSpecHash": "yJlQcmrO/74=",
   "success": true,
-  "projectFilePath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\sistemaDeGestionDev\\backend\\MateCode.Infrastructure\\MateCode.Infrastructure.csproj",
+  "projectFilePath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\MateCode\\backend\\MateCode.Infrastructure\\MateCode.Infrastructure.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\mari_\\.nuget\\packages\\azure.ai.openai\\2.9.0-beta.1\\azure.ai.openai.2.9.0-beta.1.nupkg.sha512",
     "C:\\Users\\mari_\\.nuget\\packages\\azure.core\\1.51.1\\azure.core.1.51.1.nupkg.sha512",

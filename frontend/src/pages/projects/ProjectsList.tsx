@@ -88,12 +88,20 @@ export default function ProjectsList() {
           <h1 className="text-5xl font-black text-white tracking-tighter italic uppercase">Taller de <span className="text-emerald-500">Proyectos</span></h1>
           <p className="text-zinc-500 font-medium leading-relaxed max-w-lg">Gestioná tus desarrollos activos y avanzá a través de la metodología MateCode.</p>
         </div>
-        <button
-          onClick={handleCreateProject}
-          className="px-8 py-4 bg-emerald-500 text-zinc-950 text-xs font-black uppercase tracking-widest rounded-2xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(16,185,129,0.3)] flex items-center gap-3"
-        >
-          <Plus size={18} /> Nuevo Proyecto
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Link
+            to="/app/projects/blueprint"
+            className="px-8 py-4 bg-zinc-950 border-2 border-emerald-500/50 text-emerald-500 text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-500 hover:text-zinc-950 transition-all shadow-[0_0_20px_rgba(16,185,129,0.1)] flex items-center gap-3"
+          >
+            <Rocket size={18} /> Importación Inteligente
+          </Link>
+          <button
+            onClick={handleCreateProject}
+            className="px-8 py-4 bg-emerald-500 text-zinc-950 text-xs font-black uppercase tracking-widest rounded-2xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(16,185,129,0.3)] flex items-center gap-3"
+          >
+            <Plus size={18} /> Nuevo Proyecto
+          </button>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

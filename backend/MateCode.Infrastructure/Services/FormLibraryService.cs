@@ -18,10 +18,10 @@ namespace MateCode.Infrastructure.Services
             _context = context;
         }
 
-        public async Task<IEnumerable<FormularioPlantilla>> GetFormsAsync(Guid tenantId, string? tipo = null)
+        public async Task<IEnumerable<FormularioPlantilla>> GetFormsAsync(Guid tenantId, Guid userId, string? tipo = null)
         {
             var query = _context.FormulariosPlantilla
-                .Where(f => f.TenantId == tenantId || f.TenantId == Guid.Empty);
+                .Where(f => f.TenantId == tenantId || f.TenantId == Guid.Empty || f.CreadorId == userId);
 
             if (!string.IsNullOrEmpty(tipo))
                 query = query.Where(f => f.Tipo == tipo);
@@ -29,10 +29,10 @@ namespace MateCode.Infrastructure.Services
             return await query.ToListAsync();
         }
 
-        public async Task<FormularioPlantilla> GetFormByIdAsync(Guid id, Guid tenantId)
+        public async Task<FormularioPlantilla> GetFormByIdAsync(Guid id, Guid tenantId, Guid userId)
         {
             return await _context.FormulariosPlantilla
-                .FirstOrDefaultAsync(f => f.Id == id && (f.TenantId == tenantId || f.TenantId == Guid.Empty));
+                .FirstOrDefaultAsync(f => f.Id == id && (f.TenantId == tenantId || f.TenantId == Guid.Empty || f.CreadorId == userId));
         }
 
         public async Task<FormularioPlantilla> CreateFormAsync(FormularioPlantilla form)
@@ -47,6 +47,16 @@ namespace MateCode.Infrastructure.Services
         {
             _context.FormulariosPlantilla.Update(form);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteFormAsync(Guid id, Guid tenantId, Guid userId)
+        {
+            var form = await _context.FormulariosPlantilla.FirstOrDefaultAsync(f => f.Id == id && (f.TenantId == tenantId || f.CreadorId == userId));
+            if (form != null)
+            {
+                _context.FormulariosPlantilla.Remove(form);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ using System;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Security.Claims;
 
 namespace MateCode.API.Controllers
 {
@@ -18,6 +19,12 @@ namespace MateCode.API.Controllers
         public StackController(AppDbContext context)
         {
             _context = context;
+        }
+
+        private Guid GetUserId()
+        {
+            var userIdStr = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return string.IsNullOrEmpty(userIdStr) ? Guid.Empty : Guid.Parse(userIdStr);
         }
 
         // --- CATÁLOGO ---
@@ -108,8 +115,9 @@ namespace MateCode.API.Controllers
         [HttpGet("templates")]
         public async Task<IActionResult> GetTemplates([FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
         {
+            var userId = GetUserId();
             var templates = await _context.PlantillasStack
-                .Where(p => p.TenantId == tenantId && p.Activo)
+                .Where(p => (p.TenantId == tenantId || p.CreadorId == userId) && p.Activo)
                 .OrderByDescending(p => p.FechaCreacion)
                 .ToListAsync();
             return Ok(templates);
@@ -120,6 +128,7 @@ namespace MateCode.API.Controllers
         {
             template.Id = Guid.NewGuid();
             template.TenantId = tenantId;
+            template.CreadorId = GetUserId();
             template.FechaCreacion = DateTime.UtcNow;
             template.Activo = true;
             _context.PlantillasStack.Add(template);
@@ -130,7 +139,8 @@ namespace MateCode.API.Controllers
         [HttpPut("templates/{id:guid}")]
         public async Task<IActionResult> UpdateTemplate(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId, [FromBody] PlantillaStack templateUpdate)
         {
-            var existing = await _context.PlantillasStack.FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId);
+            var userId = GetUserId();
+            var existing = await _context.PlantillasStack.FirstOrDefaultAsync(p => p.Id == id && (p.TenantId == tenantId || p.CreadorId == userId));
             if (existing == null) return NotFound();
 
             existing.Nombre = templateUpdate.Nombre;
@@ -144,7 +154,8 @@ namespace MateCode.API.Controllers
         [HttpDelete("templates/{id:guid}")]
         public async Task<IActionResult> DeleteTemplate(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
         {
-            var template = await _context.PlantillasStack.FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId);
+            var userId = GetUserId();
+            var template = await _context.PlantillasStack.FirstOrDefaultAsync(p => p.Id == id && (p.TenantId == tenantId || p.CreadorId == userId));
             if (template == null) return NotFound();
             
             template.Activo = false;

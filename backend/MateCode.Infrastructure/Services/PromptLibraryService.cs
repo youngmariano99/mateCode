@@ -18,25 +18,30 @@ namespace MateCode.Infrastructure.Services
             _context = context;
         }
 
-        public async Task<IEnumerable<PlantillaPrompt>> GetTemplatesAsync(Guid tenantId, string? fase = null)
+        public async Task<IEnumerable<PlantillaPrompt>> GetTemplatesAsync(Guid tenantId, Guid userId, string? fase = null)
         {
             var globalId = Guid.Empty;
-            var templates = await _context.PlantillasPrompt
-                .Where(p => p.TenantId == tenantId || p.TenantId == globalId)
-                .ToListAsync();
+            
+            // 1. Verificar si ya existen plantillas para este tenant
+            var hasTemplates = await _context.PlantillasPrompt
+                .AnyAsync(t => t.TenantId == tenantId && t.FaseObjetivo == "Fase 2");
 
-            // Si es un tenant nuevo y no tiene las plantillas maestras de diagramas, las creamos
-            if (!templates.Any(t => t.TenantId == tenantId && t.FaseObjetivo == "Fase 2"))
+            // 2. Si es un tenant nuevo, sembramos las por defecto
+            if (!hasTemplates && tenantId != globalId)
             {
                 await SeedDefaultTemplatesAsync(tenantId);
-                return await GetTemplatesAsync(tenantId, fase); // Re-consultar
-            }
-            
-            if (!string.IsNullOrEmpty(fase))
-            {
-                templates = templates.Where(p => p.FaseObjetivo == fase).ToList();
             }
 
+            // 3. Consultar todas las plantillas accesibles
+            var query = _context.PlantillasPrompt
+                .Where(p => p.TenantId == tenantId || p.TenantId == globalId || p.CreadorId == userId);
+
+            if (!string.IsNullOrEmpty(fase))
+            {
+                query = query.Where(p => p.FaseObjetivo == fase);
+            }
+
+            var templates = await query.ToListAsync();
             return templates.OrderByDescending(p => p.FechaCreacion);
         }
 
@@ -86,6 +91,7 @@ namespace MateCode.Infrastructure.Services
         {
             template.Id = Guid.NewGuid();
             template.FechaCreacion = DateTime.UtcNow;
+            // El CreadorId ya debería venir seteado desde el controlador o lo seteamos aquí si se prefiere.
             await _context.PlantillasPrompt.AddAsync(template);
             await _context.SaveChangesAsync();
             return template;
@@ -97,9 +103,9 @@ namespace MateCode.Infrastructure.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteTemplateAsync(Guid id, Guid tenantId)
+        public async Task DeleteTemplateAsync(Guid id, Guid tenantId, Guid userId)
         {
-            var template = await _context.PlantillasPrompt.FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId);
+            var template = await _context.PlantillasPrompt.FirstOrDefaultAsync(p => p.Id == id && (p.TenantId == tenantId || p.CreadorId == userId));
             if (template != null)
             {
                 _context.PlantillasPrompt.Remove(template);
@@ -107,11 +113,11 @@ namespace MateCode.Infrastructure.Services
             }
         }
 
-        public async Task<PlantillaPrompt> GetTemplateByIdAsync(Guid id, Guid tenantId)
+        public async Task<PlantillaPrompt> GetTemplateByIdAsync(Guid id, Guid tenantId, Guid userId)
         {
             var globalId = Guid.Empty;
             return await _context.PlantillasPrompt
-                .FirstOrDefaultAsync(p => p.Id == id && (p.TenantId == tenantId || p.TenantId == globalId));
+                .FirstOrDefaultAsync(p => p.Id == id && (p.TenantId == tenantId || p.TenantId == globalId || p.CreadorId == userId));
         }
     }
 }

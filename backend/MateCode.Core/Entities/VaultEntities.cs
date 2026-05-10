@@ -42,6 +42,7 @@ namespace MateCode.Core.Entities
         public string Descripcion { get; set; } = string.Empty;
         [Column("tecnologias_ids_json", TypeName = "jsonb")]
         public JsonElement TecnologiasIdsJson { get; set; } // Array de IDs
+        public Guid? CreadorId { get; set; }
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
         [Column("activo")]
         public bool Activo { get; set; } = true; // Soft Delete
@@ -79,6 +80,7 @@ namespace MateCode.Core.Entities
         public bool InyectaBdd { get; set; }
         public bool InyectaTicket { get; set; }
         public bool InyectaBlueprint { get; set; }
+        public Guid? CreadorId { get; set; }
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
     }
     [Table("estandares_catalogo", Schema = "boveda")]
@@ -91,6 +93,7 @@ namespace MateCode.Core.Entities
         public string Nombre { get; set; } = string.Empty;
         public string? DescripcionDidactica { get; set; }
         public string ColorHex { get; set; } = "#10B981";
+        public Guid? CreadorId { get; set; }
         public DateTime? EliminadoEn { get; set; }
         [Column("activo")]
         public bool Activo { get; set; } = true;

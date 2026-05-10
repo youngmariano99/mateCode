@@ -7,10 +7,10 @@ namespace MateCode.Application.Services
 {
     public interface IPromptLibraryService
     {
-        Task<IEnumerable<PlantillaPrompt>> GetTemplatesAsync(Guid tenantId, string? fase = null);
+        Task<IEnumerable<PlantillaPrompt>> GetTemplatesAsync(Guid tenantId, Guid userId, string? fase = null);
         Task<PlantillaPrompt> CreateTemplateAsync(PlantillaPrompt template);
         Task UpdateTemplateAsync(PlantillaPrompt template);
-        Task DeleteTemplateAsync(Guid id, Guid tenantId);
-        Task<PlantillaPrompt> GetTemplateByIdAsync(Guid id, Guid tenantId);
+        Task DeleteTemplateAsync(Guid id, Guid tenantId, Guid userId);
+        Task<PlantillaPrompt> GetTemplateByIdAsync(Guid id, Guid tenantId, Guid userId);
     }
 }

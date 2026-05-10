@@ -1847,11 +1847,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\sistemaDeGestionDev\\backend\\MateCode.Application\\MateCode.Application.csproj",
+      "projectUniqueName": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\MateCode\\backend\\MateCode.Application\\MateCode.Application.csproj",
       "projectName": "MateCode.Application",
-      "projectPath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\sistemaDeGestionDev\\backend\\MateCode.Application\\MateCode.Application.csproj",
+      "projectPath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\MateCode\\backend\\MateCode.Application\\MateCode.Application.csproj",
       "packagesPath": "C:\\Users\\mari_\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\sistemaDeGestionDev\\backend\\MateCode.Application\\obj\\",
+      "outputPath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\MateCode\\backend\\MateCode.Application\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -1872,8 +1872,8 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\sistemaDeGestionDev\\backend\\MateCode.Core\\MateCode.Core.csproj": {
-              "projectPath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\sistemaDeGestionDev\\backend\\MateCode.Core\\MateCode.Core.csproj"
+            "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\MateCode\\backend\\MateCode.Core\\MateCode.Core.csproj": {
+              "projectPath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\MateCode\\backend\\MateCode.Core\\MateCode.Core.csproj"
             }
           }
         }

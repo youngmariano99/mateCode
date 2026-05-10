@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { api as apiClient } from '../../lib/apiClient';
-import { ChevronDown, User, Zap, LogOut, Mail, Briefcase, Plus, Pencil, Trash2 } from 'lucide-react';
+import { ChevronDown, User, Zap, LogOut, Mail, Briefcase, Plus, Pencil, Trash2, Rocket, Brain } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { ProjectModal } from '../projects/ProjectModal';
+import { ImportWizardModal } from '../projects/ImportWizardModal';
 import Swal from 'sweetalert2';
 
 export const WorkspaceTopBar: React.FC = () => {
@@ -22,6 +23,7 @@ export const WorkspaceTopBar: React.FC = () => {
   const [showInvites, setShowInvites] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<any>(null);
   const navigate = useNavigate();
 
@@ -184,6 +186,15 @@ export const WorkspaceTopBar: React.FC = () => {
             <Plus size={18} strokeWidth={3} />
           </button>
 
+          <button 
+            onClick={() => setIsImportModalOpen(true)}
+            className="px-6 h-10 rounded-xl bg-gradient-to-r from-emerald-600 to-blue-600 text-white flex items-center gap-3 hover:scale-105 transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+            title="Importación Inteligente (Bootstrapping)"
+          >
+            <Rocket size={18} fill="white" />
+            <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Acelerador AI</span>
+          </button>
+
           <div className="relative group w-64">
             <select
               value={activeProjectId || ''}
@@ -284,6 +295,10 @@ export const WorkspaceTopBar: React.FC = () => {
         onClose={() => setIsModalOpen(false)} 
         onSuccess={fetchProjects}
         projectToEdit={projectToEdit}
+      />
+      <ImportWizardModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
       />
     </>
   );

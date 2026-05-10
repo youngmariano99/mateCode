@@ -101,6 +101,7 @@ builder.Services.AddScoped<IDatabaseSyncService, DatabaseSyncService>();
 builder.Services.AddScoped<IBacklogService, BacklogService>();
 builder.Services.AddScoped<IColabService, ColabService>();
 builder.Services.AddScoped<IOracleService, OracleService>();
+builder.Services.AddScoped<IProjectImportService, ProjectImportService>();
 
 var app = builder.Build();
 
@@ -165,6 +166,20 @@ using (var scope = app.Services.CreateScope())
                 END IF;
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'proyectos' AND table_name = 'proyectos' AND column_name = 'descripcion') THEN
                     ALTER TABLE proyectos.proyectos ADD COLUMN descripcion TEXT DEFAULT '';
+                END IF;
+
+                -- Ubicuidad de la Bóveda (Creador ID)
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_stack' AND column_name = 'creador_id') THEN
+                    ALTER TABLE boveda.plantillas_stack ADD COLUMN creador_id UUID;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'creador_id') THEN
+                    ALTER TABLE boveda.plantillas_prompt ADD COLUMN creador_id UUID;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'estandares_catalogo' AND column_name = 'creador_id') THEN
+                    ALTER TABLE boveda.estandares_catalogo ADD COLUMN creador_id UUID;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'formularios_plantilla' AND column_name = 'creador_id') THEN
+                    ALTER TABLE crm.formularios_plantilla ADD COLUMN creador_id UUID;
                 END IF;
 
                 -- Infraestructura de Prompts Modulares

@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useProject } from '../../context/ProjectContext';
 import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
-import { Cpu, Layers, Zap, Loader2, Save, Plus, RefreshCw } from 'lucide-react';
+import { Cpu, Layers, Zap, Loader2, Save, Plus, RefreshCw, Copy } from 'lucide-react';
 import { TemplatePickerModal } from '../shared/TemplatePickerModal';
 import { ProjectStandardsAside } from './ProjectStandardsAside';
 import { StackBuilder } from './StackBuilder';
@@ -29,6 +29,7 @@ export const FeasibilityForm = () => {
   const [activeTab, setActiveTab] = useState<'engineering' | 'stack' | 'blueprint'>('engineering');
   const [stackCount, setStackCount] = useState(0);
   const [standardsCount, setStandardsCount] = useState(0);
+  const [importJson, setImportJson] = useState('');
 
   useEffect(() => {
     const init = async () => {
@@ -55,6 +56,41 @@ export const FeasibilityForm = () => {
     } catch (err) { console.error("Error status:", err); }
   };
 
+  const generateAIPrompt = () => {
+    let prompt = "";
+    const projectName = "Proyecto"; // Podríamos traerlo del context si estuviera disponible
+
+    if (activeTab === 'engineering') {
+        const questions = (adnTemplate?.configuracionJson || []).map((q: any) => `- ${q.pregunta} (ID: ${q.etiquetaSemantica})`).join('\n');
+        prompt = `Actúa como Product Manager Senior. Para el proyecto "${projectName}", responde este cuestionario para entender el problema de forma técnica y profunda.\n\nPREGUNTAS:\n${questions}\n\nRESPONDE ÚNICAMENTE CON UN JSON PLANO: {"ID": "respuesta_detallada"}`;
+    } else if (activeTab === 'stack') {
+        const context = JSON.stringify(adnData);
+        prompt = `Actúa como Arquitecto de Software. Basado en este contexto del problema:\n${context}\n\nSugiere el STACK TECNOLÓGICO ideal (Front, Back, DB, Infra). Explica el porqué.\n\nRESPONDE ÚNICAMENTE CON UN JSON: {"plataforma": "...", "backend": "...", "frontend": "...", "bdd": "...", "infra": "..."}`;
+    } else {
+        const fullCtx = JSON.stringify({ context: adnData, stack: stackCount });
+        prompt = `Actúa como Experto en Calidad. Basado en este proyecto:\n${fullCtx}\n\nDefine las 10 Reglas de Juego y Estándares de Calidad obligatorios.\n\nRESPONDE ÚNICAMENTE CON UN JSON: {"auth": "...", "rbac": "...", "estandares": "...", "legal": "..."}`;
+    }
+
+    navigator.clipboard.writeText(prompt);
+    Swal.fire({ title: '✨ Guía Copiada', text: 'Prompt copiado al portapapeles.', icon: 'success', background: '#18181b', color: '#fff' });
+  };
+
+  const handleImportJson = async () => {
+    try {
+        const data = JSON.parse(importJson);
+        if (activeTab === 'engineering') {
+            setAdnData(data);
+            Swal.fire({ title: 'ADN Inyectado', icon: 'success', background: '#18181b', color: '#fff' });
+        } else {
+            // Para stack y blueprint, como son componentes complejos, mostramos el JSON para que el usuario sepa qué poner o implementamos inyección directa si el componente lo permite
+            await Swal.fire({ title: 'Sugerencias de IA', text: 'La IA sugiere usar estos datos. Cópialos y aplícalos en el constructor.', icon: 'info', background: '#18181b', color: '#fff' });
+        }
+        setImportJson('');
+    } catch (err) {
+        Swal.fire({ title: 'Error', text: 'JSON no válido', icon: 'error', background: '#18181b', color: '#fff' });
+    }
+  };
+
   const fetchTemplate = async (id: string) => {
     const template = await api.get(`/FormLibrary/${id}`);
     setAdnTemplate(template);
@@ -72,23 +108,6 @@ export const FeasibilityForm = () => {
     await api.put(`/Project/${projectId}/feasibility`, ctx);
     fetchTemplate(templateId);
     setShowAdnSelector(false);
-  };
-
-  const handleBrainstorming = async () => {
-    const { value: idea } = await Swal.fire({ title: '💡 Brainstorming IA', input: 'textarea', showCancelButton: true, background: '#18181b', color: '#fff' });
-    if (idea) {
-      setIsBrainstorming(true);
-      try {
-        const res = await api.post(`/FormLibrary/generate-brainstorming`, { 
-            idea, 
-            formularioId: adnTemplate?.id || availableForms.find(f => (f.tipo || f.Tipo)?.toLowerCase() === 'idea_propia')?.id 
-        });
-        const { prompt } = res;
-        await Swal.fire({ title: '🧠 Oráculo', html: `<textarea id="ai-prompt" class="w-full h-64 p-3 bg-zinc-950 text-emerald-400 text-xs font-mono border border-zinc-800 rounded-lg">${prompt}</textarea>`, confirmButtonText: 'Copiar', background: '#18181b', color: '#fff', preConfirm: () => navigator.clipboard.writeText((document.getElementById('ai-prompt') as HTMLTextAreaElement).value) });
-        const { value: jsonResult } = await Swal.fire({ title: 'Pegar JSON', input: 'textarea', background: '#18181b', color: '#fff' });
-        if (jsonResult) setAdnData(JSON.parse(jsonResult));
-      } finally { setIsBrainstorming(false); }
-    }
   };
 
   const updateAdn = async () => {
@@ -113,8 +132,28 @@ export const FeasibilityForm = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div><h1 className="text-5xl font-black text-white tracking-tighter italic uppercase">ADN Hub <span className="text-emerald-500">Fase 0</span></h1><p className="text-zinc-500 font-medium mt-2">Definición de ingeniería y procesos técnicos del proyecto.</p></div>
-        <button onClick={handleBrainstorming} disabled={isBrainstorming} className="px-8 py-4 bg-emerald-500 text-zinc-950 font-black rounded-2xl flex items-center gap-3 hover:scale-105 transition-all shadow-[0_0_30px_rgba(16,185,129,0.3)]">{isBrainstorming ? <Loader2 className="animate-spin" /> : <Zap size={20} />}<span>Brainstorming IA</span></button>
+        <div>
+            <h1 className="text-5xl font-black text-white tracking-tighter italic uppercase leading-none">ADN Hub <span className="text-emerald-500">Fase 0</span></h1>
+            <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mt-3">Definición de ingeniería y procesos técnicos del proyecto.</p>
+        </div>
+        
+        {/* AI Assistant Mini-Bar */}
+        <div className="flex bg-zinc-900 border border-zinc-800 p-2 rounded-2xl items-center gap-3">
+            <div className="px-4">
+                <p className="text-[9px] font-black text-emerald-500 uppercase">Asistente IA</p>
+                <p className="text-[10px] text-zinc-500 font-bold">Cascada Nivel 0{activeTab === 'engineering' ? 1 : activeTab === 'stack' ? 2 : 3}</p>
+            </div>
+            <button onClick={generateAIPrompt} className="p-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all border border-white/5"><Copy size={16} /></button>
+            <input 
+                value={importJson}
+                onChange={(e) => setImportJson(e.target.value)}
+                placeholder="Pegar JSON..."
+                className="bg-black border border-zinc-800 rounded-xl px-4 py-2 text-[10px] text-white outline-none focus:border-emerald-500/50 w-32"
+            />
+            {importJson && (
+                <button onClick={handleImportJson} className="p-2 bg-emerald-500 text-black rounded-lg animate-in zoom-in"><Zap size={14} /></button>
+            )}
+        </div>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -123,52 +162,65 @@ export const FeasibilityForm = () => {
             <div className="flex bg-zinc-900/50 p-1.5 rounded-[2rem] border border-zinc-800 backdrop-blur-md sticky top-4 z-40 shadow-2xl">
                 <button 
                     onClick={() => setActiveTab('engineering')}
-                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[1.5rem] text-xs font-black uppercase transition-all ${activeTab === 'engineering' ? 'bg-zinc-800 text-emerald-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'engineering' ? 'bg-zinc-800 text-emerald-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
                 >
-                    <Cpu size={18} /> 01. Ingeniería
+                    <Cpu size={16} /> 1. Entender el Problema
                 </button>
                 <button 
                     onClick={() => setActiveTab('stack')}
-                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[1.5rem] text-xs font-black uppercase transition-all ${activeTab === 'stack' ? 'bg-zinc-800 text-emerald-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'stack' ? 'bg-zinc-800 text-blue-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
                 >
-                    <Layers size={18} /> 02. Stack
+                    <Layers size={16} /> 2. Herramientas y Lenguajes
                 </button>
                 <button 
                     onClick={() => setActiveTab('blueprint')}
-                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[1.5rem] text-xs font-black uppercase transition-all ${activeTab === 'blueprint' ? 'bg-zinc-800 text-emerald-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'blueprint' ? 'bg-zinc-800 text-purple-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
                 >
-                    <Zap size={18} /> 03. Blueprint
+                    <Zap size={16} /> 3. Reglas de Juego
                 </button>
             </div>
 
             <div className="min-h-[600px]">
                 {activeTab === 'engineering' && (
-                    <section className="bg-zinc-900 border-2 border-zinc-800 rounded-[3rem] p-10 space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
-                        <div className="flex items-center gap-4"><div className="p-4 bg-emerald-500 rounded-3xl"><Cpu className="text-zinc-950" size={28} /></div><div><h2 className="text-3xl font-black text-white italic uppercase">ADN Interno</h2><p className="text-zinc-500 text-xs font-bold uppercase">Estructura Técnica</p></div></div>
+                    <section className="bg-zinc-900 border-2 border-zinc-800 rounded-[3rem] p-12 space-y-10 animate-in fade-in slide-in-from-left-4 duration-500">
+                        <div className="flex items-center gap-5">
+                            <div className="p-5 bg-emerald-500 rounded-[1.5rem] shadow-xl shadow-emerald-500/20"><Cpu className="text-zinc-950" size={32} /></div>
+                            <div>
+                                <h2 className="text-4xl font-black text-white italic uppercase leading-none">Contexto</h2>
+                                <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Definición de ADN Técnico</p>
+                            </div>
+                        </div>
+                        
                         {!adnTemplate ? (
-                            <div className="py-20 text-center space-y-6 border-2 border-dashed border-zinc-800 rounded-[2.5rem] bg-zinc-950/30">
-                                <Plus size={32} className="text-zinc-700 mx-auto" /><p className="text-zinc-500 text-sm italic">Asigna un modelo de ingeniería para comenzar.</p>
-                                <button onClick={() => setShowAdnSelector(true)} className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest text-xs rounded-2xl transition-all shadow-xl shadow-emerald-500/10">Asignar Modelo ADN</button>
+                            <div className="py-24 text-center space-y-6 border-2 border-dashed border-zinc-800 rounded-[3rem] bg-zinc-950/30">
+                                <Plus size={40} className="text-zinc-700 mx-auto" />
+                                <p className="text-zinc-500 text-xs font-black uppercase tracking-widest italic">Selecciona un modelo para comenzar el análisis.</p>
+                                <button onClick={() => setShowAdnSelector(true)} className="px-10 py-5 bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] rounded-2xl hover:scale-105 transition-all shadow-xl">Elegir Modelo</button>
                             </div>
                         ) : (
-                            <div className="space-y-8">
-                                <div className="flex justify-between items-center bg-zinc-950 p-6 rounded-[2rem] border border-emerald-500/10 shadow-lg">
-                                    <div><p className="text-[10px] text-emerald-500 font-black uppercase mb-1">Modelo Activo</p><p className="text-lg text-zinc-100 font-black italic uppercase">{adnTemplate.nombre}</p></div>
-                                    <button onClick={() => setShowAdnSelector(true)} className="p-4 bg-zinc-900 border border-zinc-800 text-zinc-500 rounded-2xl hover:text-emerald-400 transition-all"><RefreshCw size={20} /></button>
+                            <div className="space-y-10">
+                                <div className="flex justify-between items-center bg-zinc-950 p-8 rounded-[2.5rem] border border-white/5 shadow-inner">
+                                    <div>
+                                        <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest mb-2">Modelo de Negocio Activo</p>
+                                        <p className="text-2xl text-zinc-100 font-black italic uppercase tracking-tighter">{adnTemplate.nombre}</p>
+                                    </div>
+                                    <button onClick={() => setShowAdnSelector(true)} className="p-5 bg-zinc-900 border border-zinc-800 text-zinc-500 rounded-2xl hover:text-emerald-400 transition-all hover:rotate-180 duration-500"><RefreshCw size={24} /></button>
                                 </div>
-                                <div className="space-y-6">
+                                <div className="space-y-8">
                                     {(adnTemplate.configuracionJson || []).map((q: any, i: number) => (
-                                        <div key={i} className="space-y-3">
-                                            <label className="text-[11px] font-black text-zinc-600 uppercase tracking-widest">{i+1}. {q.pregunta}</label>
-                                            {(q.tipoInput || q.tipo_input) === 'textarea' ? (
-                                                <textarea value={adnData?.[q.etiquetaSemantica || q.etiqueta_semantica] || ''} onChange={e => setAdnData({ ...adnData, [q.etiquetaSemantica || q.etiqueta_semantica]: e.target.value })} rows={4} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-5 text-sm text-zinc-300 outline-none focus:border-emerald-500/50 transition-all resize-none font-medium" />
-                                            ) : (
-                                                <input value={adnData?.[q.etiquetaSemantica || q.etiqueta_semantica] || ''} onChange={e => setAdnData({ ...adnData, [q.etiquetaSemantica || q.etiqueta_semantica]: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-5 text-sm text-zinc-300 outline-none focus:border-emerald-500/50 transition-all font-medium" />
-                                            )}
+                                        <div key={i} className="space-y-4">
+                                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">{q.pregunta}</label>
+                                            <textarea 
+                                                value={adnData?.[q.etiquetaSemantica || q.etiqueta_semantica] || ''} 
+                                                onChange={e => setAdnData({ ...adnData, [q.etiquetaSemantica || q.etiqueta_semantica]: e.target.value })} 
+                                                rows={4} 
+                                                placeholder={`Detalla aquí sobre ${q.etiquetaSemantica}...`}
+                                                className="w-full bg-zinc-950 border border-zinc-800 rounded-[2rem] p-6 text-sm text-zinc-200 outline-none focus:border-emerald-500/50 transition-all resize-none font-medium shadow-inner" 
+                                            />
                                         </div>
                                     ))}
                                 </div>
-                                <button disabled={isSaving} onClick={updateAdn} className="w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-sm rounded-2xl transition-all flex justify-center items-center gap-3 shadow-lg shadow-emerald-500/10">{isSaving ? <Loader2 className="animate-spin" /> : 'Consolidar Ingeniería ADN'}</button>
+                                <button disabled={isSaving} onClick={updateAdn} className="w-full py-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-xs tracking-[0.2em] rounded-[2rem] transition-all flex justify-center items-center gap-3 shadow-2xl shadow-emerald-500/20">{isSaving ? <Loader2 className="animate-spin" /> : 'Consolidar Entendimiento'}</button>
                             </div>
                         )}
                     </section>

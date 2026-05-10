@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using MateCode.Application.Services;
 using System.Threading.Tasks;
+using System.Security.Claims;
+using System.Linq;
 
 namespace MateCode.API.Controllers
 {
@@ -14,6 +16,12 @@ namespace MateCode.API.Controllers
         private readonly IProjectService _projectService;
         private readonly IAgileService _agileService;
         private readonly IPromptLibraryService _promptLibrary;
+
+        private Guid GetUserId()
+        {
+            var userIdStr = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return string.IsNullOrEmpty(userIdStr) ? Guid.Empty : Guid.Parse(userIdStr);
+        }
 
         public DiagramController(
             IDatabaseSyncService dbSyncService, 
@@ -46,7 +54,7 @@ namespace MateCode.API.Controllers
         [HttpGet("project/{projectId:guid}/prompt")]
         public async Task<IActionResult> GetPrompt(Guid projectId, [FromQuery] string tipo, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
         {
-            var templates = await _promptLibrary.GetTemplatesAsync(tenantId, "Fase 2");
+            var templates = await _promptLibrary.GetTemplatesAsync(tenantId, GetUserId(), "Fase 2");
             var template = templates.FirstOrDefault(t => 
                 t.Titulo.Contains(tipo, StringComparison.OrdinalIgnoreCase) || 
                 t.EtiquetasJson.Contains(tipo, StringComparison.OrdinalIgnoreCase));
@@ -59,7 +67,7 @@ namespace MateCode.API.Controllers
                 return Ok(new { prompt = genericPrompt, isGeneric = true });
             }
 
-            var dynamicPrompt = await _promptEngine.GenerarPromptContextual(template.Id, projectId, null, tenantId);
+            var dynamicPrompt = await _promptEngine.GenerarPromptContextual(template.Id, projectId, null, tenantId, GetUserId());
             return Ok(new { prompt = dynamicPrompt, isGeneric = false });
         }
 

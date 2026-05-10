@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
+using System.Security.Claims;
+using System.Linq;
 
 namespace MateCode.API.Controllers
 {
@@ -21,10 +23,16 @@ namespace MateCode.API.Controllers
             _promptEngine = promptEngine;
         }
 
+        private Guid GetUserId()
+        {
+            var userIdStr = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return string.IsNullOrEmpty(userIdStr) ? Guid.Empty : Guid.Parse(userIdStr);
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetTemplates([FromQuery] string? fase, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
         {
-            var templates = await _promptLibrary.GetTemplatesAsync(tenantId, fase);
+            var templates = await _promptLibrary.GetTemplatesAsync(tenantId, GetUserId(), fase);
             return Ok(templates);
         }
 
@@ -32,6 +40,7 @@ namespace MateCode.API.Controllers
         public async Task<IActionResult> CreateTemplate([FromBody] PlantillaPrompt template, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
         {
             template.TenantId = tenantId;
+            template.CreadorId = GetUserId();
             var created = await _promptLibrary.CreateTemplateAsync(template);
             return Ok(created);
         }
@@ -41,6 +50,7 @@ namespace MateCode.API.Controllers
         {
             if (id != template.Id) return BadRequest();
             template.TenantId = tenantId;
+            template.CreadorId = GetUserId();
             await _promptLibrary.UpdateTemplateAsync(template);
             return Ok();
         }
@@ -48,7 +58,7 @@ namespace MateCode.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTemplate(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
         {
-            await _promptLibrary.DeleteTemplateAsync(id, tenantId);
+            await _promptLibrary.DeleteTemplateAsync(id, tenantId, GetUserId());
             return Ok();
         }
 
@@ -60,6 +70,7 @@ namespace MateCode.API.Controllers
                 req.ProjectId, 
                 req.TicketId, 
                 tenantId,
+                GetUserId(),
                 req.OverrideAdn,
                 req.OverrideBdd,
                 req.OverrideStack,
