@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Security.Claims;
+using System.Net.Http;
 
 namespace MateCode.API.Controllers
 {
@@ -15,10 +16,85 @@ namespace MateCode.API.Controllers
     public class StackController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly HttpClient _httpClient;
 
         public StackController(AppDbContext context)
         {
             _context = context;
+            _httpClient = new HttpClient();
+        }
+
+        public class SupabaseSyncRequest {
+            public string? Url { get; set; }
+            public string? Key { get; set; }
+        }
+
+        [HttpPost("sync/supabase")]
+        public async Task<IActionResult> SyncSupabase([FromBody] SupabaseSyncRequest request)
+        {
+            if (string.IsNullOrEmpty(request.Url) || string.IsNullOrEmpty(request.Key))
+                return BadRequest("URL y Key son obligatorios.");
+
+            try
+            {
+                var url = request.Url?.Trim() ?? "";
+                var key = request.Key?.Trim() ?? "";
+
+                // Limpiamos la URL por si viene con slash al final
+                var baseUrl = url.TrimEnd('/') + "/rest/v1/";
+                
+                var httpRequest = new HttpRequestMessage(HttpMethod.Get, baseUrl);
+                httpRequest.Headers.Add("apikey", key);
+                httpRequest.Headers.Add("Authorization", $"Bearer {key}");
+
+                var response = await _httpClient.SendAsync(httpRequest);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorDetail = await response.Content.ReadAsStringAsync();
+                    return BadRequest($"Supabase rechazó la conexión ({response.StatusCode}). Verificá que estés usando la Service Role Key si la Anon Key está restringida.");
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                
+                JsonElement tablesElement;
+                bool found = false;
+
+                // Intentamos con 'definitions' (Swagger 2.0)
+                if (doc.RootElement.TryGetProperty("definitions", out tablesElement))
+                {
+                    found = true;
+                }
+                // Si no, intentamos con 'components/schemas' (OpenAPI 3.0)
+                else if (doc.RootElement.TryGetProperty("components", out var components) && 
+                         components.TryGetProperty("schemas", out tablesElement))
+                {
+                    found = true;
+                }
+
+                if (!found)
+                {
+                    return BadRequest("No se encontraron definiciones de tablas (definitions o components/schemas) en la API de Supabase. Asegurate de tener tablas públicas.");
+                }
+
+                var tables = tablesElement.EnumerateObject().Select(table => new {
+                    name = table.Name,
+                    description = table.Value.TryGetProperty("description", out var desc) ? desc.GetString() : "",
+                    columns = table.Value.TryGetProperty("properties", out var props) 
+                        ? props.EnumerateObject().Select(col => (object)new {
+                            name = col.Name,
+                            data_type = col.Value.TryGetProperty("type", out var type) ? type.GetString() : "text",
+                            description = col.Value.TryGetProperty("description", out var colDesc) ? colDesc.GetString() : ""
+                        }).ToList() 
+                        : new System.Collections.Generic.List<object>()
+                }).ToList();
+
+                return Ok(new { tables });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno: {ex.Message}");
+            }
         }
 
         private Guid GetUserId()

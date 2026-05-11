@@ -25,6 +25,11 @@ namespace MateCode.Core.Entities
         public JsonElement ContextoJson { get; set; }
         public string FaseActual { get; set; } = "Fase 0 - Factibilidad";
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+
+        // Configuración de Sincronización Externa
+        public string? ExternalSyncUrl { get; set; }
+        public string? ExternalSyncKey { get; set; }
+        public string? ExternalSyncType { get; set; }
     }
 
     public class Diagrama

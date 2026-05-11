@@ -10,8 +10,10 @@ import { StackSearch } from './stack/StackSearch';
 import { StackArchitectView } from './stack/StackArchitectView';
 import { VaultLibrary } from './stack/VaultLibrary';
 import { CatalogModal } from './stack/CatalogModal';
+import { useProjectBlueprintStore } from '../../store/useProjectBlueprintStore';
 
 export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenantId: string }) => {
+    const { updateTechStack } = useProjectBlueprintStore();
     // ESTADO CENTRAL
     const [catalog, setCatalog] = useState<Tech[]>([]);
     const [projectStack, setProjectStack] = useState<Tech[]>([]);
@@ -31,7 +33,13 @@ export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenan
 
             setCatalog(catData);
             setTemplates(tempsData);
-            setProjectStack(stackData.map((s: any) => s.tecnologia).filter(Boolean));
+            const stack = stackData.map((s: any) => s.tecnologia).filter(Boolean);
+            setProjectStack(stack);
+            updateTechStack(stack.map((t: any) => ({
+                id: t.id,
+                categoriaPrincipal: t.categoriaPrincipal,
+                nombre: t.nombre
+            })));
         } catch (err) {
             console.error("Error cargando datos del stack:", err);
         } finally {
@@ -56,12 +64,22 @@ export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenan
         if (!tech) return;
         const newStack = [...projectStack, tech];
         setProjectStack(newStack);
+        updateTechStack(newStack.map(t => ({
+            id: t.id,
+            categoriaPrincipal: t.categoriaPrincipal,
+            nombre: t.nombre
+        })));
         syncStack(newStack);
     };
 
     const handleRemoveTech = (techId: string) => {
         const newStack = projectStack.filter(t => t.id !== techId);
         setProjectStack(newStack);
+        updateTechStack(newStack.map(t => ({
+            id: t.id,
+            categoriaPrincipal: t.categoriaPrincipal,
+            nombre: t.nombre
+        })));
         syncStack(newStack);
     };
 
@@ -89,6 +107,11 @@ export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenan
         );
         
         setProjectStack(techs);
+        updateTechStack(techs.map(t => ({
+            id: t.id,
+            categoriaPrincipal: t.categoriaPrincipal,
+            nombre: t.nombre
+        })));
         syncStack(techs);
         setActiveTemplateId(templateId);
         Swal.fire({ icon: 'success', title: 'Plantilla Aplicada', text: template.nombre, toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });

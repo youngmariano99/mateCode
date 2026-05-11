@@ -134,5 +134,15 @@ namespace MateCode.API.Controllers
             var prompt = await _promptEngine.GenerarPromptFase1Async(id);
             return Ok(new { prompt });
         }
+        [HttpPut("{id}/sync-config")]
+        public async Task<IActionResult> UpdateSyncConfig(Guid id, [FromBody] JsonElement body)
+        {
+            var url = body.TryGetProperty("url", out var uProp) ? uProp.GetString() : "";
+            var key = body.TryGetProperty("key", out var kProp) ? kProp.GetString() : "";
+            var type = body.TryGetProperty("type", out var tProp) ? tProp.GetString() : "supabase";
+
+            await _projectService.UpdateProjectSyncConfigAsync(id, url ?? "", key ?? "", type ?? "supabase");
+            return Ok(new { message = "Configuración de sincronización actualizada" });
+        }
     }
 }

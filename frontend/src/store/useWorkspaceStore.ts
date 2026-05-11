@@ -5,6 +5,9 @@ export interface Project {
   nombre: string;
   descripcion?: string;
   cliente_id?: string;
+  externalSyncUrl?: string;
+  externalSyncKey?: string;
+  externalSyncType?: string;
 }
 
 interface WorkspaceState {

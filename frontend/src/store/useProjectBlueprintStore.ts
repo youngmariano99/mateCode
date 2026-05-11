@@ -49,11 +49,19 @@ export interface GestionBlock {
     riesgos: string;
 }
 
+export interface TechItem {
+    id: string;
+    categoriaPrincipal: string;
+    nombre: string;
+    version?: string;
+}
+
 export interface ProjectBlueprintState {
     adn: AdnBlock;
     funcional: FuncionalBlock;
     diseno: DisenoBlock;
     stack: StackBlock;
+    techStack: TechItem[];
     calidad: CalidadBlock;
     gestion: GestionBlock;
     respuestasContexto: Record<string, string>;
@@ -63,6 +71,7 @@ export interface ProjectBlueprintState {
     updateFuncional: (data: Partial<FuncionalBlock>) => void;
     updateDiseno: (data: Partial<DisenoBlock>) => void;
     updateStack: (data: Partial<StackBlock>) => void;
+    updateTechStack: (techs: TechItem[]) => void;
     updateCalidad: (data: Partial<CalidadBlock>) => void;
     updateGestion: (data: Partial<GestionBlock>) => void;
     updateRespuestaContexto: (id: string, valor: string) => void;
@@ -74,6 +83,7 @@ const initialValues = {
     funcional: { modulos: '', flujos: '', funcionalidadesMust: '', wishlist: '', comunicacion: '' },
     diseno: { entidades: '', sitemap: '', roles: '', uml: '' },
     stack: { plataforma: '', backend: '', frontend: '', bdd: '', librerias_back: '', librerias_front: '', testing: '', despliegue: '', infra: '' },
+    techStack: [],
     calidad: { auth: '', rbac: '', estandares: '', legal: '' },
     gestion: { hitos: '', presupuesto: '', riesgos: '' },
     respuestasContexto: {}
@@ -88,6 +98,7 @@ export const useProjectBlueprintStore = create<ProjectBlueprintState>()(
             updateFuncional: (data) => set((state) => ({ funcional: { ...state.funcional, ...data } })),
             updateDiseno: (data) => set((state) => ({ diseno: { ...state.diseno, ...data } })),
             updateStack: (data) => set((state) => ({ stack: { ...state.stack, ...data } })),
+            updateTechStack: (techs) => set(() => ({ techStack: techs })),
             updateCalidad: (data) => set((state) => ({ calidad: { ...state.calidad, ...data } })),
             updateGestion: (data) => set((state) => ({ gestion: { ...state.gestion, ...data } })),
             updateRespuestaContexto: (id, valor) => set((state) => ({ 

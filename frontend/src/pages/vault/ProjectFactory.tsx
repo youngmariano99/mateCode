@@ -6,7 +6,9 @@ import {
 import { useStagingAreaStore } from '../../store/useStagingAreaStore';
 import { useProject } from '../../context/ProjectContext';
 import { deployProjectToBackend } from '../../services/importService';
+import { SyncProviderModal } from './SyncProviderModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Globe } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export const ProjectFactory = () => {
@@ -15,6 +17,7 @@ export const ProjectFactory = () => {
     const [activeTab, setActiveTab] = useState<'erd' | 'backlog'>('erd');
     const [jsonInput, setJsonInput] = useState('');
     const [isDeploying, setIsDeploying] = useState(false);
+    const [showSyncModal, setShowSyncModal] = useState(false);
 
     const handleFinalInjection = async () => {
         if (!projectId) {
@@ -180,15 +183,23 @@ export const ProjectFactory = () => {
                         {activeTab === 'erd' ? <Database className="text-emerald-500" /> : <Kanban className="text-emerald-500" />}
                         Elementos en Aduana <span className="text-zinc-700 text-sm ml-2">({activeTab === 'erd' ? store.stagedErd.length : store.stagedBacklog.length})</span>
                     </h2>
-                    <button 
-                        onClick={() => {
-                            if (activeTab === 'erd') store.addItem('erd', { nombre: 'Nueva Tabla', columnas: [] });
-                            else store.addItem('backlog', { titulo: 'Nueva Tarea', tipo: 'task', prioridad: 'media' });
-                        }}
-                        className="flex items-center gap-2 px-6 py-3 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                    >
-                        <Plus size={14} /> Añadir {activeTab === 'erd' ? 'Tabla' : 'Ticket'} Manual
-                    </button>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => setShowSyncModal(true)}
+                            className="flex items-center gap-2 px-6 py-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg"
+                        >
+                            <Globe size={14} /> Sincronizar Origen API
+                        </button>
+                        <button 
+                            onClick={() => {
+                                if (activeTab === 'erd') store.addItem('erd', { nombre: 'Nueva Tabla', columnas: [] });
+                                else store.addItem('backlog', { titulo: 'Nueva Tarea', tipo: 'task', prioridad: 'media' });
+                            }}
+                            className="flex items-center gap-2 px-6 py-3 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                        >
+                            <Plus size={14} /> Añadir {activeTab === 'erd' ? 'Tabla' : 'Ticket'} Manual
+                        </button>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -296,6 +307,7 @@ export const ProjectFactory = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+            <SyncProviderModal isOpen={showSyncModal} onClose={() => setShowSyncModal(false)} />
         </div>
     );
 };

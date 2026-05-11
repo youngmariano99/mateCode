@@ -4,13 +4,15 @@ import { supabase } from '../../lib/supabase';
 import { useProject } from '../../context/ProjectContext';
 import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
-import { Cpu, Layers, Zap, Loader2, Save, Plus, RefreshCw, Copy } from 'lucide-react';
+import { Cpu, Layers, Zap, Loader2, Save, Plus, RefreshCw, Copy, FileText } from 'lucide-react';
 import { TemplatePickerModal } from '../shared/TemplatePickerModal';
 import { ProjectStandardsAside } from './ProjectStandardsAside';
 import { StackBuilder } from './StackBuilder';
 import ArchitectureBlueprint from '../../pages/projects/components/ArchitectureBlueprint';
 
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+import { PromptBuilderModal } from './PromptBuilderModal';
+import { useProjectBlueprintStore } from '../../store/useProjectBlueprintStore';
 
 export const FeasibilityForm = () => {
   const { id: paramProjectId } = useParams<{ id: string }>();
@@ -26,15 +28,19 @@ export const FeasibilityForm = () => {
   const [adnTemplate, setAdnTemplate] = useState<any>(null);
   const [adnData, setAdnData] = useState<any>(null);
   const [showAdnSelector, setShowAdnSelector] = useState(false);
+  const [showContextBuilder, setShowContextBuilder] = useState(false);
   const [activeTab, setActiveTab] = useState<'engineering' | 'stack' | 'blueprint'>('engineering');
   const [stackCount, setStackCount] = useState(0);
   const [standardsCount, setStandardsCount] = useState(0);
+  const [projectStandards, setProjectStandards] = useState<any[]>([]);
+  const [projectInfo, setProjectInfo] = useState({ nombre: '', descripcion: '' });
   const [importJson, setImportJson] = useState('');
 
   useEffect(() => {
     const init = async () => {
         try {
             const project = await api.get(`/Project/${projectId}`);
+            setProjectInfo({ nombre: project.nombre, descripcion: project.descripcion });
             setAdnData(project.contextoJson?.adn?.data || {});
             if (project.contextoJson?.adn?.plantillaId) fetchTemplate(project.contextoJson.adn.plantillaId);
             const forms = await api.get(`/FormLibrary`);
@@ -45,6 +51,8 @@ export const FeasibilityForm = () => {
     fetchStatus();
   }, [tenantId, projectId]);
 
+  const { updateTechStack } = useProjectBlueprintStore();
+
   const fetchStatus = async () => {
     try {
         const [stack, standards] = await Promise.all([
@@ -53,6 +61,15 @@ export const FeasibilityForm = () => {
         ]);
         setStackCount(stack.length);
         setStandardsCount(standards.length);
+        setProjectStandards(standards);
+        
+        // Sincronizar con Zustand para el Context Builder
+        updateTechStack(stack.map((s: any) => ({
+            id: s.tecnologia?.id,
+            categoriaPrincipal: s.tecnologia?.categoriaPrincipal,
+            nombre: s.tecnologia?.nombre
+        })).filter((t: any) => t.id));
+        
     } catch (err) { console.error("Error status:", err); }
   };
 
@@ -143,6 +160,10 @@ export const FeasibilityForm = () => {
                 <p className="text-[9px] font-black text-emerald-500 uppercase">Asistente IA</p>
                 <p className="text-[10px] text-zinc-500 font-bold">Cascada Nivel 0{activeTab === 'engineering' ? 1 : activeTab === 'stack' ? 2 : 3}</p>
             </div>
+            <button onClick={() => setShowContextBuilder(true)} className="p-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-xl transition-all border border-emerald-500/20 flex items-center gap-2 group">
+                <FileText size={16} />
+                <span className="text-[9px] font-black uppercase hidden group-hover:inline animate-in fade-in slide-in-from-left-2">Context Builder</span>
+            </button>
             <button onClick={generateAIPrompt} className="p-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all border border-white/5"><Copy size={16} /></button>
             <input 
                 value={importJson}
@@ -250,6 +271,13 @@ export const FeasibilityForm = () => {
             standardsCount={standardsCount}
         />
         <TemplatePickerModal isOpen={showAdnSelector} onClose={() => setShowAdnSelector(false)} type="adn" availableForms={availableForms} onSelect={handleAssignTemplate} />
+        <PromptBuilderModal 
+            isOpen={showContextBuilder} 
+            onClose={() => setShowContextBuilder(false)} 
+            projectName={projectInfo.nombre}
+            projectDescription={projectInfo.descripcion}
+            selectedStandards={projectStandards}
+        />
       </div>
     </div>
   );

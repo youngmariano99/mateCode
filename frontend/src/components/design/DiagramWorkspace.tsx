@@ -11,6 +11,8 @@ import { GeneradorPromptDesignModal } from './GeneradorPromptDesignModal';
 import { UniversalErdWorkspace } from './UniversalErdWorkspace';
 import { UniversalSitemapBrandingWorkspace } from './UniversalSitemapBrandingWorkspace';
 import { RolesMatrixView } from './RolesMatrixView';
+import { SyncProviderModal } from '../../pages/vault/SyncProviderModal';
+import { Globe } from 'lucide-react';
 
 
 type DiagramType = 'ERD' | 'UML' | 'SITEMAP' | 'ROLES';
@@ -56,6 +58,52 @@ export const DiagramWorkspace = () => {
     const [dataLoaded, setDataLoaded] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+
+    const handleExternalSync = (syncedTables: any[]) => {
+        // Mapeador: de ErdTable[] a nuestro Formato de Diagrama Visual
+        const incomingTables = syncedTables.map(t => ({
+            id: t.id || crypto.randomUUID(),
+            name: t.nombre,
+            columns: t.columnas.map((c: any) => ({
+                name: c.nombre,
+                data_family: c.tipo || 'string',
+                is_primary_key: !!c.pk
+            }))
+        }));
+
+        const currentErd = JSON.parse(codes.ERD || '{"tables": [], "relationships": []}');
+        const existingTables = currentErd.tables || [];
+        
+        // --- SMART MERGE LOGIC ---
+        const finalTables = [...existingTables];
+
+        incomingTables.forEach(incoming => {
+            const index = finalTables.findIndex(t => t.name.toLowerCase() === incoming.name.toLowerCase());
+            
+            if (index !== -1) {
+                // Si la tabla ya existe, actualizamos sus columnas pero mantenemos el ID original
+                // para no romper relaciones visuales si existieran.
+                finalTables[index] = {
+                    ...finalTables[index],
+                    columns: incoming.columns
+                };
+            } else {
+                // Si es nueva, la agregamos
+                finalTables.push(incoming);
+            }
+        });
+
+        const newErd = {
+            ...currentErd,
+            tables: finalTables
+        };
+
+        setCodes(prev => ({
+            ...prev,
+            ERD: JSON.stringify(newErd, null, 2)
+        }));
+    };
 
     // ... funciones de exportación (las definiremos mejor abajo o en componentes)
     const exportAsImage = async () => {
@@ -177,6 +225,15 @@ export const DiagramWorkspace = () => {
                         <Zap size={18} className="text-emerald-500 group-hover:scale-125 transition-transform" />
                         IA PROMPT
                     </button>
+                    {activeTab === 'ERD' && (
+                        <button 
+                            onClick={() => setIsSyncModalOpen(true)}
+                            className="px-5 py-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-xl flex items-center gap-2 transition-all font-bold text-sm border border-emerald-500/20 group"
+                        >
+                            <Globe size={18} className="group-hover:rotate-180 transition-transform duration-700" />
+                            SYNC API
+                        </button>
+                    )}
                     <button 
                         onClick={handleSave}
                         disabled={isSaving}
@@ -267,6 +324,13 @@ export const DiagramWorkspace = () => {
                     projectId={projectId}
                     diagramType={activeTab}
                     onClose={() => setIsPromptModalOpen(false)}
+                />
+            )}
+            {isSyncModalOpen && (
+                <SyncProviderModal 
+                    isOpen={isSyncModalOpen} 
+                    onClose={() => setIsSyncModalOpen(false)} 
+                    onSync={handleExternalSync}
                 />
             )}
         </div>

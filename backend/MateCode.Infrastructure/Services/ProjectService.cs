@@ -238,5 +238,17 @@ namespace MateCode.Infrastructure.Services
 
             await _context.SaveChangesAsync();
         }
+
+        public async Task UpdateProjectSyncConfigAsync(Guid projectId, string url, string key, string type)
+        {
+            var project = await _context.Proyectos.FindAsync(projectId);
+            if (project != null)
+            {
+                project.ExternalSyncUrl = url;
+                project.ExternalSyncKey = key;
+                project.ExternalSyncType = type;
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }
