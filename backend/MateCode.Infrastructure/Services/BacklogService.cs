@@ -285,5 +285,25 @@ Utiliza este contexto para no duplicar funcionalidades existentes y para entende
 {json}
 ```";
         }
+
+        public async Task<IEnumerable<object>> ObtenerHistorialSprintsAsync(Guid proyectoId)
+        {
+            var sprints = await _context.Sprints
+                .Where(s => s.ProyectoId == proyectoId && s.Estado == "Cerrado" && !s.IsDeleted)
+                .OrderByDescending(s => s.FechaFin)
+                .ToListAsync();
+
+            var result = new List<object>();
+            foreach (var s in sprints)
+            {
+                var metricas = await _context.MetricasSprint.FirstOrDefaultAsync(m => m.SprintId == s.Id);
+                result.Add(new {
+                    Sprint = s,
+                    Metricas = metricas
+                });
+            }
+
+            return result;
+        }
     }
 }

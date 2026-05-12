@@ -145,5 +145,19 @@ namespace MateCode.API.Controllers
                 return BadRequest(new { message = ex.Message, inner = ex.InnerException?.Message });
             }
         }
+
+        [HttpGet("history")]
+        public async Task<IActionResult> GetSprintHistory(Guid proyectoId)
+        {
+            try
+            {
+                var history = await _backlogService.ObtenerHistorialSprintsAsync(proyectoId);
+                return Ok(history);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message, inner = ex.InnerException?.Message });
+            }
+        }
     }
 }

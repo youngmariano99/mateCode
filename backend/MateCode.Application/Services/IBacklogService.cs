@@ -16,5 +16,6 @@ namespace MateCode.Application.Services
         Task SoftDeleteSprintAsync(Guid sprintId);
         Task<MetricaSprint> FinalizarSprintAsync(Guid sprintId, List<Guid> ticketsAlBacklog, List<Guid> ticketsDescartados);
         Task<string> ExportarEstadoTicketsAsync(Guid proyectoId);
+        Task<IEnumerable<object>> ObtenerHistorialSprintsAsync(Guid proyectoId);
     }
 }

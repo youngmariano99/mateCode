@@ -117,7 +117,7 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
                 {ticket ? 'Editar Ticket' : 'Nuevo Ticket'}
               </h3>
               <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">
-                {ticket ? `ID: ${ticket.id.substring(0,8)}` : 'Gestión de Backlog • Fase 03'}
+                {ticket ? `ID: ${ticket.id.substring(0,8)}` : 'Gestión de Proyectos • Fase 03'}
               </p>
             </div>
           </div>
@@ -150,12 +150,13 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
             <div className="space-y-6">
               <div className="grid grid-cols-1 gap-6">
                 <div>
-                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Título de la Tarea</label>
+                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Título del Ticket</label>
+                  <p className="text-[9px] text-zinc-600 mb-2 italic">Define brevemente qué se debe construir o resolver.</p>
                   <input 
                     type="text" 
                     value={formData.titulo}
                     onChange={e => setFormData(prev => ({...prev, titulo: e.target.value}))}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl p-4 text-zinc-100 focus:border-emerald-500/50 outline-none transition-all"
+                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl p-4 text-zinc-100 focus:border-emerald-500/50 outline-none transition-all placeholder:text-zinc-700"
                     placeholder="Ej: Implementar Auth en el Backend"
                   />
                 </div>
@@ -163,36 +164,36 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Tipo</label>
+                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Tipo</label>
                   <select 
                     value={formData.tipo}
                     onChange={e => setFormData(prev => ({...prev, tipo: e.target.value as any}))}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl p-3 text-[11px] text-zinc-300 outline-none"
+                    className="w-full bg-[#1A1C24] border border-white/10 rounded-xl p-3 text-[11px] text-zinc-300 outline-none focus:border-emerald-500/50"
                   >
-                    <option value="Tarea">Tarea</option>
-                    <option value="Bug">Bug</option>
-                    <option value="DeudaTécnica">Deuda Técnica</option>
+                    <option value="Tarea" className="bg-[#1A1C24] text-white">Tarea</option>
+                    <option value="Bug" className="bg-[#1A1C24] text-white">Bug</option>
+                    <option value="DeudaTécnica" className="bg-[#1A1C24] text-white">Deuda Técnica</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Prioridad</label>
+                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Prioridad</label>
                   <select 
                     value={formData.prioridad}
                     onChange={e => setFormData(prev => ({...prev, prioridad: e.target.value}))}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl p-3 text-[11px] text-zinc-300 outline-none"
+                    className="w-full bg-[#1A1C24] border border-white/10 rounded-xl p-3 text-[11px] text-zinc-300 outline-none focus:border-emerald-500/50"
                   >
-                    <option value="MVP">MVP (Crítico)</option>
-                    <option value="Mejora">Mejora</option>
-                    <option value="Escala">Escala</option>
+                    <option value="MVP" className="bg-[#1A1C24] text-white">MVP (Crítico)</option>
+                    <option value="Mejora" className="bg-[#1A1C24] text-white">Mejora</option>
+                    <option value="Escala" className="bg-[#1A1C24] text-white">Escala</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Módulo / Épica</label>
+                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Épica / Módulo</label>
                   <input 
                     type="text" 
                     value={formData.epicTag}
                     onChange={e => setFormData(prev => ({...prev, epicTag: e.target.value}))}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl p-3 text-[11px] text-zinc-300 outline-none"
+                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl p-3 text-[11px] text-zinc-300 outline-none focus:border-emerald-500/50"
                     placeholder="Ej: Core / Auth"
                   />
                 </div>
@@ -200,7 +201,8 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
 
               {/* Criterios de Aceptación */}
               <div className="space-y-3">
-                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">Criterios de Aceptación</label>
+                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-0.5">Criterios de Aceptación</label>
+                <p className="text-[9px] text-zinc-600 mb-2 italic">Condiciones que deben cumplirse para dar la tarea por finalizada.</p>
                 <div className="flex gap-2">
                   <input 
                     type="text" 
@@ -231,7 +233,8 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
 
               {/* Tareas Técnicas */}
               <div className="space-y-3">
-                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">Plan de Acción (Tareas Técnicas)</label>
+                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-0.5">Plan de Acción (Tareas Técnicas)</label>
+                <p className="text-[9px] text-zinc-600 mb-2 italic">Pasos técnicos concretos necesarios para implementar la solución.</p>
                 <div className="flex gap-2">
                   <select 
                     value={tempTask.capa}

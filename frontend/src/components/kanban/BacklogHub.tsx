@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Ticket, Sprint } from '../agile/types';
 import { api as apiClient } from '../../lib/apiClient';
-import { Play, BrainCircuit, Download, CheckSquare, Square, X, FileJson, Search, Filter, Plus, Edit3, Trash2 } from 'lucide-react';
+import { Play, BrainCircuit, Download, CheckSquare, Square, X, FileJson, Search, Filter, Plus, Edit3, Trash2, Archive, Calendar, Clock, Trophy } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { TicketFormModal } from './TicketFormModal';
 
@@ -15,10 +15,8 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
   const [selectedTickets, setSelectedTickets] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
 
-  // Filtros
-  const [searchTerm, setSearchTerm] = useState('');
-  const [epicFilter, setEpicFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
+  const [activeTab, setActiveTab] = useState<'backlog' | 'archive'>('backlog');
+  const [historicalSprints, setHistoricalSprints] = useState<any[]>([]);
 
   // Modales
   const [showImport, setShowImport] = useState(false);
@@ -35,6 +33,10 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [editingTicket, setEditingTicket] = useState<Ticket | undefined>(undefined);
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [epicFilter, setEpicFilter] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
+
   const loadTickets = async () => {
     try {
       // Idealmente habria un endpoint GET /tickets?proyectoId=... pero si no, filtramos
@@ -48,9 +50,19 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
     }
   };
 
+  const loadHistory = async () => {
+    try {
+      const res = await apiClient.get(`/api/projects/${proyectoId}/sprints/history`);
+      setHistoricalSprints(res);
+    } catch (e) {
+      console.error("Error cargando historial", e);
+    }
+  };
+
   useEffect(() => {
-    loadTickets();
-  }, [proyectoId]);
+    if (activeTab === 'backlog') loadTickets();
+    else loadHistory();
+  }, [proyectoId, activeTab]);
 
   const toggleSelect = (id: string) => {
     const next = new Set(selectedTickets);
@@ -173,7 +185,24 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
   return (
     <div className="flex flex-col h-full bg-transparent text-zinc-100 p-8">
       {/* Action Bar (Refined) */}
-      <div className="flex justify-end items-center gap-4 mb-8">
+      <div className="flex justify-between items-center mb-8">
+        <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5">
+          <button 
+            onClick={() => setActiveTab('backlog')}
+            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'backlog' ? 'bg-emerald-500 text-black shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
+          >
+            <CheckSquare size={14} />
+            Backlog Activo
+          </button>
+          <button 
+            onClick={() => setActiveTab('archive')}
+            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'archive' ? 'bg-emerald-500 text-black shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
+          >
+            <Archive size={14} />
+            Archivo Histórico
+          </button>
+        </div>
+
         <div className="flex gap-3">
           <button 
             onClick={handleGenerarPrompt}
@@ -197,7 +226,7 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
             className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black px-5 py-2.5 rounded-xl transition-all border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20"
           >
             <Plus size={16} />
-            Nueva Tarea
+            Nuevo Ticket
           </button>
           <button 
             onClick={() => setShowImport(true)}
@@ -206,18 +235,20 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
             <Download size={16} />
             Importar JSON
           </button>
-          <button 
-            onClick={() => setShowSprintModal(true)}
-            disabled={selectedTickets.size === 0}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl ${
-              selectedTickets.size > 0 
-                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20' 
-                : 'bg-white/5 text-zinc-600 cursor-not-allowed border border-white/5'
-            }`}
-          >
-            <Play size={16} fill="currentColor" />
-            Iniciar Sprint ({selectedTickets.size})
-          </button>
+          {activeTab === 'backlog' && (
+            <button 
+              onClick={() => setShowSprintModal(true)}
+              disabled={selectedTickets.size === 0}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl ${
+                selectedTickets.size > 0 
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20' 
+                  : 'bg-white/5 text-zinc-600 cursor-not-allowed border border-white/5'
+              }`}
+            >
+              <Play size={16} fill="currentColor" />
+              Iniciar Sprint ({selectedTickets.size})
+            </button>
+          )}
         </div>
       </div>
 
@@ -262,87 +293,134 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
           </div>
         </div>
       )}
-
       <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
-        {(() => {
-          const filteredTickets = tickets.filter(t => {
-            const matchesSearch = t.titulo.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesEpic = epicFilter ? t.epicTag === epicFilter : true;
-            const matchesPriority = priorityFilter ? t.prioridad === priorityFilter : true;
-            return matchesSearch && matchesEpic && matchesPriority;
-          });
+        {activeTab === 'backlog' ? (
+          (() => {
+            const filteredTickets = tickets.filter(t => {
+              const matchesSearch = t.titulo.toLowerCase().includes(searchTerm.toLowerCase());
+              const matchesEpic = epicFilter ? t.epicTag === epicFilter : true;
+              const matchesPriority = priorityFilter ? t.prioridad === priorityFilter : true;
+              return matchesSearch && matchesEpic && matchesPriority;
+            });
 
-          if (tickets.length === 0) {
+            if (tickets.length === 0) {
+              return (
+                <div className="flex flex-col items-center justify-center h-80 text-zinc-500 border-2 border-dashed border-white/5 rounded-[3rem] bg-white/[0.02]">
+                  <BrainCircuit size={60} className="mb-6 opacity-20 text-emerald-500 animate-pulse" />
+                  <p className="text-xl font-black uppercase tracking-[0.2em]">El backlog está en blanco</p>
+                  <p className="text-[10px] uppercase font-bold text-zinc-600 mt-2">Usa la IA para generar el primer set de historias</p>
+                </div>
+              );
+            }
+
+            if (filteredTickets.length === 0) {
+              return (
+                <div className="flex flex-col items-center justify-center h-40 text-zinc-500 border border-dashed border-white/5 rounded-[2rem] bg-white/[0.01]">
+                  <p className="text-[10px] font-black uppercase tracking-widest">Sin resultados para el filtro actual</p>
+                </div>
+              );
+            }
+
             return (
-              <div className="flex flex-col items-center justify-center h-80 text-zinc-500 border-2 border-dashed border-white/5 rounded-[3rem] bg-white/[0.02]">
-                <BrainCircuit size={60} className="mb-6 opacity-20 text-emerald-500 animate-pulse" />
-                <p className="text-xl font-black uppercase tracking-[0.2em]">El backlog está en blanco</p>
-                <p className="text-[10px] uppercase font-bold text-zinc-600 mt-2">Usa la IA para generar el primer set de historias</p>
-              </div>
-            );
-          }
-
-          if (filteredTickets.length === 0) {
-            return (
-              <div className="flex flex-col items-center justify-center h-40 text-zinc-500 border border-dashed border-white/5 rounded-[2rem] bg-white/[0.01]">
-                <p className="text-[10px] font-black uppercase tracking-widest">Sin resultados para el filtro actual</p>
-              </div>
-            );
-          }
-
-          return (
-            <div className="space-y-3">
-              {filteredTickets.map(ticket => (
-                <div 
-                  key={ticket.id} 
-                  onClick={() => toggleSelect(ticket.id)}
-                  className={`flex items-center p-6 rounded-[2rem] border-2 cursor-pointer transition-all active:scale-[0.98] ${
-                    selectedTickets.has(ticket.id) 
-                      ? 'bg-emerald-500/10 border-emerald-500/30 shadow-lg shadow-emerald-900/10' 
-                      : 'bg-white/[0.03] border-white/5 hover:border-white/20 hover:bg-white/[0.05]'
-                  }`}
-                >
-                  <div className="mr-6">
-                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center border transition-all ${selectedTickets.has(ticket.id) ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/10 text-transparent'}`}>
-                        <CheckSquare size={14} />
+              <div className="space-y-3">
+                {filteredTickets.map(ticket => (
+                  <div 
+                    key={ticket.id} 
+                    onClick={() => toggleSelect(ticket.id)}
+                    className={`group flex items-center p-6 rounded-[2rem] border-2 cursor-pointer transition-all active:scale-[0.98] ${
+                      selectedTickets.has(ticket.id) 
+                        ? 'bg-emerald-500/10 border-emerald-500/30 shadow-lg shadow-emerald-900/10' 
+                        : 'bg-white/[0.03] border-white/5 hover:border-white/20 hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    <div className="mr-6">
+                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center border transition-all ${selectedTickets.has(ticket.id) ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/10 text-transparent'}`}>
+                          <CheckSquare size={14} />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-bold text-zinc-100 uppercase tracking-tight leading-tight">{ticket.titulo}</h4>
+                      <div className="flex gap-3 mt-3">
+                        <span className="bg-white/5 border border-white/5 text-zinc-500 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest">
+                          {ticket.epicTag || 'Sin Épica'}
+                        </span>
+                        <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${
+                          ticket.prioridad === 'MVP' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-white/5 border-white/5 text-zinc-600'
+                        }`}>
+                          {ticket.prioridad || 'Prioridad normal'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all ml-4">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingTicket(ticket);
+                          setShowTicketModal(true);
+                        }}
+                        className="p-3 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-xl transition-all"
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                      <button 
+                        onClick={(e) => handleDeleteTicket(ticket.id, e)}
+                        className="p-3 bg-red-500/5 hover:bg-red-500/20 text-red-500/50 hover:text-red-500 rounded-xl transition-all"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-bold text-zinc-100 uppercase tracking-tight leading-tight">{ticket.titulo}</h4>
-                    <div className="flex gap-3 mt-3">
-                      <span className="bg-white/5 border border-white/5 text-zinc-500 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest">
-                        {ticket.epicTag || 'Sin Épica'}
-                      </span>
-                      <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${
-                        ticket.prioridad === 'MVP' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-white/5 border-white/5 text-zinc-600'
-                      }`}>
-                        {ticket.prioridad || 'Prioridad normal'}
-                      </span>
-                    </div>
+                ))}
+              </div>
+            );
+          })()
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {historicalSprints.length === 0 ? (
+              <div className="col-span-full flex flex-col items-center justify-center h-80 text-zinc-500 border-2 border-dashed border-white/5 rounded-[3rem] bg-white/[0.02]">
+                <Archive size={60} className="mb-6 opacity-20 text-blue-500" />
+                <p className="text-xl font-black uppercase tracking-[0.2em]">No hay sprints cerrados</p>
+                <p className="text-[10px] uppercase font-bold text-zinc-600 mt-2">Completa tu primer ciclo para ver las métricas aquí</p>
+              </div>
+            ) : historicalSprints.map(h => (
+              <div key={h.sprint.id} className="bg-white/[0.03] border border-white/5 p-8 rounded-[2.5rem] hover:border-emerald-500/30 transition-all group">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">Finalizado</span>
+                    <h4 className="text-xl font-black text-white uppercase tracking-tighter mt-3">{h.sprint.nombre}</h4>
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1 italic">{h.sprint.objetivo}</p>
                   </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all ml-4">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingTicket(ticket);
-                        setShowTicketModal(true);
-                      }}
-                      className="p-3 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-xl transition-all"
-                    >
-                      <Edit3 size={16} />
-                    </button>
-                    <button 
-                      onClick={(e) => handleDeleteTicket(ticket.id, e)}
-                      className="p-3 bg-red-500/5 hover:bg-red-500/20 text-red-500/50 hover:text-red-500 rounded-xl transition-all"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                  <Trophy className="text-amber-400 opacity-20 group-hover:opacity-100 transition-all" size={32} />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                    <CheckSquare className="text-emerald-400 mb-2" size={14} />
+                    <p className="text-2xl font-black text-white">{h.metricas?.ticketsCompletados || 0}</p>
+                    <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest">Hechos</p>
+                  </div>
+                  <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                    <X className="text-red-400 mb-2" size={14} />
+                    <p className="text-2xl font-black text-white">{h.metricas?.ticketsIncompletos || 0}</p>
+                    <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest">Pendientes</p>
+                  </div>
+                  <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                    <Clock className="text-blue-400 mb-2" size={14} />
+                    <p className="text-2xl font-black text-white">{Math.round(h.metricas?.promedioCycleTimeHoras || 0)}h</p>
+                    <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest">Avg Cycle</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          );
-        })()}
+
+                <div className="flex items-center gap-4 text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar size={12} />
+                    {new Date(h.sprint.fechaInicio).toLocaleDateString()} - {new Date(h.sprint.fechaFin).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* MODAL IMPORTAR */}
