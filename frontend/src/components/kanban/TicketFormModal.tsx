@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, FileJson, List, Plus, Trash2, Sparkles, AlertCircle } from 'lucide-react';
-import { Ticket } from '../agile/types';
+import { type Ticket } from '../agile/types';
 import Swal from 'sweetalert2';
 
 interface TicketFormModalProps {
