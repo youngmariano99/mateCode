@@ -25,7 +25,6 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
   const [jsonText, setJsonText] = useState('');
   
   const [showSprintModal, setShowSprintModal] = useState(false);
-  const [showSprintModal, setShowSprintModal] = useState(false);
   const [sprintForm, setSprintForm] = useState({ 
     nombre: '', 
     objetivo: '', 

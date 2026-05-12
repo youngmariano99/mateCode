@@ -2,6 +2,16 @@
 
 ---
 
+* **Fecha:** 2026-05-12
+* **Módulo/Tarea:** Gestión Ágil Dinámica y Persistencia Segura (Audit-Ready)
+* **Archivos Tocados:** `AgilEntities.cs`, `AgileService.cs`, `KanbanService.cs`, `BacklogService.cs`, `KanbanController.cs`, `SprintController.cs`, `BacklogHub.tsx`, `ActiveSprintBoard.tsx`, `TicketFormModal.tsx`
+* **Qué y Por Qué:** (1) **CRUD Manual Profesional:** Se rompió la dependencia exclusiva de importaciones JSON. Se implementó un sistema completo de creación, edición y borrado de tickets y sprints con una interfaz intuitiva y "Smart Merge". (2) **Persistencia No-Destructiva:** Refactorización de `AgileService` para realizar actualizaciones inteligentes en el Story Map (Fase 1), evitando la pérdida de cambios manuales al re-sincronizar. (3) **Borrado Lógico (Soft Delete):** Implementación de `IsDeleted` en toda la jerarquía ágil para garantizar trazabilidad y cumplimiento de auditoría. (4) **Simulación de Sprints:** Se habilitó la capacidad de definir fechas de inicio manuales para registrar ciclos de trabajo históricos. (5) **IA Multi-Inyección:** Nuevo sistema de importación de tickets individuales mediante JSON para una colaboración fluida con IAs externas.
+
+---
+
+
+---
+
 *   **Fecha:** 2026-04-27
 *   **Módulo/Tarea:** Migración a Spatial OS 3D (Entorno Inmersivo 1:1)
 *   **Archivos Tocados:** `SpatialOS.tsx`, `Presence.tsx`, `BuildingShell.tsx`, `Lighting.tsx`, `CameraRig.tsx`, `SpatialLayout.tsx`, `manifest.ts`, `rooms/*.tsx`

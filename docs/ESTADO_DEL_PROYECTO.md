@@ -9,7 +9,7 @@ Basado en el historial de cambios y el progreso registrado hasta el **14 de Abri
 * **[TERMINADO] Sprint 2 (Fase 0 - Factibilidad):** Middleware `MagicLinkMiddleware`, Portal Cliente, inyección de SurveyJS y gestor de Leads (CrmService).
 * **[TERMINADO] Sprint 3 (Fase 1 - Requisitos):** Parsing a tablero 2D y editores de criterios BDD (AgileService).
 * **[TERMINADO] Sprint 4 (Fase 2 - Diseño):** Editor de diagramación (DBML a React Flow) interactivo y Wizard de Presupuestos (FinanceService).
-* **[TERMINADO] Sprint 5 (Fase 3 - Implementación):** Kanban ultrarrápido (Pragmatic Drag and Drop) con algoritmo lexicográfico e inyección inteligente vía Semantic Kernel (PromptEngineService).
+* **[TERMINADO] Sprint 5 (Fase 3 - Implementación):** Kanban profesional con CRUD manual, importación individual de JSON, simulación de sprints históricos y borrado lógico (Soft Delete).
 * **[TERMINADO] Sprint 6 (Fase 4/5 - Testing y Cosecha):** Autoreporte, pipeline visual y módulos de recolección de proyectos/bóveda (HarvestService).
 
 *(Nota: Aunque figuran como Terminados a nivel orquestación e infraestructura, la profundización y refinamiento de cada módulo entra ahora en etapa de pulido interactivo).*
@@ -26,7 +26,7 @@ Basado en el historial de cambios y el progreso registrado hasta el **14 de Abri
   * **Modo Enfoque (Las "Fases"):** Taller estructurado con endpoints visuales listos (`Phase0Feasibility` hasta `Phase5Deployment`).
 
 ## 4. Deuda Técnica o Cosas a Medias
-* **Refinamiento de Componentes Ágiles:** Tienes abierto el archivo `src/components/agile/BddEditorPanel.tsx`. Esto indica que la UI y la conexión interna del parseo y edición BDD de la Fase 1 probablemente necesite acoplarse firmemente a los servicios del backend o depurar su estado en React.
+* **Refinamiento de Componentes Ágiles [RESUELTO]:** Se implementó el `TicketFormModal` con soporte para BDD, criterios y tareas técnicas. La conexión entre Fase 01 y Fase 03 ahora es bidireccional y segura gracias al "Smart Merge".
 * **Manejo Dinámico de Fricciones D&D:** Pragmatic Drag & Drop está implementado teóricamente, pero requiere validación en el Kanban ante volumen alto para evitar "reconciliación visual masiva" (Regla 3 de la arquitectura).
 * **Supabase / Local Auth Sync:** El Auth y RLS se pasaron a producción local en la última sesión, habría que re-testear la inserción transaccional sin romper las restricciones de nivel de fila (Row Level Security).
 

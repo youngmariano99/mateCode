@@ -33,11 +33,11 @@ Maneja la identidad, los espacios de trabajo y la matriz de permisos.
 
 ### Esquema: `agil` (Sprints, Historias y Backlog)
 * **Tabla `epicas` & `historias` (Fase 1):** 
-  * Columnas: `id`, `proyecto_id`, `titulo`, `criterios_bdd` (JSONB), etc.
+  * Columnas: `id`, `proyecto_id`, `titulo`, `criterios_bdd` (JSONB), `is_deleted`, `deleted_at`, etc.
 * **Tabla `sprints` (Fase 3):**
-  * Columnas: `id`, `proyecto_id`, `nombre`, `objetivo`, `fecha_inicio`, `fecha_fin`, `estado`.
+  * Columnas: `id`, `proyecto_id`, `nombre`, `objetivo`, `fecha_inicio`, `fecha_fin`, `estado`, `is_deleted`, `deleted_at`.
 * **Tabla `tickets` (Fase 3 - Trinchera):**
-  * Columnas: `id`, `proyecto_id`, `historia_id`, `sprint_id`, `origen_historia_id`, `tipo` (Tarea/Bug/etc.), `estado`, `responsable_id`, `rango_lexicografico` (Texto para ordenamiento Drag&Drop O(1)), `titulo`, `epic_tag`, `prioridad`, `criterios_json`, `tareas_json`, `fecha_inicio_real`, `fecha_fin_real`.
+  * Columnas: `id`, `proyecto_id`, `historia_id`, `sprint_id`, `origen_historia_id`, `tipo` (Tarea/Bug/etc.), `estado`, `responsable_id`, `rango_lexicografico` (Texto para ordenamiento Drag&Drop O(1)), `titulo`, `epic_tag`, `prioridad`, `criterios_json`, `tareas_json`, `fecha_inicio_real`, `fecha_fin_real`, `is_deleted`, `deleted_at`.
 * **Tabla `metricas_sprint`:**
   * Columnas: `id`, `sprint_id`, `tickets_completados`, `tickets_incompletos`, `promedio_cycle_time_horas`, `notas_retrospectiva`, `fecha_cierre`.
 
