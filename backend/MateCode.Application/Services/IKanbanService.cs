@@ -11,6 +11,9 @@ namespace MateCode.Application.Services
         Task<Ticket> UpdateTicketStatusAndRankAsync(Guid ticketId, string nuevoEstado, string nuevoRango, Guid tenantId);
         Task<string> GetMagicPromptAsync(Guid ticketId, Guid tenantId);
         Task<Ticket> CreateBugFromTestingAsync(Guid proyectoId, Guid historiaId, string descripcionBug, Guid tenantId);
+        Task<Ticket> CreateTicketAsync(Ticket ticket, Guid tenantId);
+        Task<Ticket> UpdateTicketAsync(Guid ticketId, Ticket ticketUpdate, Guid tenantId);
+        Task SoftDeleteTicketAsync(Guid ticketId, Guid tenantId);
         
         // Nuevos métodos para Columnas Dinámicas
         Task<IEnumerable<KanbanColumna>> GetColumnsByProyectoAsync(Guid proyectoId, Guid tenantId);

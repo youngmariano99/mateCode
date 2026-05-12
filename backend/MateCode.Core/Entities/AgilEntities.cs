@@ -27,6 +27,8 @@ namespace MateCode.Core.Entities
         public string Nombre { get; set; } = string.Empty;
         public string? ColorHex { get; set; }
         public int OrdenPosicion { get; set; }
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
     }
 
     public class Epica
@@ -36,6 +38,8 @@ namespace MateCode.Core.Entities
         public string Titulo { get; set; } = string.Empty;
         public string? ColorHex { get; set; }
         public int OrdenPosicion { get; set; }
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
     }
 
     public class Historia
@@ -51,6 +55,8 @@ namespace MateCode.Core.Entities
         public string Prioridad { get; set; } = "MVP";
         public JsonElement? TareasTecnicasJson { get; set; }
         public string RangoLexicografico { get; set; } = "a";
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
     }
 
     public class Ticket
@@ -72,6 +78,8 @@ namespace MateCode.Core.Entities
         public Guid? ResponsableId { get; set; }
         public string RangoLexicografico { get; set; } = "a";
         public string? Especialidad { get; set; }
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
     }
 
     public class Sprint
@@ -83,6 +91,8 @@ namespace MateCode.Core.Entities
         public DateTime? FechaInicio { get; set; }
         public DateTime? FechaFin { get; set; }
         public string Estado { get; set; } = "Planificado";
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
     }
 
     public class MetricaSprint

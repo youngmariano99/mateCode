@@ -26,7 +26,7 @@ namespace MateCode.Infrastructure.Services
                     t => t.ProyectoId,
                     p => p.Id,
                     (t, p) => new { t, p })
-                .Where(x => x.t.ProyectoId == proyectoId && x.p.TenantId == tenantId)
+                .Where(x => x.t.ProyectoId == proyectoId && x.p.TenantId == tenantId && !x.t.IsDeleted)
                 .Select(x => x.t)
                 .OrderBy(t => t.RangoLexicografico)
                 .ToListAsync();
@@ -108,6 +108,59 @@ namespace MateCode.Infrastructure.Services
             _context.Tickets.Add(bugTicket);
             await _context.SaveChangesAsync();
             return bugTicket;
+        }
+
+        public async Task<Ticket> CreateTicketAsync(Ticket ticket, Guid tenantId)
+        {
+            var proyectoData = await _context.Proyectos.AnyAsync(p => p.Id == ticket.ProyectoId && p.TenantId == tenantId);
+            if (!proyectoData) throw new UnauthorizedAccessException();
+
+            ticket.Id = Guid.NewGuid();
+            ticket.IsDeleted = false;
+            
+            _context.Tickets.Add(ticket);
+            await _context.SaveChangesAsync();
+            return ticket;
+        }
+
+        public async Task<Ticket> UpdateTicketAsync(Guid ticketId, Ticket ticketUpdate, Guid tenantId)
+        {
+            var ticket = await _context.Tickets
+                .Join(_context.Proyectos, t => t.ProyectoId, p => p.Id, (t, p) => new { t, p })
+                .Where(x => x.t.Id == ticketId && x.p.TenantId == tenantId)
+                .Select(x => x.t)
+                .FirstOrDefaultAsync();
+
+            if (ticket == null) throw new UnauthorizedAccessException();
+
+            ticket.Titulo = ticketUpdate.Titulo;
+            ticket.EpicTag = ticketUpdate.EpicTag;
+            ticket.Prioridad = ticketUpdate.Prioridad;
+            ticket.Tipo = ticketUpdate.Tipo;
+            ticket.CriteriosJson = ticketUpdate.CriteriosJson;
+            ticket.TareasJson = ticketUpdate.TareasJson;
+            ticket.Estado = ticketUpdate.Estado;
+            ticket.SprintId = ticketUpdate.SprintId;
+            ticket.RangoLexicografico = ticketUpdate.RangoLexicografico;
+
+            await _context.SaveChangesAsync();
+            return ticket;
+        }
+
+        public async Task SoftDeleteTicketAsync(Guid ticketId, Guid tenantId)
+        {
+            var ticket = await _context.Tickets
+                .Join(_context.Proyectos, t => t.ProyectoId, p => p.Id, (t, p) => new { t, p })
+                .Where(x => x.t.Id == ticketId && x.p.TenantId == tenantId)
+                .Select(x => x.t)
+                .FirstOrDefaultAsync();
+
+            if (ticket == null) return;
+
+            ticket.IsDeleted = true;
+            ticket.DeletedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task<IEnumerable<KanbanColumna>> GetColumnsByProyectoAsync(Guid proyectoId, Guid tenantId)

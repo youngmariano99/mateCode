@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import type { Ticket, Sprint } from '../agile/types';
 import { api as apiClient } from '../../lib/apiClient';
-import { Play, BrainCircuit, Download, CheckSquare, Square, X, FileJson, Search, Filter } from 'lucide-react';
+import { Play, BrainCircuit, Download, CheckSquare, Square, X, FileJson, Search, Filter, Plus, Edit3, Trash2 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { TicketFormModal } from './TicketFormModal';
 
 interface BacklogHubProps {
   proyectoId: string;
@@ -24,7 +25,16 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
   const [jsonText, setJsonText] = useState('');
   
   const [showSprintModal, setShowSprintModal] = useState(false);
-  const [sprintForm, setSprintForm] = useState({ nombre: '', objetivo: '', duracionDias: 14 });
+  const [showSprintModal, setShowSprintModal] = useState(false);
+  const [sprintForm, setSprintForm] = useState({ 
+    nombre: '', 
+    objetivo: '', 
+    duracionDias: 14,
+    fechaInicio: new Date().toISOString().split('T')[0] 
+  });
+
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [editingTicket, setEditingTicket] = useState<Ticket | undefined>(undefined);
 
   const loadTickets = async () => {
     try {
@@ -104,6 +114,7 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
       setLoading(true);
       const res = await apiClient.post(`/api/projects/${proyectoId}/sprints/start`, {
         ...sprintForm,
+        fechaInicio: new Date(sprintForm.fechaInicio).toISOString(),
         ticketIds: Array.from(selectedTickets)
       });
       Swal.fire('¡Sprint Iniciado!', '¡A picar código!', 'success');
@@ -115,6 +126,48 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
       Swal.fire('Error', 'No se pudo iniciar el sprint', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveTicket = async (ticketData: Partial<Ticket>) => {
+    try {
+      setLoading(true);
+      if (editingTicket) {
+        await apiClient.put(`/api/kanban/tickets/${editingTicket.id}`, ticketData);
+        Swal.fire('Ticket Actualizado', '', 'success');
+      } else {
+        await apiClient.post(`/api/kanban/tickets`, ticketData);
+        Swal.fire('Ticket Creado', '', 'success');
+      }
+      setShowTicketModal(false);
+      loadTickets();
+    } catch (e) {
+      Swal.fire('Error', 'No se pudo guardar el ticket', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteTicket = async (ticketId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const result = await Swal.fire({
+      title: '¿Eliminar ticket?',
+      text: "Se marcará como borrado pero podrás recuperarlo desde la DB si es necesario.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      confirmButtonText: 'Sí, borrar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await apiClient.delete(`/api/kanban/tickets/${ticketId}`);
+        loadTickets();
+        Swal.fire('Borrado', 'El ticket ha sido eliminado del backlog.', 'success');
+      } catch (e) {
+        Swal.fire('Error', 'No se pudo eliminar el ticket', 'error');
+      }
     }
   };
 
@@ -138,11 +191,21 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
             Exportar Estado
           </button>
           <button 
+            onClick={() => {
+              setEditingTicket(undefined);
+              setShowTicketModal(true);
+            }}
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black px-5 py-2.5 rounded-xl transition-all border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20"
+          >
+            <Plus size={16} />
+            Nueva Tarea
+          </button>
+          <button 
             onClick={() => setShowImport(true)}
             className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-zinc-100 px-5 py-2.5 rounded-xl transition-all border border-white/5 text-[10px] font-black uppercase tracking-widest"
           >
             <Download size={16} />
-            Importar
+            Importar JSON
           </button>
           <button 
             onClick={() => setShowSprintModal(true)}
@@ -258,6 +321,24 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
                       </span>
                     </div>
                   </div>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all ml-4">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingTicket(ticket);
+                        setShowTicketModal(true);
+                      }}
+                      className="p-3 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-xl transition-all"
+                    >
+                      <Edit3 size={16} />
+                    </button>
+                    <button 
+                      onClick={(e) => handleDeleteTicket(ticket.id, e)}
+                      className="p-3 bg-red-500/5 hover:bg-red-500/20 text-red-500/50 hover:text-red-500 rounded-xl transition-all"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -324,15 +405,26 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
                   placeholder="Ej: Tener el carrito funcionando offline"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">Duración (Días)</label>
-                <input 
-                  type="number" 
-                  value={sprintForm.duracionDias}
-                  onChange={e => setSprintForm(prev => ({ ...prev, duracionDias: Number(e.target.value) }))}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md p-2 text-zinc-100 focus:border-emerald-500 focus:outline-none"
-                  min="1"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1">Fecha de Inicio</label>
+                  <input 
+                    type="date" 
+                    value={sprintForm.fechaInicio}
+                    onChange={e => setSprintForm(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md p-2 text-zinc-100 focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1">Duración (Días)</label>
+                  <input 
+                    type="number" 
+                    value={sprintForm.duracionDias}
+                    onChange={e => setSprintForm(prev => ({ ...prev, duracionDias: Number(e.target.value) }))}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md p-2 text-zinc-100 focus:border-emerald-500 focus:outline-none"
+                    min="1"
+                  />
+                </div>
               </div>
             </div>
             <div className="p-4 border-t border-zinc-800 flex justify-end gap-3 bg-zinc-900/50">
@@ -345,6 +437,15 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
           </div>
         </div>
       )}
+
+      {/* MODAL TICKET (MANUAL / INDIVIDUAL JSON) */}
+      <TicketFormModal 
+        isOpen={showTicketModal}
+        onClose={() => setShowTicketModal(false)}
+        onSave={handleSaveTicket}
+        ticket={editingTicket}
+        proyectoId={proyectoId}
+      />
     </div>
   );
 };

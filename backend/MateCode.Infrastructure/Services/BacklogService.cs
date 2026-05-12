@@ -21,7 +21,10 @@ namespace MateCode.Infrastructure.Services
 
         public async Task<IEnumerable<Sprint>> ObtenerSprintsAsync(Guid proyectoId)
         {
-            return await _context.Sprints.Where(s => s.ProyectoId == proyectoId).OrderByDescending(s => s.FechaInicio).ToListAsync();
+            return await _context.Sprints
+                .Where(s => s.ProyectoId == proyectoId && !s.IsDeleted)
+                .OrderByDescending(s => s.FechaInicio)
+                .ToListAsync();
         }
 
         public async Task<string> GenerarPromptGroomingAsync(Guid proyectoId)
@@ -139,15 +142,16 @@ Analiza el contexto y cruza las Historias de Usuario con las tablas y módulos c
             return tickets;
         }
 
-        public async Task<Sprint> IniciarSprintAsync(Guid proyectoId, string nombre, string objetivo, int duracionDias, List<Guid> ticketIds)
+        public async Task<Sprint> IniciarSprintAsync(Guid proyectoId, string nombre, string objetivo, int duracionDias, List<Guid> ticketIds, DateTime? fechaInicio = null)
         {
+            var start = fechaInicio ?? DateTime.UtcNow;
             var sprint = new Sprint
             {
                 ProyectoId = proyectoId,
                 Nombre = nombre,
                 Objetivo = objetivo,
-                FechaInicio = DateTime.UtcNow,
-                FechaFin = DateTime.UtcNow.AddDays(duracionDias),
+                FechaInicio = start,
+                FechaFin = start.AddDays(duracionDias),
                 Estado = "Activo"
             };
 
@@ -163,6 +167,32 @@ Analiza el contexto y cruza las Historias de Usuario con las tablas y módulos c
 
             await _context.SaveChangesAsync();
             return sprint;
+        }
+
+        public async Task<Sprint> UpdateSprintAsync(Guid sprintId, Sprint sprintUpdate)
+        {
+            var sprint = await _context.Sprints.FindAsync(sprintId);
+            if (sprint == null) throw new Exception("Sprint no encontrado");
+
+            sprint.Nombre = sprintUpdate.Nombre;
+            sprint.Objetivo = sprintUpdate.Objetivo;
+            sprint.FechaInicio = sprintUpdate.FechaInicio;
+            sprint.FechaFin = sprintUpdate.FechaFin;
+            sprint.Estado = sprintUpdate.Estado;
+
+            await _context.SaveChangesAsync();
+            return sprint;
+        }
+
+        public async Task SoftDeleteSprintAsync(Guid sprintId)
+        {
+            var sprint = await _context.Sprints.FindAsync(sprintId);
+            if (sprint == null) return;
+
+            sprint.IsDeleted = true;
+            sprint.DeletedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task<MetricaSprint> FinalizarSprintAsync(Guid sprintId, List<Guid> ticketsAlBacklog, List<Guid> ticketsDescartados)

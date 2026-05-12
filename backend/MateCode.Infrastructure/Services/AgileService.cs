@@ -24,26 +24,29 @@ namespace MateCode.Infrastructure.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 1. Limpiar datos anteriores del proyecto
-                await _context.Database.ExecuteSqlRawAsync("DELETE FROM agil.personas_proyecto WHERE proyecto_id = {0}", projectId);
-                await _context.Database.ExecuteSqlRawAsync("DELETE FROM agil.releases WHERE proyecto_id = {0}", projectId);
-                await _context.Database.ExecuteSqlRawAsync("DELETE FROM agil.historias WHERE proyecto_id = {0}", projectId);
-                await _context.Database.ExecuteSqlRawAsync("DELETE FROM agil.features WHERE epica_id IN (SELECT id FROM agil.epicas WHERE proyecto_id = {0})", projectId);
-                await _context.Database.ExecuteSqlRawAsync("DELETE FROM agil.epicas WHERE proyecto_id = {0}", projectId);
+                // 1. Cargar estado actual (para Smart Merge)
+                var existingEpics = await _context.Epicas.Where(e => e.ProyectoId == projectId).ToListAsync();
+                var existingFeatures = await _context.Features.Where(f => existingEpics.Select(e => e.Id).Contains(f.EpicaId)).ToListAsync();
+                var existingStories = await _context.Historias.Where(h => h.ProyectoId == projectId).ToListAsync();
+                var existingReleases = await _context.Releases.Where(r => r.ProyectoId == projectId).ToListAsync();
+                var existingPersonas = await _context.PersonasProyecto.Where(p => p.ProyectoId == projectId).ToListAsync();
 
-                // 2. Guardar Personas
+                // 2. Guardar Personas (Update or Create)
                 if (storyMapData.TryGetProperty("personas", out var personasNode))
                 {
                     foreach (var p in personasNode.EnumerateArray())
                     {
-                        var persona = new PersonaProyecto {
-                            Id = Guid.NewGuid(),
-                            ProyectoId = projectId,
-                            Nombre = p.GetProperty("nombre").GetString() ?? "Anon",
-                            Rol = p.GetProperty("rol").GetString() ?? "Usuario"
-                        };
-                        _context.PersonasProyecto.Add(persona);
+                        var pName = p.GetProperty("nombre").GetString() ?? "Anon";
+                        var persona = existingPersonas.FirstOrDefault(ep => ep.Nombre == pName);
+                        if (persona == null)
+                        {
+                            persona = new PersonaProyecto { Id = Guid.NewGuid(), ProyectoId = projectId };
+                            _context.PersonasProyecto.Add(persona);
+                        }
+                        persona.Nombre = pName;
+                        persona.Rol = p.GetProperty("rol").GetString() ?? "Usuario";
                     }
+                    // Soft Delete Personas (físico por ahora ya que no tienen IsDeleted, o podrías añadirlo si es crítico)
                 }
 
                 // 3. Guardar Releases
@@ -53,81 +56,99 @@ namespace MateCode.Infrastructure.Services
                     int idx = 0;
                     foreach (var r in releasesNode.EnumerateArray())
                     {
-                        var rid = Guid.NewGuid();
                         var rname = r.GetProperty("nombre").GetString() ?? "V1";
                         var rKey = r.TryGetProperty("id", out var idNode) ? idNode.GetString() : rname;
                         
-                        var release = new Release {
-                            Id = rid,
-                            ProyectoId = projectId,
-                            Nombre = rname,
-                            Descripcion = r.TryGetProperty("descripcion", out var d) ? d.GetString() : "",
-                            OrdenPosicion = idx++
-                        };
-                        _context.Releases.Add(release);
-                        if (rKey != null) releaseIdMap[rKey] = rid;
+                        var release = existingReleases.FirstOrDefault(er => er.Nombre == rname);
+                        if (release == null)
+                        {
+                            release = new Release { Id = Guid.NewGuid(), ProyectoId = projectId };
+                            _context.Releases.Add(release);
+                        }
+                        release.Nombre = rname;
+                        release.Descripcion = r.TryGetProperty("descripcion", out var d) ? d.GetString() : "";
+                        release.OrdenPosicion = idx++;
+                        
+                        if (rKey != null) releaseIdMap[rKey] = release.Id;
                     }
                 }
 
-                // Guardar cambios parciales para que los Releases existan antes de las historias (evitar error de FK)
                 await _context.SaveChangesAsync();
 
-                // 4. Guardar Jerarquía Epics -> Features -> Stories
+                // 4. Guardar Jerarquía Epics -> Features -> Stories (Smart Merge)
+                var processedEpics = new HashSet<Guid>();
+                var processedFeatures = new HashSet<Guid>();
+                var processedStories = new HashSet<Guid>();
+
                 if (storyMapData.TryGetProperty("epics", out var epicsNode))
                 {
                     int epicIdx = 0;
                     foreach (var epicNode in epicsNode.EnumerateArray())
                     {
-                        var epicId = Guid.NewGuid();
-                        var epic = new Epica {
-                            Id = epicId,
-                            ProyectoId = projectId,
-                            Titulo = epicNode.GetProperty("nombre").GetString() ?? "Sin Título",
-                            ColorHex = epicNode.TryGetProperty("color", out var c) ? c.GetString() : "#10b981",
-                            OrdenPosicion = epicIdx++
-                        };
-                        _context.Epicas.Add(epic);
+                        var epicName = epicNode.GetProperty("nombre").GetString() ?? "Sin Título";
+                        var epic = existingEpics.FirstOrDefault(e => e.Titulo == epicName);
+                        if (epic == null)
+                        {
+                            epic = new Epica { Id = Guid.NewGuid(), ProyectoId = projectId };
+                            _context.Epicas.Add(epic);
+                        }
+                        epic.Titulo = epicName;
+                        epic.ColorHex = epicNode.TryGetProperty("color", out var c) ? c.GetString() : "#10b981";
+                        epic.OrdenPosicion = epicIdx++;
+                        epic.IsDeleted = false;
+                        processedEpics.Add(epic.Id);
 
                         if (epicNode.TryGetProperty("features", out var featuresNode))
                         {
                             int featIdx = 0;
                             foreach (var featNode in featuresNode.EnumerateArray())
                             {
-                                var featId = Guid.NewGuid();
-                                var feature = new Feature {
-                                    Id = featId,
-                                    EpicaId = epicId,
-                                    Nombre = featNode.GetProperty("nombre").GetString() ?? "Feature",
-                                    ColorHex = featNode.TryGetProperty("color", out var fc) ? fc.GetString() : epic.ColorHex,
-                                    OrdenPosicion = featIdx++
-                                };
-                                _context.Features.Add(feature);
+                                var featName = featNode.GetProperty("nombre").GetString() ?? "Feature";
+                                var feature = existingFeatures.FirstOrDefault(f => f.Nombre == featName && f.EpicaId == epic.Id);
+                                if (feature == null)
+                                {
+                                    feature = new Feature { Id = Guid.NewGuid(), EpicaId = epic.Id };
+                                    _context.Features.Add(feature);
+                                }
+                                feature.Nombre = featName;
+                                feature.ColorHex = featNode.TryGetProperty("color", out var fc) ? fc.GetString() : epic.ColorHex;
+                                feature.OrdenPosicion = featIdx++;
+                                feature.IsDeleted = false;
+                                processedFeatures.Add(feature.Id);
 
                                 if (featNode.TryGetProperty("user_stories", out var storiesNode))
                                 {
                                     foreach (var storyNode in storiesNode.EnumerateArray())
                                     {
+                                        var storyTitle = storyNode.GetProperty("titulo").GetString() ?? "US";
                                         var rKey = storyNode.TryGetProperty("release_id", out var rNode) ? rNode.GetString() : null;
                                         var rid = rKey != null && releaseIdMap.ContainsKey(rKey) ? releaseIdMap[rKey] : (Guid?)null;
 
-                                        var historia = new Historia {
-                                            Id = Guid.NewGuid(),
-                                            FeatureId = featId,
-                                            ReleaseId = rid,
-                                            ProyectoId = projectId,
-                                            Titulo = storyNode.GetProperty("titulo").GetString() ?? "US",
-                                            UsuarioNarrativo = storyNode.TryGetProperty("user", out var u) ? u.GetString() : "Usuario",
-                                            Prioridad = storyNode.TryGetProperty("prioridad", out var prio) ? prio.GetString() : "MVP",
-                                            CriteriosAceptacion = storyNode.TryGetProperty("criterios_aceptacion", out var ca) ? ca : (JsonElement?)null,
-                                            CriteriosBdd = storyNode.TryGetProperty("bdd", out var bdd) ? bdd.GetString() : ""
-                                        };
-                                        _context.Historias.Add(historia);
+                                        var historia = existingStories.FirstOrDefault(h => h.Titulo == storyTitle && h.FeatureId == feature.Id);
+                                        if (historia == null)
+                                        {
+                                            historia = new Historia { Id = Guid.NewGuid(), ProyectoId = projectId, FeatureId = feature.Id };
+                                            _context.Historias.Add(historia);
+                                        }
+                                        historia.ReleaseId = rid;
+                                        historia.Titulo = storyTitle;
+                                        historia.UsuarioNarrativo = storyNode.TryGetProperty("user", out var u) ? u.GetString() : "Usuario";
+                                        historia.Prioridad = storyNode.TryGetProperty("prioridad", out var prio) ? prio.GetString() : "MVP";
+                                        historia.CriteriosAceptacion = storyNode.TryGetProperty("criterios_aceptacion", out var ca) ? ca : (JsonElement?)null;
+                                        historia.CriteriosBdd = storyNode.TryGetProperty("bdd", out var bdd) ? bdd.GetString() : historia.CriteriosBdd;
+                                        historia.IsDeleted = false;
+                                        processedStories.Add(historia.Id);
                                     }
                                 }
                             }
                         }
                     }
                 }
+
+                // 5. Aplicar Soft Delete a lo que no vino en el JSON
+                foreach (var e in existingEpics.Where(e => !processedEpics.Contains(e.Id))) { e.IsDeleted = true; e.DeletedAt = DateTime.UtcNow; }
+                foreach (var f in existingFeatures.Where(f => !processedFeatures.Contains(f.Id))) { f.IsDeleted = true; f.DeletedAt = DateTime.UtcNow; }
+                foreach (var h in existingStories.Where(h => !processedStories.Contains(h.Id))) { h.IsDeleted = true; h.DeletedAt = DateTime.UtcNow; }
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -141,15 +162,15 @@ namespace MateCode.Infrastructure.Services
 
         public async Task<object> GetFullStoryMapAsync(Guid projectId)
         {
-            var epicas = await _context.Epicas.Where(e => e.ProyectoId == projectId).OrderBy(e => e.OrdenPosicion).ToListAsync();
-            var stories = await _context.Historias.Where(h => h.ProyectoId == projectId).ToListAsync();
+            var epicas = await _context.Epicas.Where(e => e.ProyectoId == projectId && !e.IsDeleted).OrderBy(e => e.OrdenPosicion).ToListAsync();
+            var stories = await _context.Historias.Where(h => h.ProyectoId == projectId && !h.IsDeleted).ToListAsync();
             var epicIds = epicas.Select(e => e.Id).ToList();
             var features = epicIds.Any() 
-                ? await _context.Features.Where(f => epicIds.Contains(f.EpicaId)).OrderBy(f => f.OrdenPosicion).ToListAsync()
+                ? await _context.Features.Where(f => epicIds.Contains(f.EpicaId) && !f.IsDeleted).OrderBy(f => f.OrdenPosicion).ToListAsync()
                 : new List<Feature>();
             var releases = await _context.Releases.Where(r => r.ProyectoId == projectId).OrderBy(r => r.OrdenPosicion).ToListAsync();
             var personas = await _context.PersonasProyecto.Where(p => p.ProyectoId == projectId).ToListAsync();
-            var tickets = await _context.Tickets.Where(t => t.ProyectoId == projectId).ToListAsync();
+            var tickets = await _context.Tickets.Where(t => t.ProyectoId == projectId && !t.IsDeleted).ToListAsync();
 
             return new {
                 proyectoId = projectId,
@@ -183,7 +204,10 @@ namespace MateCode.Infrastructure.Services
             {
                 if (cleanSync)
                 {
-                    await _context.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM agil.tickets WHERE proyecto_id = {projectId}");
+                    // Marcamos como borrados en lugar de DELETE físico
+                    var tickets = await _context.Tickets.Where(t => t.ProyectoId == projectId).ToListAsync();
+                    foreach (var t in tickets) { t.IsDeleted = true; t.DeletedAt = DateTime.UtcNow; }
+                    await _context.SaveChangesAsync();
                 }
 
                 var existingColumns = await _context.KanbanColumnas
@@ -214,8 +238,8 @@ namespace MateCode.Infrastructure.Services
 
                 var firstColumnName = existingColumns.First().Nombre;
 
-                var historias = await _context.Historias.Where(h => h.ProyectoId == projectId).ToListAsync();
-                var existingTickets = await _context.Tickets.Where(t => t.ProyectoId == projectId).ToListAsync();
+                var historias = await _context.Historias.Where(h => h.ProyectoId == projectId && !h.IsDeleted).ToListAsync();
+                var existingTickets = await _context.Tickets.Where(t => t.ProyectoId == projectId && !t.IsDeleted).ToListAsync();
                 
                 int createdCount = 0;
 
@@ -275,7 +299,7 @@ namespace MateCode.Infrastructure.Services
         public async Task<IEnumerable<Historia>> GetStoriesByProjectAsync(Guid projectId)
         {
             return await _context.Historias
-                .Where(h => h.ProyectoId == projectId)
+                .Where(h => h.ProyectoId == projectId && !h.IsDeleted)
                 .OrderBy(h => h.RangoLexicografico)
                 .ToListAsync();
         }
@@ -290,7 +314,7 @@ namespace MateCode.Infrastructure.Services
         public async Task<IEnumerable<Ticket>> GetTicketsByProjectAsync(Guid projectId)
         {
             return await _context.Tickets
-                .Where(t => t.ProyectoId == projectId)
+                .Where(t => t.ProyectoId == projectId && !t.IsDeleted)
                 .OrderBy(t => t.RangoLexicografico)
                 .ToListAsync();
         }

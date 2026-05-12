@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import type { Sprint, Ticket } from '../agile/types';
 import { api as apiClient } from '../../lib/apiClient';
 import { SprintRetrospectiveModal } from './SprintRetrospectiveModal';
-import { Trophy, GripVertical, Eye, Box, Sparkles } from 'lucide-react';
+import { Trophy, GripVertical, Eye, Box, Sparkles, Edit3 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { TicketFormModal } from './TicketFormModal';
 import * as signalR from '@microsoft/signalr';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 
@@ -30,6 +31,8 @@ export const ActiveSprintBoard: React.FC<ActiveSprintBoardProps> = ({
   const [focusedTickets, setFocusedTickets] = useState<Record<string, {avatarUrl: string, name: string}>>({});
   const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [editingTicket, setEditingTicket] = useState<Ticket | undefined>(undefined);
 
   useEffect(() => {
     if (!propSprint && proyectoId) {
@@ -145,6 +148,22 @@ export const ActiveSprintBoard: React.FC<ActiveSprintBoardProps> = ({
     }
   };
 
+  const handleSaveTicket = async (ticketData: Partial<Ticket>) => {
+    try {
+      setLoading(true);
+      if (editingTicket) {
+        await apiClient.put(`/api/kanban/tickets/${editingTicket.id}`, ticketData);
+        Swal.fire('Ticket Actualizado', '', 'success');
+      }
+      setShowTicketModal(false);
+      loadTickets();
+    } catch (e) {
+      Swal.fire('Error', 'No se pudo guardar el ticket', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!proyectoId) return <ProjectSelectorRequired />;
 
   if (loading) {
@@ -231,7 +250,19 @@ export const ActiveSprintBoard: React.FC<ActiveSprintBoardProps> = ({
                         }`}>
                         {ticket.tipo || 'Tarea'}
                       </span>
-                      <GripVertical size={14} className="text-zinc-700 group-hover:text-zinc-500 transition-colors" />
+                      <div className="flex items-center gap-1">
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingTicket(ticket);
+                                setShowTicketModal(true);
+                            }}
+                            className="p-1.5 hover:bg-white/5 text-zinc-700 hover:text-white rounded-lg transition-all"
+                        >
+                            <Edit3 size={14} />
+                        </button>
+                        <GripVertical size={14} className="text-zinc-700 group-hover:text-zinc-500 transition-colors" />
+                      </div>
                     </div>
                     <h4 className="text-sm font-bold text-zinc-200 leading-tight group-hover:text-white transition-colors">{ticket.titulo}</h4>
 
@@ -261,6 +292,14 @@ export const ActiveSprintBoard: React.FC<ActiveSprintBoardProps> = ({
           onSprintClosed={() => onSprintClosed?.()}
         />
       )}
+
+      <TicketFormModal 
+        isOpen={showTicketModal}
+        onClose={() => setShowTicketModal(false)}
+        onSave={handleSaveTicket}
+        ticket={editingTicket}
+        proyectoId={proyectoId}
+      />
     </div>
   );
 };

@@ -80,6 +80,7 @@ namespace MateCode.API.Controllers
             public string Nombre { get; set; } = string.Empty;
             public string Objetivo { get; set; } = string.Empty;
             public int DuracionDias { get; set; }
+            public DateTime? FechaInicio { get; set; }
             public List<Guid> TicketIds { get; set; } = new();
         }
 
@@ -88,7 +89,7 @@ namespace MateCode.API.Controllers
         {
             try
             {
-                var sprint = await _backlogService.IniciarSprintAsync(proyectoId, request.Nombre, request.Objetivo, request.DuracionDias, request.TicketIds);
+                var sprint = await _backlogService.IniciarSprintAsync(proyectoId, request.Nombre, request.Objetivo, request.DuracionDias, request.TicketIds, request.FechaInicio);
                 return Ok(sprint);
             }
             catch (Exception ex)
@@ -110,6 +111,34 @@ namespace MateCode.API.Controllers
             {
                 var metrica = await _backlogService.FinalizarSprintAsync(sprintId, request.TicketsAlBacklog, request.TicketsDescartados);
                 return Ok(metrica);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message, inner = ex.InnerException?.Message });
+            }
+        }
+
+        [HttpPut("{sprintId}")]
+        public async Task<IActionResult> UpdateSprint(Guid proyectoId, Guid sprintId, [FromBody] Sprint sprintUpdate)
+        {
+            try
+            {
+                var result = await _backlogService.UpdateSprintAsync(sprintId, sprintUpdate);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message, inner = ex.InnerException?.Message });
+            }
+        }
+
+        [HttpDelete("{sprintId}")]
+        public async Task<IActionResult> DeleteSprint(Guid proyectoId, Guid sprintId)
+        {
+            try
+            {
+                await _backlogService.SoftDeleteSprintAsync(sprintId);
+                return NoContent();
             }
             catch (Exception ex)
             {

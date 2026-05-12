@@ -48,6 +48,36 @@ namespace MateCode.API.Controllers
             return Ok(new { prompt });
         }
 
+        [HttpPost("tickets")]
+        public async Task<IActionResult> CreateTicket([FromBody] Ticket ticket)
+        {
+            if (!HttpContext.Items.TryGetValue("CurrentTenantId", out var tenantObj) || tenantObj is null)
+                return Unauthorized();
+
+            var result = await _kanbanService.CreateTicketAsync(ticket, (Guid)tenantObj);
+            return Ok(result);
+        }
+
+        [HttpPut("tickets/{ticketId:guid}")]
+        public async Task<IActionResult> UpdateTicket(Guid ticketId, [FromBody] Ticket ticketUpdate)
+        {
+            if (!HttpContext.Items.TryGetValue("CurrentTenantId", out var tenantObj) || tenantObj is null)
+                return Unauthorized();
+
+            var result = await _kanbanService.UpdateTicketAsync(ticketId, ticketUpdate, (Guid)tenantObj);
+            return Ok(result);
+        }
+
+        [HttpDelete("tickets/{ticketId:guid}")]
+        public async Task<IActionResult> DeleteTicket(Guid ticketId)
+        {
+            if (!HttpContext.Items.TryGetValue("CurrentTenantId", out var tenantObj) || tenantObj is null)
+                return Unauthorized();
+
+            await _kanbanService.SoftDeleteTicketAsync(ticketId, (Guid)tenantObj);
+            return NoContent();
+        }
+
         [HttpPost("testing/report-bug")]
         public async Task<IActionResult> ReportBug([FromBody] BugReportRequest request)
         {

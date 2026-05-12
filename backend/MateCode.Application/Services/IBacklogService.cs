@@ -11,7 +11,9 @@ namespace MateCode.Application.Services
         Task<string> GenerarPromptGroomingAsync(Guid proyectoId);
         Task<IEnumerable<Sprint>> ObtenerSprintsAsync(Guid proyectoId);
         Task<IEnumerable<Ticket>> BulkImportTicketsAsync(Guid proyectoId, JsonElement payload);
-        Task<Sprint> IniciarSprintAsync(Guid proyectoId, string nombre, string objetivo, int duracionDias, List<Guid> ticketIds);
+        Task<Sprint> IniciarSprintAsync(Guid proyectoId, string nombre, string objetivo, int duracionDias, List<Guid> ticketIds, DateTime? fechaInicio = null);
+        Task<Sprint> UpdateSprintAsync(Guid sprintId, Sprint sprintUpdate);
+        Task SoftDeleteSprintAsync(Guid sprintId);
         Task<MetricaSprint> FinalizarSprintAsync(Guid sprintId, List<Guid> ticketsAlBacklog, List<Guid> ticketsDescartados);
         Task<string> ExportarEstadoTicketsAsync(Guid proyectoId);
     }
