@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MateCode.Application.Services;
+using MateCode.Core.Entities;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MateCode.API.Controllers
