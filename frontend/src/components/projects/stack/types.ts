@@ -4,6 +4,7 @@ export interface Tech {
     categoriaPrincipal: string; // La "Capa"
     categoriaSecundaria: string; // El "Tipo"
     urlDocumentacion?: string;
+    justificacion?: string; // Por qué se eligió en este proyecto
     colorHex?: string;
 }
 

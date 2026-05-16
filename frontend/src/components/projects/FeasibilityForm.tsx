@@ -23,6 +23,9 @@ export const FeasibilityForm = () => {
   const { tenantId } = useProject();
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
   const [isBrainstorming, setIsBrainstorming] = useState(false);
   const [availableForms, setAvailableForms] = useState<any[]>([]);
   const [adnTemplate, setAdnTemplate] = useState<any>(null);
@@ -51,7 +54,18 @@ export const FeasibilityForm = () => {
     fetchStatus();
   }, [tenantId, projectId]);
 
-  const { updateTechStack } = useProjectBlueprintStore();
+  // AUTO-SAVE LOGIC (Debounce)
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const timer = setTimeout(() => {
+        updateAdn();
+    }, 2000); // 2 segundos de calma y guardamos
+
+    return () => clearTimeout(timer);
+  }, [adnData, isDirty]);
+
+  const { updateTechStack, setPendingStackImport } = useProjectBlueprintStore();
 
   const fetchStatus = async () => {
     try {
@@ -82,7 +96,24 @@ export const FeasibilityForm = () => {
         prompt = `Actúa como Product Manager Senior. Para el proyecto "${projectName}", responde este cuestionario técnico.\n\nPREGUNTAS:\n${questions}\n\nREGLA CRÍTICA: Responde con un JSON donde cada clave sea el REF_ID exacto (ej. tag##index) y el valor sea tu respuesta.\n\nJSON ESPERADO: {"etiqueta##indice": "respuesta"}`;
     } else if (activeTab === 'stack') {
         const context = JSON.stringify(adnData);
-        prompt = `Actúa como Arquitecto de Software. Basado en este contexto del problema:\n${context}\n\nSugiere el STACK TECNOLÓGICO ideal (Front, Back, DB, Infra). Explica el porqué.\n\nRESPONDE ÚNICAMENTE CON UN JSON: {"plataforma": "...", "backend": "...", "frontend": "...", "bdd": "...", "infra": "..."}`;
+        prompt = `Actúa como Arquitecto de Software Senior. Basado en este contexto del problema:\n${context}\n\nSugiere el STACK TECNOLÓGICO ideal.
+        
+        REGLAS PARA EL JSON:
+        1. "capa" debe ser uno de: "🖥️ Frontend", "⚙️ Backend", "🗄️ Base de Datos", "☁️ Infra & DevOps", "🧪 Testing & QA", "📱 Mobile", "🎨 Diseño & UI".
+        2. "tipo" debe ser uno de: "Lenguaje", "Framework", "Librería", "Motor DB", "Extensión / ORM", "Plataforma / Herramienta".
+        
+        RESPONDE ÚNICAMENTE CON UN JSON CON ESTA ESTRUCTURA:
+        {
+          "tecnologias": [
+            {
+              "nombre": "Nombre de la herramienta",
+              "capa": "Capa (según regla 1)",
+              "tipo": "Tipo (según regla 2)",
+              "url_doc": "URL oficial de la documentación",
+              "justificacion": "Breve explicación de por qué es la mejor opción para este caso"
+            }
+          ]
+        }`;
     } else {
         const fullCtx = JSON.stringify({ context: adnData, stack: stackCount });
         prompt = `Actúa como Experto en Calidad. Basado en este proyecto:\n${fullCtx}\n\nDefine las 10 Reglas de Juego y Estándares de Calidad obligatorios.\n\nRESPONDE ÚNICAMENTE CON UN JSON: {"auth": "...", "rbac": "...", "estandares": "...", "legal": "..."}`;
@@ -98,7 +129,15 @@ export const FeasibilityForm = () => {
         if (activeTab === 'engineering') {
             // Unimos con lo que ya existe para no borrar si el JSON es parcial
             setAdnData({ ...adnData, ...data });
+            setIsDirty(true);
             Swal.fire({ title: 'ADN Inyectado', icon: 'success', background: '#18181b', color: '#fff' });
+        } else if (activeTab === 'stack') {
+            if (data.tecnologias && Array.isArray(data.tecnologias)) {
+                setPendingStackImport(data.tecnologias);
+                Swal.fire({ title: 'Stack Procesado', text: 'Detectamos sugerencias de la IA. El constructor las procesará ahora.', icon: 'success', background: '#18181b', color: '#fff' });
+            } else {
+                Swal.fire({ title: 'Formato Incorrecto', text: 'El JSON debe contener un array "tecnologias".', icon: 'warning', background: '#18181b', color: '#fff' });
+            }
         } else {
             await Swal.fire({ title: 'Sugerencias de IA', text: 'La IA sugiere usar estos datos. Cópialos y aplícalos en el constructor.', icon: 'info', background: '#18181b', color: '#fff' });
         }
@@ -134,7 +173,8 @@ export const FeasibilityForm = () => {
         const ctx = project.contextoJson || {};
         ctx.adn = { ...ctx.adn, data: adnData };
         await api.put(`/Project/${projectId}/feasibility`, ctx);
-        Swal.fire({ icon: 'success', title: 'ADN Consolidado', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+        setIsDirty(false);
+        setLastSaved(new Date());
     } finally { setIsSaving(false); }
   };
 
@@ -156,9 +196,16 @@ export const FeasibilityForm = () => {
         
         {/* AI Assistant Mini-Bar */}
         <div className="flex bg-zinc-900 border border-zinc-800 p-2 rounded-2xl items-center gap-3">
-            <div className="px-4">
-                <p className="text-[9px] font-black text-emerald-500 uppercase">Asistente IA</p>
-                <p className="text-[10px] text-zinc-500 font-bold">Cascada Nivel 0{activeTab === 'engineering' ? 1 : activeTab === 'stack' ? 2 : 3}</p>
+            <div className="px-4 flex items-center gap-3">
+                <div>
+                  <p className="text-[9px] font-black text-emerald-500 uppercase">Asistente IA</p>
+                  <p className="text-[10px] text-zinc-500 font-bold">Cascada Nivel 0{activeTab === 'engineering' ? 1 : activeTab === 'stack' ? 2 : 3}</p>
+                </div>
+                <div className="h-8 w-px bg-zinc-800" />
+                <div className="flex flex-col items-center">
+                   <div className={`w-2 h-2 rounded-full ${isSaving ? 'bg-amber-500 animate-pulse' : isDirty ? 'bg-amber-500/50' : 'bg-emerald-500'} shadow-[0_0_10px_rgba(16,185,129,0.2)]`} />
+                   <p className="text-[7px] font-black uppercase mt-1 text-zinc-600">{isSaving ? 'Guardando' : isDirty ? 'Pendiente' : 'Sincro'}</p>
+                </div>
             </div>
             <button onClick={() => setShowContextBuilder(true)} className="p-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-xl transition-all border border-emerald-500/20 flex items-center gap-2 group">
                 <FileText size={16} />
@@ -235,7 +282,10 @@ export const FeasibilityForm = () => {
                                                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">{q.pregunta}</label>
                                                 <textarea 
                                                     value={adnData?.[uniqueKey] || ''} 
-                                                    onChange={e => setAdnData({ ...adnData, [uniqueKey]: e.target.value })} 
+                                                    onChange={e => {
+                                                        setAdnData({ ...adnData, [uniqueKey]: e.target.value });
+                                                        setIsDirty(true);
+                                                    }} 
                                                     rows={4} 
                                                     placeholder={`Detalla aquí sobre ${q.etiquetaSemantica}...`}
                                                     className="w-full bg-zinc-950 border border-zinc-800 rounded-[2rem] p-6 text-sm text-zinc-200 outline-none focus:border-emerald-500/50 transition-all resize-none font-medium shadow-inner" 
@@ -244,7 +294,15 @@ export const FeasibilityForm = () => {
                                         );
                                     })}
                                 </div>
-                                <button disabled={isSaving} onClick={updateAdn} className="w-full py-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-xs tracking-[0.2em] rounded-[2rem] transition-all flex justify-center items-center gap-3 shadow-2xl shadow-emerald-500/20">{isSaving ? <Loader2 className="animate-spin" /> : 'Consolidar Entendimiento'}</button>
+                                <button 
+                                    disabled={isSaving} 
+                                    onClick={updateAdn} 
+                                    className={`w-full py-6 font-black uppercase text-xs tracking-[0.2em] rounded-[2rem] transition-all flex justify-center items-center gap-3 shadow-2xl ${
+                                        isDirty ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-zinc-800 text-zinc-500 cursor-default'
+                                    }`}
+                                >
+                                    {isSaving ? <Loader2 className="animate-spin" /> : isDirty ? 'Consolidar Cambios' : 'ADN Sincronizado'}
+                                </button>
                             </div>
                         )}
                     </section>

@@ -13,7 +13,7 @@ import { CatalogModal } from './stack/CatalogModal';
 import { useProjectBlueprintStore } from '../../store/useProjectBlueprintStore';
 
 export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenantId: string }) => {
-    const { updateTechStack } = useProjectBlueprintStore();
+    const { updateTechStack, pendingStackImport, setPendingStackImport } = useProjectBlueprintStore();
     // ESTADO CENTRAL
     const [catalog, setCatalog] = useState<Tech[]>([]);
     const [projectStack, setProjectStack] = useState<Tech[]>([]);
@@ -33,7 +33,11 @@ export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenan
 
             setCatalog(catData);
             setTemplates(tempsData);
-            const stack = stackData.map((s: any) => s.tecnologia).filter(Boolean);
+            const stack = stackData.map((s: any) => ({
+                ...s.tecnologia,
+                justificacion: s.descripcionUso
+            })).filter((t: any) => t.id);
+            
             setProjectStack(stack);
             updateTechStack(stack.map((t: any) => ({
                 id: t.id,
@@ -49,20 +53,67 @@ export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenan
 
     useEffect(() => { loadData(); }, [projectId, tenantId]);
 
+    // INYECCIÓN AUTOMÁTICA (Smart Match)
+    useEffect(() => {
+        if (pendingStackImport && pendingStackImport.length > 0 && catalog.length > 0) {
+            const processImport = async () => {
+                const results = [];
+                for (const item of pendingStackImport) {
+                    // Buscar en catálogo (match por nombre insensible a mayúsculas)
+                    const existing = catalog.find(c => c.nombre.toLowerCase() === item.nombre.toLowerCase());
+                    if (existing) {
+                        results.push({ ...existing, justificacion: item.justificacion });
+                    } else {
+                        // Crear on-the-fly
+                        try {
+                            const newTech = await api.post('/Stack/catalog', {
+                                nombre: item.nombre,
+                                categoriaPrincipal: item.capa,
+                                categoriaSecundaria: item.tipo,
+                                urlDocumentacion: item.url_doc
+                            });
+                            setCatalog(prev => [...prev, newTech]);
+                            results.push({ ...newTech, justificacion: item.justificacion });
+                        } catch (e) { console.error("Error creating tech on fly", e); }
+                    }
+                }
+
+                // Unir con lo que ya existe sin duplicar IDs
+                const currentIds = new Set(projectStack.map(t => t.id));
+                const filteredNew = results.filter(r => !currentIds.has(r.id));
+                const finalStack = [...projectStack, ...filteredNew];
+                
+                setProjectStack(finalStack);
+                updateTechStack(finalStack.map(t => ({
+                    id: t.id,
+                    categoriaPrincipal: t.categoriaPrincipal,
+                    nombre: t.nombre
+                })));
+                syncStack(finalStack);
+                setPendingStackImport(null); // Limpiar una vez procesado
+                Swal.fire({ icon: 'success', title: 'Stack Inyectado', text: `${filteredNew.length} nuevas herramientas agregadas.`, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            };
+            processImport();
+        }
+    }, [pendingStackImport, catalog]);
+
     // LÓGICA DE STACK
     const syncStack = async (newStack: Tech[]) => {
         try {
-            await api.post(`/Stack/project/${projectId}`, newStack.map(t => t.id));
+            await api.post(`/Stack/project/${projectId}`, newStack.map(t => ({
+                tecnologiaId: t.id,
+                justificacion: t.justificacion || ''
+            })));
         } catch (err) {
             console.error("Error sincronizando stack:", err);
         }
     };
 
-    const handleAddTech = (techId: string) => {
+    const handleAddTech = (techId: string, justification?: string) => {
         if (projectStack.some(t => t.id === techId)) return;
         const tech = catalog.find(t => t.id === techId);
         if (!tech) return;
-        const newStack = [...projectStack, tech];
+        const newStack = [...projectStack, { ...tech, justificacion: justification }];
         setProjectStack(newStack);
         updateTechStack(newStack.map(t => ({
             id: t.id,
@@ -80,6 +131,12 @@ export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenan
             categoriaPrincipal: t.categoriaPrincipal,
             nombre: t.nombre
         })));
+        syncStack(newStack);
+    };
+
+    const handleUpdateJustification = (techId: string, justification: string) => {
+        const newStack = projectStack.map(t => t.id === techId ? { ...t, justificacion: justification } : t);
+        setProjectStack(newStack);
         syncStack(newStack);
     };
 
@@ -185,25 +242,27 @@ export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenan
     };
 
     // LÓGICA DE CATÁLOGO
-    const createOnTheFly = async () => {
+    const createOnTheFly = async (initialData?: any) => {
         const { value: v } = await Swal.fire({
             title: '🚀 Nueva Tecnología',
             background: '#18181b', color: '#fff', confirmButtonColor: '#10b981',
             html: `
                 <div class="text-left space-y-4">
-                    <input id="swal-name" class="swal2-input bg-zinc-950 text-white w-full m-0" placeholder="Nombre">
+                    <input id="swal-name" class="swal2-input bg-zinc-950 text-white w-full m-0" placeholder="Nombre" value="${initialData?.nombre || ''}">
                     <select id="swal-main" class="swal2-input bg-zinc-950 text-white w-full m-0">
-                        ${MAIN_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+                        ${MAIN_CATEGORIES.map(c => `<option value="${c}" ${initialData?.categoriaPrincipal === c ? 'selected' : ''}>${c}</option>`).join('')}
                     </select>
                     <select id="swal-sec" class="swal2-input bg-zinc-950 text-white w-full m-0">
-                        ${SECONDARY_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+                        ${SECONDARY_CATEGORIES.map(c => `<option value="${c}" ${initialData?.categoriaSecundaria === c ? 'selected' : ''}>${c}</option>`).join('')}
                     </select>
+                    <input id="swal-url" class="swal2-input bg-zinc-950 text-white w-full m-0" placeholder="URL Doc (opcional)" value="${initialData?.urlDocumentacion || ''}">
                 </div>
             `,
             preConfirm: () => ({
                 nombre: (document.getElementById('swal-name') as HTMLInputElement).value,
                 categoriaPrincipal: (document.getElementById('swal-main') as HTMLSelectElement).value,
-                categoriaSecundaria: (document.getElementById('swal-sec') as HTMLSelectElement).value
+                categoriaSecundaria: (document.getElementById('swal-sec') as HTMLSelectElement).value,
+                urlDocumentacion: (document.getElementById('swal-url') as HTMLInputElement).value
             })
         });
 
@@ -211,7 +270,7 @@ export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenan
             try {
                 const newTech = await api.post('/Stack/catalog', v);
                 setCatalog(prev => [...prev, newTech]);
-                handleAddTech(newTech.id);
+                handleAddTech(newTech.id, initialData?.justificacion);
             } catch (err) {
                 console.error("Error creando tecnología:", err);
             }
@@ -286,6 +345,7 @@ export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenan
                 <StackArchitectView 
                     projectStack={projectStack} 
                     onRemoveTech={handleRemoveTech} 
+                    onUpdateJustification={handleUpdateJustification}
                 />
             </div>
 

@@ -156,6 +156,12 @@ namespace MateCode.API.Controllers
             return Ok(existing);
         }
 
+        public class StackUpdateItem
+        {
+            public Guid TecnologiaId { get; set; }
+            public string Justificacion { get; set; } = string.Empty;
+        }
+
         // --- PROYECTO STACK ---
         [HttpGet("project/{projectId:guid}")]
         public async Task<IActionResult> GetProjectStack(Guid projectId)
@@ -168,18 +174,19 @@ namespace MateCode.API.Controllers
         }
 
         [HttpPost("project/{projectId:guid}")]
-        public async Task<IActionResult> UpdateProjectStack(Guid projectId, [FromBody] System.Collections.Generic.List<Guid> techIds)
+        public async Task<IActionResult> UpdateProjectStack(Guid projectId, [FromBody] System.Collections.Generic.List<StackUpdateItem> items)
         {
             var current = await _context.ProyectosStack.Where(s => s.ProyectoId == projectId).ToListAsync();
             _context.ProyectosStack.RemoveRange(current);
 
-            foreach (var tid in techIds)
+            foreach (var item in items)
             {
                 _context.ProyectosStack.Add(new ProyectoStack
                 {
                     Id = Guid.NewGuid(),
                     ProyectoId = projectId,
-                    TecnologiaId = tid
+                    TecnologiaId = item.TecnologiaId,
+                    DescripcionUso = item.Justificacion
                 });
             }
 
