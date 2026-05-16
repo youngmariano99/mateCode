@@ -36,6 +36,8 @@ export const FeasibilityForm = () => {
   const [stackCount, setStackCount] = useState(0);
   const [standardsCount, setStandardsCount] = useState(0);
   const [projectStandards, setProjectStandards] = useState<any[]>([]);
+  const [projectStack, setProjectStack] = useState<any[]>([]);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [projectInfo, setProjectInfo] = useState({ nombre: '', descripcion: '' });
   const [importJson, setImportJson] = useState('');
 
@@ -46,8 +48,15 @@ export const FeasibilityForm = () => {
             setProjectInfo({ nombre: project.nombre, descripcion: project.descripcion });
             setAdnData(project.contextoJson?.adn?.data || {});
             if (project.contextoJson?.adn?.plantillaId) fetchTemplate(project.contextoJson.adn.plantillaId);
-            const forms = await api.get(`/FormLibrary`);
+            const [forms, catalog] = await Promise.all([
+                api.get(`/FormLibrary`),
+                api.get(`/Standard`)
+            ]);
             setAvailableForms(forms);
+            
+            // Extraer categorías únicas del catálogo de estándares
+            const cats = Array.from(new Set(catalog.map((s: any) => s.categoria))).filter(Boolean) as string[];
+            setAvailableCategories(cats);
         } catch (err) { console.error("Error init:", err); }
     };
     init();
@@ -65,7 +74,7 @@ export const FeasibilityForm = () => {
     return () => clearTimeout(timer);
   }, [adnData, isDirty]);
 
-  const { updateTechStack, setPendingStackImport } = useProjectBlueprintStore();
+  const { updateTechStack, setPendingStackImport, setPendingStandardsImport, updateCalidad } = useProjectBlueprintStore();
 
   const fetchStatus = async () => {
     try {
@@ -73,6 +82,7 @@ export const FeasibilityForm = () => {
             api.get(`/Stack/project/${projectId}`),
             api.get(`/Project/${projectId}/standards`)
         ]);
+        setProjectStack(stack);
         setStackCount(stack.length);
         setStandardsCount(standards.length);
         setProjectStandards(standards);
@@ -131,13 +141,42 @@ export const FeasibilityForm = () => {
           ]
         }`;
     } else {
+        // CONTEXTO PARA BLUEPRINT (ESTÁNDARES)
+        const stackSummary = projectStack.map(s => `${s.tecnologia?.nombre} (${s.tecnologia?.categoriaPrincipal})`).join(', ');
+        
         const fullCtx = JSON.stringify({ 
             proyecto: projectName,
             descripcion: projectInfo.descripcion,
             adn: adnData, 
-            stack_count: stackCount 
-        });
-        prompt = `Actúa como Experto en Calidad. Basado en este proyecto:\n${fullCtx}\n\nDefine las 10 Reglas de Juego y Estándares de Calidad obligatorios.\n\nRESPONDE ÚNICAMENTE CON UN JSON: {"auth": "...", "rbac": "...", "estandares": "...", "legal": "..."}`;
+            stack_detallado: stackSummary,
+            categorias_estandares_disponibles: availableCategories
+        }, null, 2);
+
+        prompt = `Actúa como Experto en Calidad y Arquitecto de Software. 
+        Basado en el proyecto "${projectName}" y su stack técnico (${stackSummary}), define las 10 Reglas de Juego y Estándares de Calidad obligatorios.
+        
+        CONTEXTO COMPLETO:
+        ${fullCtx}
+
+        REGLAS CRÍTICAS:
+        1. Los estándares deben ser técnicamente viables para el stack mencionado.
+        2. Usa las "categorias_estandares_disponibles" proporcionadas en el contexto si es posible.
+        3. Clasifica cada estándar en una categoría lógica (ej. Seguridad, Código, Infraestructura, Legal).
+
+        RESPONDE ÚNICAMENTE CON UN JSON CON ESTA ESTRUCTURA:
+        {
+          "auth": "Resumen de estrategia de autenticación",
+          "rbac": "Resumen de estrategia de roles y permisos",
+          "legal": "Consideraciones legales y de datos (GDPR, Ley 25.326, etc.)",
+          "estandares": [
+            {
+              "nombre": "Título del estándar",
+              "categoria": "Categoría (según el catálogo o una nueva si es vital)",
+              "descripcion": "Explicación técnica de por qué y cómo implementarlo",
+              "color": "Color hexadecimal sugerido para el badge"
+            }
+          ]
+        }`;
     }
 
     navigator.clipboard.writeText(prompt);
@@ -148,7 +187,6 @@ export const FeasibilityForm = () => {
     try {
         const data = JSON.parse(importJson);
         if (activeTab === 'engineering') {
-            // Unimos con lo que ya existe para no borrar si el JSON es parcial
             setAdnData({ ...adnData, ...data });
             setIsDirty(true);
             Swal.fire({ title: 'ADN Inyectado', icon: 'success', background: '#18181b', color: '#fff' });
@@ -156,11 +194,25 @@ export const FeasibilityForm = () => {
             if (data.tecnologias && Array.isArray(data.tecnologias)) {
                 setPendingStackImport(data.tecnologias);
                 Swal.fire({ title: 'Stack Procesado', text: 'Detectamos sugerencias de la IA. El constructor las procesará ahora.', icon: 'success', background: '#18181b', color: '#fff' });
-            } else {
-                Swal.fire({ title: 'Formato Incorrecto', text: 'El JSON debe contener un array "tecnologias".', icon: 'warning', background: '#18181b', color: '#fff' });
             }
-        } else {
-            await Swal.fire({ title: 'Sugerencias de IA', text: 'La IA sugiere usar estos datos. Cópialos y aplícalos en el constructor.', icon: 'info', background: '#18181b', color: '#fff' });
+        } else if (activeTab === 'blueprint') {
+            // Inyectar estrategias generales
+            updateCalidad({ 
+                auth: data.auth || '', 
+                rbac: data.rbac || '', 
+                legal: data.legal || '' 
+            });
+
+            if (data.estandares && Array.isArray(data.estandares)) {
+                setPendingStandardsImport(data.estandares);
+                Swal.fire({ 
+                    title: 'Blueprint Inyectado', 
+                    text: 'Las estrategias de Auth/RBAC se actualizaron y los estándares están listos para revisión.', 
+                    icon: 'success', 
+                    background: '#18181b', 
+                    color: '#fff' 
+                });
+            }
         }
         setImportJson('');
     } catch (err) {

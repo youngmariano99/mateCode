@@ -66,6 +66,7 @@ export interface ProjectBlueprintState {
     gestion: GestionBlock;
     respuestasContexto: Record<string, string>;
     pendingStackImport: any[] | null;
+    pendingStandardsImport: any[] | null;
     
     // Actions
     updateAdn: (data: Partial<AdnBlock>) => void;
@@ -77,6 +78,7 @@ export interface ProjectBlueprintState {
     updateGestion: (data: Partial<GestionBlock>) => void;
     updateRespuestaContexto: (id: string, valor: string) => void;
     setPendingStackImport: (techs: any[] | null) => void;
+    setPendingStandardsImport: (standards: any[] | null) => void;
     reset: () => void;
 }
 
@@ -89,7 +91,8 @@ const initialValues = {
     calidad: { auth: '', rbac: '', estandares: '', legal: '' },
     gestion: { hitos: '', presupuesto: '', riesgos: '' },
     respuestasContexto: {},
-    pendingStackImport: null
+    pendingStackImport: null,
+    pendingStandardsImport: null
 };
 
 export const useProjectBlueprintStore = create<ProjectBlueprintState>()(
@@ -108,6 +111,7 @@ export const useProjectBlueprintStore = create<ProjectBlueprintState>()(
                 respuestasContexto: { ...state.respuestasContexto, [id]: valor } 
             })),
             setPendingStackImport: (techs) => set(() => ({ pendingStackImport: techs })),
+            setPendingStandardsImport: (standards) => set(() => ({ pendingStandardsImport: standards })),
             
             reset: () => set(initialValues)
         }),
