@@ -132,10 +132,26 @@ namespace MateCode.API.Controllers
             var existing = await _context.TecnologiasCatalogo.FirstOrDefaultAsync(t => t.Id == id && (t.TenantId == tenantId || t.TenantId == null));
             if (existing == null) return NotFound();
 
-            // Permitimos desactivar globales para quitarlas del catálogo sin romper integridad
+            // Soft delete
             existing.Activo = false;
             await _context.SaveChangesAsync();
             return Ok(new { success = true });
+        }
+
+        [HttpPost("catalog/bulk-delete")]
+        public async Task<IActionResult> BulkDeleteTech([FromHeader(Name = "X-Tenant-Id")] Guid tenantId, [FromBody] System.Collections.Generic.List<Guid> ids)
+        {
+            var techs = await _context.TecnologiasCatalogo
+                .Where(t => ids.Contains(t.Id) && (t.TenantId == tenantId || t.TenantId == null))
+                .ToListAsync();
+
+            foreach (var t in techs)
+            {
+                t.Activo = false;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true, count = techs.Count });
         }
 
         [HttpPut("catalog/{id:guid}")]

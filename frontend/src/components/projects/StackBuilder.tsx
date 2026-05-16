@@ -57,10 +57,15 @@ export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenan
     useEffect(() => {
         if (pendingStackImport && pendingStackImport.length > 0 && catalog.length > 0) {
             const processImport = async () => {
+                const toProcess = [...pendingStackImport];
+                setPendingStackImport(null); // Limpiar INMEDIATAMENTE para evitar bucles
+
                 const results = [];
-                for (const item of pendingStackImport) {
+                let updatedCatalog = [...catalog];
+
+                for (const item of toProcess) {
                     // Buscar en catálogo (match por nombre insensible a mayúsculas)
-                    const existing = catalog.find(c => c.nombre.toLowerCase() === item.nombre.toLowerCase());
+                    const existing = updatedCatalog.find(c => c.nombre.toLowerCase() === item.nombre.toLowerCase());
                     if (existing) {
                         results.push({ ...existing, justificacion: item.justificacion });
                     } else {
@@ -72,30 +77,47 @@ export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenan
                                 categoriaSecundaria: item.tipo,
                                 urlDocumentacion: item.url_doc
                             });
-                            setCatalog(prev => [...prev, newTech]);
+                            updatedCatalog = [...updatedCatalog, newTech];
                             results.push({ ...newTech, justificacion: item.justificacion });
                         } catch (e) { console.error("Error creating tech on fly", e); }
                     }
                 }
+
+                // Actualizar catálogo local una sola vez
+                setCatalog(updatedCatalog);
 
                 // Unir con lo que ya existe sin duplicar IDs
                 const currentIds = new Set(projectStack.map(t => t.id));
                 const filteredNew = results.filter(r => !currentIds.has(r.id));
                 const finalStack = [...projectStack, ...filteredNew];
                 
-                setProjectStack(finalStack);
-                updateTechStack(finalStack.map(t => ({
-                    id: t.id,
-                    categoriaPrincipal: t.categoriaPrincipal,
-                    nombre: t.nombre
-                })));
-                syncStack(finalStack);
-                setPendingStackImport(null); // Limpiar una vez procesado
-                Swal.fire({ icon: 'success', title: 'Stack Inyectado', text: `${filteredNew.length} nuevas herramientas agregadas.`, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                if (filteredNew.length > 0) {
+                    setProjectStack(finalStack);
+                    updateTechStack(finalStack.map(t => ({
+                        id: t.id,
+                        categoriaPrincipal: t.categoriaPrincipal,
+                        nombre: t.nombre
+                    })));
+                    // Sincronizar con el backend de forma segura
+                    await api.post(`/Stack/project/${projectId}`, finalStack.map(t => ({
+                        tecnologiaId: t.id,
+                        justificacion: t.justificacion || ''
+                    })));
+
+                    Swal.fire({ 
+                        icon: 'success', 
+                        title: 'Stack Sincronizado', 
+                        text: `${filteredNew.length} nuevas herramientas inyectadas y guardadas.`, 
+                        toast: true, 
+                        position: 'top-end', 
+                        showConfirmButton: false, 
+                        timer: 3000 
+                    });
+                }
             };
             processImport();
         }
-    }, [pendingStackImport, catalog]);
+    }, [pendingStackImport, catalog, projectId, projectStack]);
 
     // LÓGICA DE STACK
     const syncStack = async (newStack: Tech[]) => {
@@ -256,21 +278,28 @@ export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenan
                         ${SECONDARY_CATEGORIES.map(c => `<option value="${c}" ${initialData?.categoriaSecundaria === c ? 'selected' : ''}>${c}</option>`).join('')}
                     </select>
                     <input id="swal-url" class="swal2-input bg-zinc-950 text-white w-full m-0" placeholder="URL Doc (opcional)" value="${initialData?.urlDocumentacion || ''}">
+                    <textarea id="swal-just" class="swal2-textarea bg-zinc-950 text-white w-full m-0" placeholder="¿Por qué elegimos esta tecnología? (Justificación)" style="height: 80px">${initialData?.justificacion || ''}</textarea>
                 </div>
             `,
             preConfirm: () => ({
                 nombre: (document.getElementById('swal-name') as HTMLInputElement).value,
                 categoriaPrincipal: (document.getElementById('swal-main') as HTMLSelectElement).value,
                 categoriaSecundaria: (document.getElementById('swal-sec') as HTMLSelectElement).value,
-                urlDocumentacion: (document.getElementById('swal-url') as HTMLInputElement).value
+                urlDocumentacion: (document.getElementById('swal-url') as HTMLInputElement).value,
+                justificacion: (document.getElementById('swal-just') as HTMLTextAreaElement).value
             })
         });
 
         if (v && v.nombre) {
             try {
-                const newTech = await api.post('/Stack/catalog', v);
+                const newTech = await api.post('/Stack/catalog', {
+                    nombre: v.nombre,
+                    categoriaPrincipal: v.categoriaPrincipal,
+                    categoriaSecundaria: v.categoriaSecundaria,
+                    urlDocumentacion: v.urlDocumentacion
+                });
                 setCatalog(prev => [...prev, newTech]);
-                handleAddTech(newTech.id, initialData?.justificacion);
+                handleAddTech(newTech.id, v.justificacion);
             } catch (err) {
                 console.error("Error creando tecnología:", err);
             }
@@ -295,6 +324,17 @@ export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenan
             } catch (err: any) {
                 Swal.fire({ icon: 'error', title: 'Error', text: err.message });
             }
+        }
+    };
+
+    const handleBulkDelete = async (techIds: string[]) => {
+        try {
+            await api.post('/Stack/catalog/bulk-delete', techIds);
+            setCatalog(prev => prev.filter(t => !techIds.includes(t.id)));
+            setProjectStack(prev => prev.filter(t => !techIds.includes(t.id)));
+            Swal.fire({ icon: 'success', title: 'Bóveda Limpia', text: `${techIds.length} herramientas ocultadas.`, toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+        } catch (err: any) {
+            Swal.fire({ icon: 'error', title: 'Error masivo', text: err.message });
         }
     };
 
@@ -360,6 +400,7 @@ export const StackBuilder = ({ projectId, tenantId }: { projectId: string; tenan
                 <CatalogModal 
                     catalog={catalog} 
                     onDeleteTech={handleDeleteTech} 
+                    onBulkDelete={handleBulkDelete}
                     onClose={() => setShowCatalogManager(false)} 
                 />
             )}

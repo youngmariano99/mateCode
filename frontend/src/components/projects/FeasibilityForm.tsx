@@ -89,14 +89,30 @@ export const FeasibilityForm = () => {
 
   const generateAIPrompt = () => {
     let prompt = "";
-    const projectName = "Proyecto"; 
+    const projectName = projectInfo.nombre || "Proyecto"; 
 
     if (activeTab === 'engineering') {
         const questions = (adnTemplate?.configuracionJson || []).map((q: any, i: number) => `- ${q.pregunta} (REF_ID: ${q.etiquetaSemantica || q.etiqueta_semantica}##${i})`).join('\n');
         prompt = `Actúa como Product Manager Senior. Para el proyecto "${projectName}", responde este cuestionario técnico.\n\nPREGUNTAS:\n${questions}\n\nREGLA CRÍTICA: Responde con un JSON donde cada clave sea el REF_ID exacto (ej. tag##index) y el valor sea tu respuesta.\n\nJSON ESPERADO: {"etiqueta##indice": "respuesta"}`;
     } else if (activeTab === 'stack') {
-        const context = JSON.stringify(adnData);
-        prompt = `Actúa como Arquitecto de Software Senior. Basado en este contexto del problema:\n${context}\n\nSugiere el STACK TECNOLÓGICO ideal.
+        // CONTEXTO RICO: Mapeamos preguntas con respuestas para que la IA entienda el "sentido" de cada dato
+        const technicalContext = (adnTemplate?.configuracionJson || []).map((q: any, i: number) => {
+            const key = `${q.etiquetaSemantica || q.etiqueta_semantica}##${i}`;
+            return {
+                pregunta: q.pregunta,
+                respuesta: adnData?.[key] || 'No especificado'
+            };
+        });
+
+        const fullContext = {
+            proyecto: projectName,
+            descripcion_general: projectInfo.descripcion,
+            especificaciones_tecnicas: technicalContext
+        };
+
+        const contextStr = JSON.stringify(fullContext, null, 2);
+        
+        prompt = `Actúa como Arquitecto de Software Senior. Basado en este contexto del problema:\n${contextStr}\n\nSugiere el STACK TECNOLÓGICO ideal.
         
         REGLAS PARA EL JSON:
         1. "capa" debe ser uno de: "🖥️ Frontend", "⚙️ Backend", "🗄️ Base de Datos", "☁️ Infra & DevOps", "🧪 Testing & QA", "📱 Mobile", "🎨 Diseño & UI".
@@ -115,7 +131,12 @@ export const FeasibilityForm = () => {
           ]
         }`;
     } else {
-        const fullCtx = JSON.stringify({ context: adnData, stack: stackCount });
+        const fullCtx = JSON.stringify({ 
+            proyecto: projectName,
+            descripcion: projectInfo.descripcion,
+            adn: adnData, 
+            stack_count: stackCount 
+        });
         prompt = `Actúa como Experto en Calidad. Basado en este proyecto:\n${fullCtx}\n\nDefine las 10 Reglas de Juego y Estándares de Calidad obligatorios.\n\nRESPONDE ÚNICAMENTE CON UN JSON: {"auth": "...", "rbac": "...", "estandares": "...", "legal": "..."}`;
     }
 
