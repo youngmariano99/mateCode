@@ -7,13 +7,13 @@ import { BacklogHub } from '../kanban/BacklogHub';
 
 export const DevHubWorkspace: React.FC = () => {
     const { activeProjectId, setActiveRoom } = useWorkspaceStore();
-    const [activeTab, setActiveTab] = useState<'kanban' | 'backlog'>('kanban');
+    const [activeTab, setActiveTab] = useState<'kanban' | 'backlog'>('backlog');
 
     if (!activeProjectId) return null;
 
     const tabs = [
-        { id: 'kanban', label: 'Tablero de Sprint', icon: LayoutGrid, color: 'emerald' },
-        { id: 'backlog', label: 'Product Backlog', icon: ListTodo, color: 'blue' }
+        { id: 'backlog', label: 'Product Backlog', icon: ListTodo, color: 'blue' },
+        { id: 'kanban', label: 'Tablero de Sprint', icon: LayoutGrid, color: 'emerald' }
     ] as const;
 
     return (

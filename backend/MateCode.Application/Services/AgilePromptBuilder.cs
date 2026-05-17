@@ -7,39 +7,45 @@ namespace MateCode.Application.Services
     {
         public static string BuildPhase1Prompt(Proyecto project, string adn, string stack, string standards)
         {
-            var sb = new StringBuilder();
-            sb.AppendLine($"### PROYECTO: {project?.Nombre?.ToUpper()} ###");
-            sb.AppendLine("### MATECODE AI: ORÁCULO DE REQUISITOS (FASE 1) ###");
-            sb.AppendLine();
-            sb.AppendLine("Actúa como un Senior Product Manager y Business Analyst. Tu objetivo es generar un 'User Story Mapping' completo basado en la visión técnica y estratégica del proyecto.");
-            sb.AppendLine();
+            var adnContext = DesignPromptBuilder.FormatAdn(adn);
 
-            sb.AppendLine("## 1. CONTEXTO ESTRATÉGICO (ADN - FASE 0)");
-            sb.AppendLine(DesignPromptBuilder.FormatAdn(adn));
-            sb.AppendLine();
+            return $@"<system_context>
+Eres un Product Manager Senior y Agile Coach.
+Dominio: Estrategia de Producto y User Story Mapping (Fase 1).
+</system_context>
 
-            sb.AppendLine("## 2. STACK TECNOLÓGICO");
-            sb.AppendLine(stack);
-            sb.AppendLine();
+<contexto_del_proyecto>
+### PROYECTO: {project?.Nombre?.ToUpper()} ###
 
-            sb.AppendLine("## 3. BLUEPRINT Y ESTÁNDARES");
-            sb.AppendLine(standards);
-            sb.AppendLine();
+## 1. CONTEXTO ESTRATÉGICO (ADN - FASE 0)
+{adnContext}
 
-            sb.AppendLine("## TU TAREA:");
-            sb.AppendLine("Diseñá un 'User Story Map' bidimensional detallado (Jeff Patton style). Debés devolver ÚNICAMENTE un objeto JSON válido con la siguiente estructura estricta:");
-            sb.AppendLine();
-            sb.AppendLine(GetStoryMapJsonTemplate());
-            sb.AppendLine();
-            sb.AppendLine("REGLAS:");
-            sb.AppendLine("1. EJE HORIZONTAL: Epics agrupan Features (pasos narrativos).");
-            sb.AppendLine("2. EJE VERTICAL (RELEASES): Realizá el 'Slicing' en al menos 3 releases (V1, V2, V3).");
-            sb.AppendLine("3. PERSONAS: Identificá actores clave. El campo 'user' en cada 'user_story' DEBE ser el nombre de una de las personas definidas en la lista 'personas'.");
-            sb.AppendLine("4. STORY MAPPING: Cada 'user_story' DEBE tener un 'release_id' válido.");
-            sb.AppendLine("5. FORMATO: Solo JSON crudo, sin bloques markdown ni texto adicional.");
+## 2. STACK TECNOLÓGICO
+{stack}
 
-            return sb.ToString();
+## 3. BLUEPRINT Y ESTÁNDARES
+{standards}
+</contexto_del_proyecto>
+
+<imperativo_de_tarea>
+Diseñar un 'User Story Map' bidimensional detallado (Jeff Patton style) basado en la visión estratégica, el stack tecnológico y las reglas de negocio del proyecto.
+</imperativo_de_tarea>
+
+<restricciones_criticas>
+- MANTÉN LA COHERENCIA TÉCNICA: Las historias de usuario deben tener sentido con el Stack Tecnológico elegido y los Estándares de Calidad.
+- EJE HORIZONTAL (EPICS): Agrupa la narrativa del usuario en Epics lógicas, y éstas en Features (pasos narrativos).
+- EJE VERTICAL (RELEASES): Realiza un 'Slicing' vertical en al menos 3 releases claras (Ej: V1 MVP, V2 Mejoras, V3 Escalamiento).
+- PERSONAS: Identifica a los actores clave basándote en el ADN. El campo 'user' en cada 'user_story' DEBE coincidir con el nombre de una de las personas definidas en tu lista de 'personas'.
+- MAPEO ESTRICTO: Cada 'user_story' DEBE tener un 'release_id' válido y declarado en tu arreglo de releases.
+</restricciones_criticas>
+
+<formato_de_salida_estricto>
+- Devuelve ÚNICAMENTE un objeto JSON válido, sin bloques de código markdown, sin introducciones ni conclusiones.
+- El JSON debe estructurarse obligatoriamente de la siguiente manera:
+{GetStoryMapJsonTemplate()}
+</formato_de_salida_estricto>";
         }
+
 
         public static string GetMagicPromptTemplate()
         {

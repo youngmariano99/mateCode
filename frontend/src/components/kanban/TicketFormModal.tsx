@@ -278,17 +278,37 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-start gap-4 p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl mb-4">
-                <AlertCircle className="text-blue-400 shrink-0" size={18} />
-                <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  Pega aquí el objeto JSON individual que generó la IA. El sistema reconocerá automáticamente los campos <span className="text-blue-300">titulo_tecnico</span>, <span className="text-blue-300">criterios_aceptacion</span> y <span className="text-blue-300">tareas_tecnicas</span>.
-                </p>
+              <div className="flex justify-between items-center bg-blue-500/5 border border-blue-500/20 rounded-2xl p-4 mb-4">
+                <div className="flex items-start gap-4">
+                  <AlertCircle className="text-blue-400 shrink-0" size={18} />
+                  <p className="text-[11px] text-zinc-400 leading-relaxed max-w-md">
+                    Pega aquí el objeto JSON individual que generó la IA. El sistema reconocerá automáticamente los campos <span className="text-blue-300">titulo_tecnico</span>, <span className="text-blue-300">criterios_aceptacion</span> y <span className="text-blue-300">tareas_tecnicas</span>.
+                  </p>
+                </div>
+                <button 
+                  onClick={async () => {
+                    try {
+                      Swal.fire({ title: 'Generando contexto...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                      // @ts-ignore
+                      const apiClient = (await import('../../api/client')).default;
+                      const res = await apiClient.get(`/api/projects/${proyectoId}/sprints/ticket-prompt-template`);
+                      await navigator.clipboard.writeText(res.prompt);
+                      Swal.fire('¡Prompt Copiado!', 'Pégalo en ChatGPT/Claude y luego pídele que desglose una historia en particular.', 'success');
+                    } catch (e) {
+                      Swal.fire('Error', 'No se pudo generar el prompt unitario', 'error');
+                    }
+                  }}
+                  className="shrink-0 flex items-center gap-2 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/30 text-blue-400 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                >
+                  <Sparkles size={14} /> Copiar Prompt Unitario
+                </button>
               </div>
               <textarea 
                 value={jsonInput}
                 onChange={e => setJsonInput(e.target.value)}
                 className="w-full h-80 bg-black/40 border border-white/10 rounded-2xl p-6 text-zinc-300 font-mono text-sm focus:border-blue-500/50 outline-none transition-all"
                 placeholder='{
+  "origen_historia_id": "uuid...",
   "titulo_tecnico": "Backend: Endpoint de Login",
   "prioridad_release": "MVP",
   "epic_tag": "Auth",

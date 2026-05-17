@@ -47,6 +47,20 @@ namespace MateCode.API.Controllers
             }
         }
 
+        [HttpGet("ticket-prompt-template")]
+        public async Task<IActionResult> GenerarPromptTicketUnitarioTemplate(Guid proyectoId)
+        {
+            try
+            {
+                var prompt = await _backlogService.GenerarPromptTicketUnitarioTemplateAsync(proyectoId);
+                return Ok(new { prompt });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message, inner = ex.InnerException?.Message });
+            }
+        }
+
         [HttpGet("exportar-estado")]
         public async Task<IActionResult> ExportarEstadoTickets(Guid proyectoId)
         {

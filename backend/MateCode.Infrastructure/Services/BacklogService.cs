@@ -58,33 +58,39 @@ namespace MateCode.Infrastructure.Services
                 ? $"🚨 **ATENCIÓN: FALTA CONTEXTO.** El proyecto no tiene información de: {string.Join(", ", missingPhases)}. Es MUY recomendable que el usuario complete estas fases en MateCode antes de generar el Backlog, o de lo contrario tendrás que asumir muchos detalles técnicos o funcionales.\n\n"
                 : "";
 
-            // Armar el prompt
-            return $@"{warningHeader}Actúa como Tech Lead y Arquitecto de Software. Tu tarea es generar tickets técnicos detallados cruzando la información de negocio con la arquitectura del sistema.
+            // Armar el prompt XML
+            return $@"{warningHeader}<system_context>
+Eres un Tech Lead y Arquitecto de Software Senior.
+Tu objetivo es realizar el 'Backlog Grooming' generando tickets técnicos detallados que crucen las necesidades de negocio con las definiciones arquitectónicas.
+</system_context>
 
-### FASE 0: CONTEXTO DEL PROYECTO (ADN)
-```json
+<contexto_del_proyecto>
 {contextoAdn}
-```
+</contexto_del_proyecto>
 
----
-
-### FASE 1: HISTORIAS DE USUARIO (BACKLOG)
-*(Nota: Conserva el ID exacto en el ticket final)*
-
+<historias_de_usuario>
 {historiasFormatted}
+</historias_de_usuario>
 
----
-
-### FASE 2: ARQUITECTURA Y MODELOS
-
+<arquitectura_y_modelos>
 {diagramasStr}
+</arquitectura_y_modelos>
 
----
+<imperativo_de_tarea>
+Analizar todas las historias de usuario proporcionadas y transformarlas en tickets técnicos accionables.
+</imperativo_de_tarea>
 
-### INSTRUCCIÓN DE SALIDA ESTRICTA
-Analiza el contexto y cruza las Historias de Usuario con las tablas y módulos correspondientes. Genera un JSON estricto respetando el siguiente formato. NO incluyas formato markdown ni texto fuera del JSON.
+<restricciones_criticas>
+- MANTENER TRAZABILIDAD: Es OBLIGATORIO conservar el ID exacto de la historia original en el campo 'origen_historia_id'.
+- DESGLOSE TÉCNICO: Cada ticket debe mencionar explícitamente componentes de frontend, endpoints, o tablas de base de datos definidos en la Arquitectura.
+- REDACCIÓN ACCIONABLE: El 'titulo_tecnico' debe ser directo (ej: 'Frontend: Implementar pantalla de Login').
+</restricciones_criticas>
 
-```json
+<formato_de_salida_estricto>
+- Devuelve ÚNICAMENTE un objeto JSON en crudo.
+- PROHIBIDO usar bloques de markdown (```json o ```).
+- PROHIBIDO agregar introducciones o conclusiones.
+- La estructura debe ser exactamente un objeto con un array de 'tickets':
 {{
   ""sprint_recomendado_dias"": 14,
   ""tickets"": [
@@ -103,7 +109,78 @@ Analiza el contexto y cruza las Historias de Usuario con las tablas y módulos c
     }}
   ]
 }}
-```";
+</formato_de_salida_estricto>";
+        }
+
+        public async Task<string> GenerarPromptTicketUnitarioTemplateAsync(Guid proyectoId)
+        {
+            var proyecto = await _context.Proyectos.FindAsync(proyectoId);
+            if (proyecto == null) throw new Exception("Proyecto no encontrado");
+
+            // Fase 0 (ADN)
+            string contextoAdn = proyecto.ContextoJson.ValueKind != JsonValueKind.Undefined ? proyecto.ContextoJson.GetRawText() : "{}";
+
+            // Fase 1 (Historias)
+            var historias = await _context.Historias
+                .Where(h => h.ProyectoId == proyectoId)
+                .Select(h => new { h.Id, h.Titulo, h.Prioridad, h.CriteriosBdd })
+                .ToListAsync();
+            string historiasFormatted = string.Join("\n", historias.Select((h, i) => 
+                $"{i+1}. **[ID: {h.Id}]** (Prioridad: {h.Prioridad}) - {h.Titulo}\n   *Criterios:* {h.CriteriosBdd}"));
+
+            // Fase 2 (Stack/ERD)
+            var diagramas = await _context.Diagramas
+                .Where(d => d.ProyectoId == proyectoId)
+                .ToListAsync();
+            string diagramasStr = string.Join("\n\n", diagramas.Select(d => $"#### {d.Tipo}\n```json\n{d.ContenidoCodigo}\n```"));
+
+            return $@"<system_context>
+Eres un Tech Lead y Arquitecto de Software Senior.
+Tu objetivo es detallar TÉCNICAMENTE una Historia de Usuario específica, generando un Ticket de Desarrollo estructurado.
+</system_context>
+
+<contexto_global>
+{contextoAdn}
+</contexto_global>
+
+<historias_de_usuario_disponibles>
+{historiasFormatted}
+</historias_de_usuario_disponibles>
+
+<arquitectura_y_modelos>
+{diagramasStr}
+</arquitectura_y_modelos>
+
+<imperativo_de_tarea>
+El usuario te indicará en su próximo mensaje cuál historia de usuario (por título o ID) desea desglosar.
+Deberás analizar esa historia en particular y desglosarla en un único ticket técnico altamente accionable, alineado con la arquitectura del sistema.
+</imperativo_de_tarea>
+
+<restricciones_criticas>
+- MANTENER TRAZABILIDAD: El campo 'origen_historia_id' DEBE ser exactamente el UUID de la historia seleccionada.
+- DESGLOSE TÉCNICO GRANULAR: Las tareas deben ser específicas para el desarrollador (ej: 'Crear tabla X', 'Crear endpoint POST /api/Y', 'Crear componente React Z').
+- REDACCIÓN ACCIONABLE: El 'titulo_tecnico' debe ser directo.
+</restricciones_criticas>
+
+<formato_de_salida_estricto>
+- Devuelve ÚNICAMENTE un objeto JSON en crudo para ESE ticket.
+- PROHIBIDO usar bloques de markdown (```json o ```).
+- PROHIBIDO agregar introducciones o conclusiones.
+- La salida debe ser estrictamente este formato unitario:
+{{
+  ""origen_historia_id"": ""UUID_de_la_historia_seleccionada"",
+  ""titulo_tecnico"": ""Capa (Front/Back/DB): Título accionable"",
+  ""prioridad_release"": ""MVP | Mejora | Escala"",
+  ""epic_tag"": ""Módulo al que pertenece"",
+  ""criterios_aceptacion"": [
+    ""Criterio 1 detallado"",
+    ""Criterio 2 detallado""
+  ],
+  ""tareas_tecnicas"": [
+    {{ ""capa"": ""Frontend | Backend | DB"", ""detalle"": ""Acción técnica específica"" }}
+  ]
+}}
+</formato_de_salida_estricto>";
         }
 
         public async Task<IEnumerable<Ticket>> BulkImportTicketsAsync(Guid proyectoId, JsonElement payload)

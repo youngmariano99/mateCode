@@ -30,11 +30,32 @@ export const MapaHistoriasBoard = ({ rawJson, initialData, projectId: propProjec
   const [isLoading, setIsLoading] = useState(false);
   
   const boardRef = useRef<HTMLDivElement>(null);
+  const [isPromptLoading, setIsPromptLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [startY, setStartY] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
+
+  const fetchPrompt = async () => {
+    if (!projectId) return;
+    setIsPromptLoading(true);
+    try {
+      const res = await api.get(`/Project/${projectId}/phase1-prompt`);
+      navigator.clipboard.writeText(res.prompt);
+      Swal.fire({
+        title: '🚀 Prompt Maestro Copiado',
+        text: 'Pegalo en ChatGPT o Claude para obtener tu User Story Mapping en formato JSON.',
+        icon: 'success',
+        background: '#18181b', color: '#fff', confirmButtonColor: '#10b981',
+        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000
+      });
+    } catch (err) {
+      Swal.fire({ title: 'Error', text: 'No se pudo obtener el prompt.', icon: 'error', background: '#18181b', color: '#fff' });
+    } finally {
+      setIsPromptLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -166,6 +187,14 @@ export const MapaHistoriasBoard = ({ rawJson, initialData, projectId: propProjec
         </div>
 
         <div className="flex gap-4">
+          <button 
+            onClick={fetchPrompt}
+            disabled={isPromptLoading}
+            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${isPromptLoading ? 'bg-zinc-800 text-zinc-500 border-zinc-800' : 'bg-white/5 text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10'}`}
+          >
+            <Sparkles size={14} className={isPromptLoading ? "animate-spin" : ""} />
+            {isPromptLoading ? "GENERANDO..." : "PROMPT MAESTRO"}
+          </button>
           <button 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${isSidebarOpen ? 'bg-emerald-500 text-black border-emerald-400' : 'bg-white/5 text-zinc-400 border-white/5 hover:bg-white/10'}`}

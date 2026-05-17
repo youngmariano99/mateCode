@@ -9,6 +9,7 @@ namespace MateCode.Application.Services
     public interface IBacklogService
     {
         Task<string> GenerarPromptGroomingAsync(Guid proyectoId);
+        Task<string> GenerarPromptTicketUnitarioTemplateAsync(Guid proyectoId);
         Task<IEnumerable<Sprint>> ObtenerSprintsAsync(Guid proyectoId);
         Task<IEnumerable<Ticket>> BulkImportTicketsAsync(Guid proyectoId, JsonElement payload);
         Task<Sprint> IniciarSprintAsync(Guid proyectoId, string nombre, string objetivo, int duracionDias, List<Guid> ticketIds, DateTime? fechaInicio = null);

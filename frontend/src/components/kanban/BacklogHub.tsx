@@ -203,52 +203,63 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
           </button>
         </div>
 
-        <div className="flex gap-3">
-          <button 
-            onClick={handleGenerarPrompt}
-            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-emerald-400 px-5 py-2.5 rounded-xl transition-all border border-white/5 text-[10px] font-black uppercase tracking-widest"
-          >
-            <BrainCircuit size={16} />
-            Generar Prompt
-          </button>
+        <div className="flex gap-4">
+          {/* Herramientas de Estado */}
           <button 
             onClick={handleExportarEstado}
-            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-amber-400 px-5 py-2.5 rounded-xl transition-all border border-white/5 text-[10px] font-black uppercase tracking-widest"
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-amber-400 px-4 py-2.5 rounded-xl transition-all border border-white/5 text-[10px] font-black uppercase tracking-widest h-full"
           >
             <FileJson size={16} />
-            Exportar Estado
+            <span className="hidden xl:inline">Exportar Estado</span>
           </button>
-          <button 
-            onClick={() => {
-              setEditingTicket(undefined);
-              setShowTicketModal(true);
-            }}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black px-5 py-2.5 rounded-xl transition-all border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20"
-          >
-            <Plus size={16} />
-            Nuevo Ticket
-          </button>
-          <button 
-            onClick={() => setShowImport(true)}
-            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-zinc-100 px-5 py-2.5 rounded-xl transition-all border border-white/5 text-[10px] font-black uppercase tracking-widest"
-          >
-            <Download size={16} />
-            Importar JSON
-          </button>
-          {activeTab === 'backlog' && (
+
+          {/* Cápsula IA (Grooming Masivo) */}
+          <div className="flex items-center bg-blue-500/5 rounded-xl border border-blue-500/20 p-1">
             <button 
-              onClick={() => setShowSprintModal(true)}
-              disabled={selectedTickets.size === 0}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl ${
-                selectedTickets.size > 0 
-                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20' 
-                  : 'bg-white/5 text-zinc-600 cursor-not-allowed border border-white/5'
-              }`}
+              onClick={handleGenerarPrompt}
+              className="flex items-center gap-2 hover:bg-blue-500/10 text-blue-400 px-4 py-1.5 rounded-lg transition-all text-[10px] font-black uppercase tracking-widest h-full"
             >
-              <Play size={16} fill="currentColor" />
-              Iniciar Sprint ({selectedTickets.size})
+              <BrainCircuit size={16} />
+              Prompt Masivo
             </button>
-          )}
+            <div className="w-px h-4 bg-blue-500/20 mx-1" />
+            <button 
+              onClick={() => setShowImport(true)}
+              className="flex items-center gap-2 hover:bg-blue-500/10 text-blue-400 px-4 py-1.5 rounded-lg transition-all text-[10px] font-black uppercase tracking-widest h-full"
+            >
+              <Download size={16} />
+              Importar JSON
+            </button>
+          </div>
+
+          {/* Acciones Principales */}
+          <div className="flex gap-2">
+            <button 
+              onClick={() => {
+                setEditingTicket(undefined);
+                setShowTicketModal(true);
+              }}
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black px-6 py-2.5 rounded-xl transition-all border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 h-full"
+            >
+              <Plus size={16} />
+              Nuevo Ticket
+            </button>
+
+            {activeTab === 'backlog' && (
+              <button 
+                onClick={() => setShowSprintModal(true)}
+                disabled={selectedTickets.size === 0}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl h-full ${
+                  selectedTickets.size > 0 
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20' 
+                    : 'bg-white/5 text-zinc-600 cursor-not-allowed border border-white/5'
+                }`}
+              >
+                <Play size={16} fill="currentColor" />
+                Iniciar Sprint ({selectedTickets.size})
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
