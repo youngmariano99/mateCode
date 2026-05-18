@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Download, X, Terminal, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Download, Terminal, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useProjectBlueprintStore } from '../../store/useProjectBlueprintStore';
 import type { TechItem } from '../../store/useProjectBlueprintStore';
 
@@ -18,24 +18,22 @@ interface PromptBuilderModalProps {
     selectedStandards: Estandar[];
 }
 
-export const PromptBuilderModal: React.FC<PromptBuilderModalProps> = ({ 
-    isOpen, 
-    onClose, 
-    projectName, 
+export const PromptBuilderModal: React.FC<PromptBuilderModalProps> = ({
+    isOpen,
+    onClose,
+    projectName,
     projectDescription,
-    selectedStandards 
+    selectedStandards
 }) => {
     const { techStack } = useProjectBlueprintStore();
 
     if (!isOpen) return null;
 
     const generateContextMarkdown = (
-        standards: Estandar[], 
-        stack: TechItem[], 
+        standards: Estandar[],
+        stack: TechItem[],
         context: string
     ): string => {
-        const date = new Date().toLocaleDateString();
-        
         // Agrupar estándares por categoría
         const groupedStandards = standards.reduce((acc, curr) => {
             if (!acc[curr.categoria]) acc[curr.categoria] = [];
@@ -43,30 +41,87 @@ export const PromptBuilderModal: React.FC<PromptBuilderModalProps> = ({
             return acc;
         }, {} as Record<string, Estandar[]>);
 
-        let md = `# CONTEXTO MAESTRO DEL PROYECTO: ${projectName}\n`;
-        md += `> Generado el: ${date}\n\n`;
-        
-        md += `## 📝 RESUMEN DEL CONTEXTO\n`;
-        md += `${context || 'Sin descripción de contexto definida.'}\n\n`;
-
-        md += `## 🛠️ STACK TECNOLÓGICO ESTRICTO\n`;
+        // Generar diagrama Mermaid dinámico si hay componentes en el stack
+        let mermaidStr = '';
         if (stack.length > 0) {
-            stack.forEach(tech => {
-                md += `- **${tech.categoriaPrincipal}:** ${tech.nombre} ${tech.version || ''}\n`;
+            mermaidStr += `    \`\`\`mermaid\n`;
+            mermaidStr += `    graph TD\n`;
+
+            const frontends = stack.filter(t => t.categoriaPrincipal.toLowerCase() === 'frontend');
+            const backends = stack.filter(t => t.categoriaPrincipal.toLowerCase() === 'backend');
+            const databases = stack.filter(t => t.categoriaPrincipal.toLowerCase() === 'base de datos' || t.categoriaPrincipal.toLowerCase() === 'database');
+
+            if (frontends.length > 0) {
+                mermaidStr += `    subgraph Frontend [Capa de Presentación]\n`;
+                frontends.forEach(f => mermaidStr += `        ${f.id.substring(0, 6)}[${f.nombre}]\n`);
+                mermaidStr += `    end\n`;
+            }
+
+            if (backends.length > 0) {
+                mermaidStr += `    subgraph Backend [Lógica de Negocio]\n`;
+                backends.forEach(b => mermaidStr += `        ${b.id.substring(0, 6)}(${b.nombre})\n`);
+                mermaidStr += `    end\n`;
+            }
+
+            if (databases.length > 0) {
+                mermaidStr += `    subgraph Database [Persistencia]\n`;
+                databases.forEach(d => mermaidStr += `        ${d.id.substring(0, 6)}[(${d.nombre})]\n`);
+                mermaidStr += `    end\n`;
+            }
+
+            // Conexiones lógicas simples si existen las capas
+            if (frontends.length > 0 && backends.length > 0) {
+                mermaidStr += `    Frontend -->|HTTP/REST| Backend\n`;
+            }
+            if (backends.length > 0 && databases.length > 0) {
+                mermaidStr += `    Backend -->|CRUD| Database\n`;
+            }
+
+            mermaidStr += `    \`\`\`\n`;
+        }
+
+        let md = `<contexto_maestro>\n`;
+
+        md += `  <resumen_proyecto>\n`;
+        md += `    ${context || 'Sin descripción de contexto definida.'}\n`;
+        md += `  </resumen_proyecto>\n\n`;
+
+        md += `  <stack_tecnologico>\n`;
+        if (stack.length > 0) {
+            const groupedStack = stack.reduce((acc, curr) => {
+                if (!acc[curr.categoriaPrincipal]) acc[curr.categoriaPrincipal] = [];
+                acc[curr.categoriaPrincipal].push(curr.nombre + (curr.version ? ` ${curr.version}` : ''));
+                return acc;
+            }, {} as Record<string, string[]>);
+
+            Object.entries(groupedStack).forEach(([cat, items]) => {
+                md += `    - ${cat}: ${items.join(', ')}\n`;
             });
         } else {
-            md += `_No se han definido componentes tecnológicos aún._\n`;
+            md += `    Sin stack definido.\n`;
         }
-        md += `\n`;
+        md += `  </stack_tecnologico>\n\n`;
 
-        md += `## 🛡️ ESTÁNDARES Y REGLAS DE CALIDAD\n`;
-        Object.keys(groupedStandards).forEach(category => {
-            md += `### ${category.toUpperCase()}\n`;
-            groupedStandards[category].forEach(std => {
-                md += `#### ${std.nombre}\n`;
-                md += `${std.descripcionDidactica}\n\n`;
+        if (mermaidStr) {
+            md += `  <arquitectura_topologia_mermaid>\n`;
+            md += mermaidStr;
+            md += `  </arquitectura_topologia_mermaid>\n\n`;
+        }
+
+        md += `  <reglas_globales_criticas>\n`;
+        if (standards.length > 0) {
+            Object.keys(groupedStandards).forEach(category => {
+                md += `    <!-- ${category.toUpperCase()} -->\n`;
+                groupedStandards[category].forEach(std => {
+                    md += `    - ${std.nombre}: ${std.descripcionDidactica.replace(/\n/g, ' ')}\n`;
+                });
             });
-        });
+        } else {
+            md += `    Sin reglas definidas.\n`;
+        }
+        md += `  </reglas_globales_criticas>\n`;
+
+        md += `</contexto_maestro>`;
 
         return md;
     };
@@ -77,7 +132,7 @@ export const PromptBuilderModal: React.FC<PromptBuilderModalProps> = ({
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         const dateStr = new Date().toISOString().split('T')[0];
-        
+
         link.href = url;
         link.download = `${projectName.replace(/\s+/g, '_')}_Contexto_${dateStr}.md`;
         document.body.appendChild(link);
@@ -127,13 +182,13 @@ export const PromptBuilderModal: React.FC<PromptBuilderModalProps> = ({
                 </div>
 
                 <footer className="p-8 border-t border-zinc-800 bg-zinc-900/50 flex justify-end gap-4">
-                    <button 
+                    <button
                         onClick={onClose}
                         className="px-10 py-4 bg-zinc-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-700 transition-all"
                     >
                         Cerrar
                     </button>
-                    <button 
+                    <button
                         onClick={handleDownload}
                         className="px-10 py-4 bg-emerald-500 text-zinc-950 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-3 active:scale-95"
                     >
