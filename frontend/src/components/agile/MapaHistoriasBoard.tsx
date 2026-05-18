@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
-import { Layout, Box, Sparkles, RefreshCcw, User, X } from 'lucide-react';
+import { Layout, Box, Sparkles, RefreshCcw, User, X, Save } from 'lucide-react';
 import { CodeEditorPane } from '../design/CodeEditorPane';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { ProjectSelectorRequired } from '../shared/ProjectSelectorRequired';
@@ -153,6 +153,26 @@ export const MapaHistoriasBoard = ({ rawJson, initialData, projectId: propProjec
     }
   };
 
+  const handleSaveJson = async () => {
+    if (!projectId) return;
+    setIsSyncing(true);
+    try {
+      const parsed = JSON.parse(localJson);
+      await api.post(`/Agile/projects/${projectId}/mapa-historias/importar`, parsed);
+      Swal.fire({ 
+        title: '✅ Mapa Guardado', 
+        text: 'Progreso guardado correctamente en la base de datos.', 
+        icon: 'success', 
+        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
+        background: '#18181b', color: '#fff' 
+      });
+    } catch (err) {
+      Swal.fire({ title: 'Error', text: 'El JSON parece ser inválido o hubo un error de red.', icon: 'error', background: '#18181b', color: '#fff' });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   if (!projectId) return <ProjectSelectorRequired />;
 
   if (isLoading) {
@@ -216,7 +236,13 @@ export const MapaHistoriasBoard = ({ rawJson, initialData, projectId: propProjec
               <div className="w-[450px] bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden flex flex-col animate-in slide-in-from-left duration-300">
                   <div className="p-4 bg-zinc-900 border-b border-zinc-800 flex justify-between items-center">
                       <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Editor de Requisitos (JSON)</span>
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+                      <button 
+                        onClick={handleSaveJson} 
+                        disabled={isSyncing} 
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg active:scale-95"
+                      >
+                        <Save size={12} /> {isSyncing ? "..." : "Guardar JSON"}
+                      </button>
                   </div>
                   <div className="flex-1 overflow-hidden flex flex-col bg-zinc-900">
                     <CodeEditorPane code={localJson} onChange={handleJsonChange} />
