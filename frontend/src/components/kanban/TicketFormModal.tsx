@@ -290,7 +290,7 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
                     try {
                       Swal.fire({ title: 'Generando contexto...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
                       // @ts-ignore
-                      const apiClient = (await import('../../api/client')).default;
+                      const { api: apiClient } = await import('../../lib/apiClient');
                       const res = await apiClient.get(`/api/projects/${proyectoId}/sprints/ticket-prompt-template`);
                       await navigator.clipboard.writeText(res.prompt);
                       Swal.fire('¡Prompt Copiado!', 'Pégalo en ChatGPT/Claude y luego pídele que desglose una historia en particular.', 'success');
