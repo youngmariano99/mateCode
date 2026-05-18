@@ -47,9 +47,9 @@ export const PromptBuilderModal: React.FC<PromptBuilderModalProps> = ({
             mermaidStr += `    \`\`\`mermaid\n`;
             mermaidStr += `    graph TD\n`;
 
-            const frontends = stack.filter(t => t.categoriaPrincipal.toLowerCase() === 'frontend');
-            const backends = stack.filter(t => t.categoriaPrincipal.toLowerCase() === 'backend');
-            const databases = stack.filter(t => t.categoriaPrincipal.toLowerCase() === 'base de datos' || t.categoriaPrincipal.toLowerCase() === 'database');
+            const frontends = stack.filter(t => t.categoriaPrincipal.toLowerCase().includes('frontend'));
+            const backends = stack.filter(t => t.categoriaPrincipal.toLowerCase().includes('backend'));
+            const databases = stack.filter(t => t.categoriaPrincipal.toLowerCase().includes('base de datos') || t.categoriaPrincipal.toLowerCase().includes('database'));
 
             if (frontends.length > 0) {
                 mermaidStr += `    subgraph Frontend [Capa de Presentación]\n`;
