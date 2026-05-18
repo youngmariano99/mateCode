@@ -44,6 +44,57 @@ namespace MateCode.API.Controllers
         }
 
         /// <summary>
+        /// Obtiene el catálogo de estándares agrupado por uso en proyectos.
+        /// </summary>
+        [HttpGet("grouped")]
+        public async Task<IActionResult> GetGroupedCatalog([FromQuery] Guid? currentProjectId, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                
+                var allStandards = await _context.EstandaresCatalogo
+                    .Where(e => (e.EspacioTrabajoId == null || e.EspacioTrabajoId == tenantId || e.CreadorId == userId) && e.Activo)
+                    .OrderBy(e => e.Nombre)
+                    .ToListAsync();
+
+                var projectLinks = await _context.ProyectosEstandares
+                    .Include(pe => pe.Proyecto)
+                    .ToListAsync();
+
+                var currentProjectStandardIds = currentProjectId.HasValue 
+                    ? projectLinks.Where(pe => pe.ProyectoId == currentProjectId.Value).Select(pe => pe.EstandarId).ToHashSet()
+                    : new HashSet<Guid>();
+
+                var actual = allStandards.Where(s => currentProjectStandardIds.Contains(s.Id)).ToList();
+
+                var allLinkedStandardIds = projectLinks.Select(pe => pe.EstandarId).ToHashSet();
+                var sinAsociar = allStandards.Where(s => !allLinkedStandardIds.Contains(s.Id)).ToList();
+
+                var otrosProyectos = projectLinks
+                    .Where(pe => !currentProjectId.HasValue || pe.ProyectoId != currentProjectId.Value)
+                    .GroupBy(pe => new { pe.ProyectoId, Nombre = pe.Proyecto != null ? pe.Proyecto.Nombre : "Proyecto Desconocido" })
+                    .Select(g => new {
+                        ProyectoId = g.Key.ProyectoId,
+                        ProyectoNombre = g.Key.Nombre,
+                        Estandares = allStandards.Where(s => g.Select(pe => pe.EstandarId).Contains(s.Id)).ToList()
+                    })
+                    .Where(g => g.Estandares.Any())
+                    .ToList();
+
+                return Ok(new {
+                    Actual = actual,
+                    SinAsociar = sinAsociar,
+                    OtrosProyectos = otrosProyectos
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Crea un nuevo estándar on-the-fly.
         /// </summary>
         [HttpPost]

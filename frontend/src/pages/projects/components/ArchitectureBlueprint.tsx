@@ -27,6 +27,8 @@ const NIVELES = {
 
 const ArchitectureBlueprint: React.FC<Props> = ({ projectId }) => {
   const [catalogo, setCatalogo] = useState<Estandar[]>([]);
+  const [groupedCatalog, setGroupedCatalog] = useState<{ actual: any[], sinAsociar: any[], otrosProyectos: any[] }>({ actual: [], sinAsociar: [], otrosProyectos: [] });
+  const [catalogo, setCatalogo] = useState<any[]>([]);
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,20 +36,21 @@ const ArchitectureBlueprint: React.FC<Props> = ({ projectId }) => {
 
   const fetchBlueprint = async () => {
     try {
-      const [catData, projData] = await Promise.all([
-        api.get('/Standard'),
-        api.get(`/Project/${projectId}/standards`)
-      ]);
-
-      const fullList = [...catData];
-      projData.forEach((ps: any) => {
-        if (!fullList.some(c => c.id === ps.id)) {
-          fullList.push({ ...ps, activo: false });
-        }
+      const groupedData = await api.get(`/Standard/grouped?currentProjectId=${projectId}`);
+      setGroupedCatalog({
+        actual: groupedData.actual || [],
+        sinAsociar: groupedData.sinAsociar || [],
+        otrosProyectos: groupedData.otrosProyectos || []
       });
 
-      setCatalogo(fullList);
-      setSeleccionados(projData.map((p: any) => p.id));
+      const flatList = [...(groupedData.actual || []), ...(groupedData.sinAsociar || [])];
+      (groupedData.otrosProyectos || []).forEach((op: any) => {
+         flatList.push(...op.estandares);
+      });
+      
+      const uniqueFlat = Array.from(new Map(flatList.map(item => [item.id, item])).values());
+      setCatalogo(uniqueFlat);
+      setSeleccionados((groupedData.actual || []).map((s:any) => s.id));
     } catch (error) {
       console.error("Error cargando blueprint:", error);
     } finally {
@@ -230,111 +233,100 @@ const ArchitectureBlueprint: React.FC<Props> = ({ projectId }) => {
             Reglas de juego y estándares de calidad para el Motor de Prompts.
           </p>
         </div>
-        <div className="px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-2xl shadow-inner">
-          <span className="text-[9px] text-emerald-500 font-black uppercase tracking-widest">Nivel de Madurez: Phase 0</span>
+        <div className="flex gap-4 items-center">
+          <button 
+              onClick={() => handleCreate("Personalizado")}
+              className="px-4 py-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2"
+          >
+              <Plus size={14} /> Nuevo Estándar
+          </button>
+          <div className="px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-2xl shadow-inner hidden md:block">
+            <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest">Nivel de Madurez: Phase 0</span>
+          </div>
         </div>
       </header>
 
-      {/* RENDER POR NIVELES */}
-      {Object.entries(NIVELES).map(([nivel, cats]) => {
-          const categoriasNivel = categoriasUnicas.filter(c => cats.some(target => c.toLowerCase().includes(target.toLowerCase())));
-          if (categoriasNivel.length === 0) return null;
-
-          return (
-            <section key={nivel} className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <h3 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em]">{nivel}</h3>
-                    <div className="h-px flex-1 bg-zinc-800/50" />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {categoriasNivel.map(cat => (
-                        <div key={cat} className="group bg-zinc-950/40 border border-zinc-800/60 rounded-[2.5rem] p-6 hover:border-emerald-500/20 transition-all duration-300">
-                            <div className="flex items-center justify-between mb-6 border-b border-zinc-800/50 pb-4">
-                                <div className="flex items-center gap-3 text-zinc-400 font-black text-[10px] uppercase tracking-widest">
-                                    <span className="text-emerald-500/70 p-2 bg-zinc-900 rounded-xl shadow-inner">{getIcon(cat)}</span>
-                                    {cat}
-                                </div>
-                                <button 
-                                    onClick={() => handleCreate(cat)}
-                                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-600 hover:text-emerald-400 transition-all"
-                                    title="Nuevo estándar"
-                                >
-                                    <Plus size={16} />
-                                </button>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2">
-                                {catalogo.filter(e => e.categoria === cat).map(estandar => {
-                                    const isSelected = seleccionados.includes(estandar.id);
-                                    const isCustom = !!estandar.espacioTrabajoId;
-
-                                    return (
-                                        <div
-                                            key={estandar.id}
-                                            onClick={() => handleToggle(estandar.id)}
-                                            title={estandar.descripcionDidactica}
-                                            className={`
-                                                group/pill relative cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-300
-                                                ${isSelected 
-                                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
-                                                    : 'bg-zinc-900/50 text-zinc-600 border-transparent hover:bg-zinc-800/50 hover:text-zinc-300'}
-                                            `}
-                                        >
-                                            {isSelected && <Check size={12} strokeWidth={4} />}
-                                            <span className={`text-[10px] font-black uppercase tracking-tighter ${!estandar.activo && estandar.activo !== undefined ? 'opacity-60 italic line-through' : ''}`}>
-                                                {estandar.nombre}
-                                            </span>
-                                            
-                                            {isCustom && estandar.activo !== false && (
-                                                <X 
-                                                    onClick={(e) => handleDelete(e, estandar.id)}
-                                                    className="w-3 h-3 text-zinc-700 hover:text-red-500 opacity-0 group-hover/pill:opacity-100 transition-opacity ml-1" 
-                                                />
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
-          );
-      })}
-
-      {/* CATEGORIAS HUERFANAS (No mapeadas en NIVELES) */}
+      {/* RENDER AGRUPADO POR PROYECTO */}
       {(() => {
-          const mappedCats = Object.values(NIVELES).flat().map(c => c.toLowerCase());
-          const huerfanas = categoriasUnicas.filter(c => !mappedCats.some(target => c.toLowerCase().includes(target)));
-          
-          if (huerfanas.length === 0) return null;
-
-          return (
-              <section className="space-y-6 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
-                  <div className="flex items-center gap-4">
-                      <h3 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em]">Otras Categorías</h3>
-                      <div className="h-px flex-1 bg-zinc-800/50" />
+          const renderStandardGroup = (title: string, standards: any[], icon: React.ReactNode, isEmptyMsg: string) => {
+              if (standards.length === 0) return (
+                  <div className="flex items-center gap-3 p-4 bg-zinc-950/40 border border-zinc-800/60 rounded-2xl text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                      {isEmptyMsg}
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {huerfanas.map(cat => (
-                          <div key={cat} className="group bg-zinc-950/40 border border-zinc-800/60 rounded-[2.5rem] p-6">
-                              <div className="flex items-center justify-between mb-4">
-                                  <div className="flex items-center gap-3 text-zinc-400 font-black text-[10px] uppercase tracking-widest">
-                                      {getIcon(cat)} {cat}
+              );
+
+              // Agrupar por categoría
+              const porCategoria = standards.reduce((acc, estandar) => {
+                  acc[estandar.categoria] = acc[estandar.categoria] || [];
+                  acc[estandar.categoria].push(estandar);
+                  return acc;
+              }, {} as Record<string, any[]>);
+
+              return (
+                  <div className="space-y-6">
+                      <div className="flex items-center gap-4">
+                          <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em] flex items-center gap-2">
+                              {icon} {title}
+                          </h3>
+                          <div className="h-px flex-1 bg-zinc-800/50" />
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {Object.entries(porCategoria).map(([cat, items]: [string, any]) => (
+                              <div key={cat} className="group bg-zinc-950/40 border border-zinc-800/60 rounded-[2.5rem] p-6 hover:border-emerald-500/20 transition-all duration-300">
+                                  <div className="flex items-center justify-between mb-6 border-b border-zinc-800/50 pb-4">
+                                      <div className="flex items-center gap-3 text-zinc-400 font-black text-[10px] uppercase tracking-widest">
+                                          <span className="text-emerald-500/70 p-2 bg-zinc-900 rounded-xl shadow-inner">{getIcon(cat)}</span>
+                                          {cat}
+                                      </div>
+                                  </div>
+
+                                  <div className="flex flex-wrap gap-2">
+                                      {items.map((estandar: any) => {
+                                          const isSelected = seleccionados.includes(estandar.id);
+                                          const isCustom = !!estandar.espacioTrabajoId;
+                                          return (
+                                              <div
+                                                  key={estandar.id}
+                                                  onClick={() => handleToggle(estandar.id)}
+                                                  title={estandar.descripcionDidactica}
+                                                  className={`group/pill relative cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-300 ${isSelected ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-zinc-900/50 text-zinc-600 border-transparent hover:bg-zinc-800/50 hover:text-zinc-300'}`}
+                                              >
+                                                  {isSelected && <Check size={12} strokeWidth={4} />}
+                                                  <span className={`text-[10px] font-black uppercase tracking-tighter ${!estandar.activo && estandar.activo !== undefined ? 'opacity-60 italic line-through' : ''}`}>
+                                                      {estandar.nombre}
+                                                  </span>
+                                                  {isCustom && estandar.activo !== false && (
+                                                      <X onClick={(e) => handleDelete(e, estandar.id)} className="w-3 h-3 text-zinc-700 hover:text-red-500 opacity-0 group-hover/pill:opacity-100 transition-opacity ml-1" />
+                                                  )}
+                                              </div>
+                                          );
+                                      })}
                                   </div>
                               </div>
-                              <div className="flex flex-wrap gap-2">
-                                  {catalogo.filter(e => e.categoria === cat).map(estandar => (
-                                      <div key={estandar.id} onClick={() => handleToggle(estandar.id)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase border transition-all ${seleccionados.includes(estandar.id) ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-zinc-900/50 text-zinc-600 border-transparent'}`}>
-                                          {estandar.nombre}
-                                      </div>
-                                  ))}
-                              </div>
-                          </div>
-                      ))}
+                          ))}
+                      </div>
                   </div>
-              </section>
+              );
+          };
+
+          return (
+              <div className="space-y-12">
+                  {renderStandardGroup("Estándares del Proyecto Actual", groupedCatalog.actual, <Shield className="w-4 h-4 text-emerald-500" />, "No hay estándares seleccionados en este proyecto aún.")}
+                  
+                  {renderStandardGroup("Disponibles (Sin Asociar)", groupedCatalog.sinAsociar, <Layers className="w-4 h-4 text-blue-500" />, "No hay estándares huérfanos.")}
+
+                  {groupedCatalog.otrosProyectos.length > 0 && (
+                      <div className="space-y-8 mt-12 pt-8 border-t border-zinc-800/50">
+                          <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Estándares en Otros Proyectos</h3>
+                          {groupedCatalog.otrosProyectos.map((grupo: any) => (
+                              <div key={grupo.proyectoId} className="pl-4 border-l-2 border-zinc-800/50">
+                                  {renderStandardGroup(`Proyecto: ${grupo.proyectoNombre}`, grupo.estandares, <Layout className="w-4 h-4 text-zinc-500" />, "Sin estándares")}
+                              </div>
+                          ))}
+                      </div>
+                  )}
+              </div>
           );
       })()}
       
