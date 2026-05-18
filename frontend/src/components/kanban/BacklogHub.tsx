@@ -106,7 +106,17 @@ export const BacklogHub: React.FC<BacklogHubProps> = ({ proyectoId, onSprintStar
   const handleImport = async () => {
     try {
       setLoading(true);
-      const payload = JSON.parse(jsonText);
+      
+      // Auto-limpiador de Markdown y texto basura de la IA
+      let cleanedText = jsonText.trim();
+      const firstBrace = cleanedText.indexOf('{');
+      const lastBrace = cleanedText.lastIndexOf('}');
+      
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
+          cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
+      }
+      
+      const payload = JSON.parse(cleanedText);
       await apiClient.post(`/api/projects/${proyectoId}/sprints/bulk-import`, payload);
       setShowImport(false);
       setJsonText('');
