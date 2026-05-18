@@ -26,7 +26,6 @@ const NIVELES = {
 };
 
 const ArchitectureBlueprint: React.FC<Props> = ({ projectId }) => {
-  const [catalogo, setCatalogo] = useState<Estandar[]>([]);
   const [groupedCatalog, setGroupedCatalog] = useState<{ actual: any[], sinAsociar: any[], otrosProyectos: any[] }>({ actual: [], sinAsociar: [], otrosProyectos: [] });
   const [catalogo, setCatalogo] = useState<any[]>([]);
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
