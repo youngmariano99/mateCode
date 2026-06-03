@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Building, Briefcase, Users, Target, FileText, Calendar, Key, Video,
-  DollarSign, ShieldAlert, ArrowLeft, Shield, Layout, Search
+  DollarSign, ShieldAlert, ArrowLeft, Shield, Layout, Search, Plus
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { api } from '../../lib/apiClient';
@@ -33,6 +33,7 @@ export const AgencyDashboard: React.FC = () => {
   } = useAgencyStore();
 
   const [activeTab, setActiveTab] = useState<string>('structure');
+  const [dashboardMode, setDashboardMode] = useState<'standard' | 'immersive'>('immersive');
   const [agencyWorkspaces, setAgencyWorkspaces] = useState<any[]>([]);
   const [agencyMembers, setAgencyMembers] = useState<Member[]>([]);
 
@@ -194,6 +195,13 @@ export const AgencyDashboard: React.FC = () => {
 
         <div className="pt-6 border-t border-zinc-800/80 flex flex-col gap-2">
           <button
+            onClick={() => setDashboardMode(prev => prev === 'standard' ? 'immersive' : 'standard')}
+            className="w-full py-2.5 px-4 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2"
+          >
+            {dashboardMode === 'standard' ? <Building size={14} /> : <Layout size={14} />}
+            <span>{dashboardMode === 'standard' ? 'Vista Inmersiva' : 'Vista Estándar'}</span>
+          </button>
+          <button
             onClick={() => navigate('/workspace-selector?view=workspaces')}
             className="w-full py-2.5 px-4 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2"
           >
@@ -216,34 +224,103 @@ export const AgencyDashboard: React.FC = () => {
         <div className="absolute bottom-[-10%] left-[10%] w-[35%] h-[35%] bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none" />
 
         <div className="flex-1 flex flex-col">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.15 }}
-              className="flex-1 flex flex-col"
-            >
-              {activeTab === 'structure' && (
-                <StructurePanel
-                  activeAgency={activeAgency}
-                  agencyWorkspaces={agencyWorkspaces}
-                  agencyMembers={agencyMembers}
-                  onOpenInviteModal={() => setIsInviteModalOpen(true)}
-                  onOpenPermModal={handleOpenPermModal}
+          {dashboardMode === 'immersive' ? (
+            <div className="flex-1 flex flex-col items-center justify-center relative">
+              <div className="text-center mb-6 z-10">
+                <h1 className="text-3xl font-black text-white tracking-tight uppercase italic">Oficina <span className="text-emerald-500">Corporativa</span></h1>
+                <p className="text-zinc-500 text-xs mt-1">Haz clic en cualquier departamento para ingresar a la consola operativa.</p>
+              </div>
+
+              {/* Contenedor del Mapa Inmersivo */}
+              <div className="relative w-full max-w-4xl aspect-[16/10] border border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-2xl bg-zinc-950/60 backdrop-blur-sm z-10">
+                <img
+                  src="/agency_office_mockup.png"
+                  alt="Oficina Corporativa"
+                  className="w-full h-full object-cover opacity-60"
                 />
-              )}
-              {activeTab === 'crm' && <CrmPanel />}
-              {activeTab === 'goals' && <GoalsPanel agencyMembers={agencyMembers} />}
-              {activeTab === 'resources' && <ResourcesPanel />}
-              {activeTab === 'tasks' && <TasksPanel agencyMembers={agencyMembers} />}
-              {activeTab === 'secrets' && <SecretsPanel />}
-              {activeTab === 'content' && <ContentPanel agencyMembers={agencyMembers} />}
-              {activeTab === 'finance' && <FinancePanel agencyWorkspaces={agencyWorkspaces} />}
-              {activeTab === 'audit' && <AuditPanel />}
-            </motion.div>
-          </AnimatePresence>
+
+                {/* Hotspots */}
+                {[
+                  { id: 'structure', label: 'Estructura & Equipo', desc: 'Estructura & Equipo', icon: Briefcase, top: '15%', left: '15%', w: '22%', h: '22%' },
+                  { id: 'crm', label: 'Clientes & Leads', desc: 'Clientes & CRM', icon: Users, top: '15%', left: '42%', w: '22%', h: '22%' },
+                  { id: 'goals', label: 'Objetivos Organizacionales', desc: 'Muro OKR', icon: Target, top: '15%', left: '68%', w: '20%', h: '22%' },
+                  
+                  { id: 'resources', label: 'Recursos Vault', desc: 'Biblioteca Prompts', icon: FileText, top: '44%', left: '15%', w: '22%', h: '22%' },
+                  { id: 'tasks', label: 'Tareas Operativas', desc: 'Tablero Kanban', icon: Calendar, top: '44%', left: '42%', w: '22%', h: '22%' },
+                  { id: 'secrets', label: 'Accesos Cifrados', desc: 'Accesos Cifrados', icon: Key, top: '44%', left: '68%', w: '20%', h: '22%' },
+                  
+                  { id: 'content', label: 'Planificador Contenido', desc: 'Plan de Contenido', icon: Video, top: '72%', left: '15%', w: '22%', h: '20%' },
+                  { id: 'finance', label: 'Finanzas Dashboard', desc: 'Finanzas Corporativas', icon: DollarSign, top: '72%', left: '42%', w: '22%', h: '20%' },
+                  { id: 'audit', label: 'Logs de Auditoría', desc: 'Logs de Seguridad', icon: ShieldAlert, top: '72%', left: '68%', w: '20%', h: '20%' },
+                ].map(spot => {
+                  const Icon = spot.icon;
+                  return (
+                    <button
+                      key={spot.id}
+                      onClick={() => {
+                        setActiveTab(spot.id);
+                        setDashboardMode('standard');
+                      }}
+                      style={{
+                        position: 'absolute',
+                        top: spot.top,
+                        left: spot.left,
+                        width: spot.w,
+                        height: spot.h
+                      }}
+                      className="group border border-white/5 hover:border-emerald-500/50 bg-zinc-950/20 hover:bg-emerald-500/10 rounded-2xl transition-all duration-305 flex flex-col items-center justify-center p-3 text-center backdrop-blur-[1px] hover:backdrop-blur-[4px] hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] cursor-pointer"
+                    >
+                      <div className="p-2.5 bg-zinc-900/80 border border-zinc-800 group-hover:border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-black rounded-xl transition-all mb-1 text-zinc-400">
+                        <Icon size={18} />
+                      </div>
+                      <span className="text-[10px] font-black text-white uppercase tracking-wider group-hover:text-emerald-400 transition-colors">{spot.desc}</span>
+                      <span className="text-[8px] text-zinc-500 font-bold uppercase mt-0.5 tracking-widest block opacity-0 group-hover:opacity-100 transition-opacity">{spot.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col">
+              {/* Botón de retorno al mapa */}
+              <button
+                onClick={() => setDashboardMode('immersive')}
+                className="mb-6 self-start px-3.5 py-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-850 text-zinc-350 hover:text-white text-[10px] font-black uppercase tracking-wider rounded-xl flex items-center gap-2 transition-all shadow-md"
+              >
+                <ArrowLeft size={12} />
+                <span>Volver a Oficina Inmersiva</span>
+              </button>
+
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex-1 flex flex-col"
+                >
+                  {activeTab === 'structure' && (
+                    <StructurePanel
+                      activeAgency={activeAgency}
+                      agencyWorkspaces={agencyWorkspaces}
+                      agencyMembers={agencyMembers}
+                      onOpenInviteModal={() => setIsInviteModalOpen(true)}
+                      onOpenPermModal={handleOpenPermModal}
+                    />
+                  )}
+                  {activeTab === 'crm' && <CrmPanel />}
+                  {activeTab === 'goals' && <GoalsPanel agencyMembers={agencyMembers} />}
+                  {activeTab === 'resources' && <ResourcesPanel />}
+                  {activeTab === 'tasks' && <TasksPanel agencyMembers={agencyMembers} />}
+                  {activeTab === 'secrets' && <SecretsPanel />}
+                  {activeTab === 'content' && <ContentPanel agencyMembers={agencyMembers} />}
+                  {activeTab === 'finance' && <FinancePanel agencyWorkspaces={agencyWorkspaces} />}
+                  {activeTab === 'audit' && <AuditPanel />}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          )}
         </div>
       </div>
 
