@@ -13,7 +13,7 @@ import { PublicLeadForm } from './pages/public/PublicLeadForm';
 
 // --------- Workspace Selector ---------
 import { WorkspaceSelectorPage } from './pages/WorkspaceSelectorPage';
-import AgencyDashboard from './pages/agency/AgencyDashboard';
+import { AgencyDashboard } from './pages/agency/AgencyDashboard';
 
 import { PresenceProvider } from './context/PresenceContext';
 import { supabase } from './lib/supabase';

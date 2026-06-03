@@ -316,4 +316,4 @@ export const AgencyDashboard: React.FC = () => {
     </div>
   );
 };
-export default AgencyDashboard;
+
