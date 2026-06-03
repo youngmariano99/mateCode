@@ -18,7 +18,7 @@ RUN dotnet restore
 # Copiar el resto del código y compilar
 COPY . .
 WORKDIR /app/MateCode.API
-RUN dotnet publish -c Release -o /out --no-restore
+RUN dotnet publish -c Release -o /out
 
 # 2. Runtime Stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
