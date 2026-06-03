@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS crm.leads_agencia (
     motivo_contacto TEXT,
     descripcion TEXT,
     notas JSONB DEFAULT '[]'::jsonb,
-    orden_posicion VARCHAR(50) DEFAULT 'a',
+    rango_lexicografico VARCHAR(50) DEFAULT 'a',
     fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

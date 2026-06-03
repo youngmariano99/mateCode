@@ -19,6 +19,22 @@ namespace MateCode.API.Controllers
             _workspaceService = workspaceService;
         }
 
+        [HttpGet("profile")]
+        public async Task<IActionResult> GetProfile()
+        {
+            var userIdStr = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr)) 
+                return Unauthorized("Usuario no identificado en el token.");
+
+            var userId = Guid.Parse(userIdStr);
+            var email = User.FindFirstValue("email") ?? User.FindFirstValue(ClaimTypes.Email) ?? "";
+            var name = User.FindFirstValue("full_name") ?? User.Identity?.Name ?? email;
+            
+            await _workspaceService.SyncUserAsync(userId, email, name);
+
+            return Ok(new { id = userId, email, nombreCompleto = name });
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetMyWorkspaces()
         {

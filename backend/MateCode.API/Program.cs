@@ -205,6 +205,11 @@ using (var scope = app.Services.CreateScope())
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'recursos' AND column_name = 'categoria') THEN
                     ALTER TABLE organizacion.recursos ADD COLUMN categoria VARCHAR(100) DEFAULT 'General';
                 END IF;
+
+                -- Columnas para CRM de Agencia (Corrección de orden_posicion -> rango_lexicografico)
+                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'leads_agencia' AND column_name = 'orden_posicion') THEN
+                    ALTER TABLE crm.leads_agencia RENAME COLUMN orden_posicion TO rango_lexicografico;
+                END IF;
             END $$;";
         context.Database.ExecuteSqlRaw(sql);
         Console.WriteLine("✅ Infraestructura de Bóveda y Stacks verificada exitosamente.");
