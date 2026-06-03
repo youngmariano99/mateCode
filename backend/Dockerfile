@@ -12,12 +12,13 @@ COPY MateCode.API/*.csproj ./MateCode.API/
 COPY MateCode.Application/*.csproj ./MateCode.Application/
 COPY MateCode.Core/*.csproj ./MateCode.Core/
 COPY MateCode.Infrastructure/*.csproj ./MateCode.Infrastructure/
+COPY MateCode.Tests/*.csproj ./MateCode.Tests/
 RUN dotnet restore
 
 # Copiar el resto del código y compilar
 COPY . .
 WORKDIR /app/MateCode.API
-RUN dotnet publish -c Release -o /out
+RUN dotnet publish -c Release -o /out --no-restore
 
 # 2. Runtime Stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
