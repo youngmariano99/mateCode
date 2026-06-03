@@ -1,0 +1,53 @@
+---
+description: Reglas fundacionales de arquitectura, tipado y estilo aplicables a la totalidad del repositorio base.
+globs: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.cs"]
+alwaysApply: true
+priority: 1
+tags: [core, standards, architecture, clean-code]
+version: 1.0.0
+---
+
+# Estándares Core de Codificación y Arquitectura Limpia
+
+## Propósito y Activación
+Esta directiva se aplica globalmente a todas las mutaciones del código fuente para asegurar la consistencia arquitectónica en capas (Clean Architecture) y el cumplimiento de SOLID.
+
+## Requisitos Innegociables
+- **TypeScript:** Compilación `"strict": true`. Prohibido el tipo `any`. Usar `unknown` respaldado por guardas de tipo (*type narrowing*).
+- **Límites de Archivo:** Límite estricto de ~250 líneas. SRP absoluto (un componente/clase/interfaz por archivo).
+- **Spanglish Técnico:** Nombres de variables, funciones y tablas en Español latinoamericano. Sufijos arquitectónicos y palabras clave en Inglés.
+  - *Correcto:* `obtenerProyectosActivos()`, `UsuarioController`, `ClienteRepository`, `created_at`.
+- **Excepciones:** Prohibidas excepciones genéricas. Heredar de `DomainException` o `SystemException` para asegurar serialización uniforme.
+
+## Ejemplos Formativos
+<example>
+// VÁLIDO: Controlador anémico con delegación y tipado seguro.
+import { Controller, Post, Body } from '@nestjs/common';
+import { RegistrarUsuarioUseCase } from '../use-cases/registrar-usuario.usecase';
+import { RegistrarUsuarioDto } from '../dto/registrar-usuario.dto';
+
+@Controller('usuarios')
+export class UsuarioController {
+  constructor(private readonly registrarUsuarioUseCase: RegistrarUsuarioUseCase) {}
+
+  @Post()
+  async registrar(@Body() payload: RegistrarUsuarioDto) {
+    return await this.registrarUsuarioUseCase.execute(payload);
+  }
+}
+</example>
+
+<example type="invalid">
+// INVÁLIDO: Contaminación de persistencia en controlador y uso de any.
+@Controller('usuarios')
+export class UsuarioController {
+  constructor(private readonly db: DatabaseService) {}
+
+  @Post()
+  async registrar(@Body() payload: any) { // Violación de tipo: any
+    if (payload.edad < 18) throw new Error("Edad insuficiente"); // Error genérico
+    await this.db.insert(payload); // Inyección directa de persistencia
+    return { exito: true };
+  }
+}
+</example>

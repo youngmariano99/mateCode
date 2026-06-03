@@ -8,7 +8,7 @@ import { Cpu, Layers, Zap, Loader2, Save, Plus, RefreshCw, Copy, FileText } from
 import { TemplatePickerModal } from '../shared/TemplatePickerModal';
 import { ProjectStandardsAside } from './ProjectStandardsAside';
 import { StackBuilder } from './StackBuilder';
-import ArchitectureBlueprint from '../../pages/projects/components/ArchitectureBlueprint';
+import ArchitectureBlueprint from './ArchitectureBlueprint';
 
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { PromptBuilderModal } from './PromptBuilderModal';

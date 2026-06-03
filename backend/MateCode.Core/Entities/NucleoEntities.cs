@@ -16,6 +16,7 @@ namespace MateCode.Core.Entities
         public Guid Id { get; set; }
         public string Nombre { get; set; } = string.Empty;
         public Guid PropietarioId { get; set; }
+        public Guid? AgenciaId { get; set; }
         public DateTime FechaCreacion { get; set; }
     }
 

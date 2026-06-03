@@ -1,0 +1,53 @@
+---
+description: Reglas de diseño y convención de base de datos PostgreSQL, esquemas lógicos y multitenancy.
+globs: ["backend/db/**/*.sql", "backend/database/**/*.sql", "backend/MateCode.Infrastructure/Persistence/**/*.cs"]
+alwaysApply: false
+priority: 2
+tags: [database, postgresql, rls, schemas]
+version: 1.0.0
+---
+
+# Convenciones de Base de Datos y Persistencia (PostgreSQL)
+
+## Propósito y Activación
+Esta regla se activa condicionalmente al modificar scripts de migración SQL o clases de persistencia y mapeo en EF Core. Asegura la integridad referencial y las barreras de aislamiento del multitenancy.
+
+## Requisitos Innegociables
+- **Multitenancy Estricto (RLS):** Toda tabla con información del cliente debe contar con la columna `tenant_id` y tener habilitadas políticas de Row-Level Security en PostgreSQL que verifiquen el token JWT del contexto del usuario.
+- **Prohibición de Eliminaciones Físicas:** El comando SQL `DELETE` está vetado en tablas de datos transaccionales. Utilizar borrado lógico a través de `activo = false` o `is_deleted = true` y guardar la marca de tiempo en `deleted_at`.
+- **Esquemas Lógicos:** Dividir las tablas lógicamente según su módulo en lugar de usar un esquema único `public`. Esquemas autorizados: `nucleo`, `crm`, `proyectos`, `agil`, `boveda` (o `blueprints`).
+- **Almacenamiento Dinámico (JSONB):** Guardar configuraciones dinámicas de formularios o listas de tareas dentro de columnas `JSONB`. Habilitar índices GIN sobre estos campos para optimizar búsquedas.
+- **Reordenamiento Kanban O(1):** El orden de los tickets no debe re-calcular un índice numérico para todo el listado. Utilizar la columna `rango_lexicografico` (texto) para posicionar tarjetas mediante strings lexicográficos.
+
+## Ejemplos Formativos
+<example>
+-- VÁLIDO: Creación de tabla con borrado lógico, JSONB y política de RLS.
+CREATE TABLE agil.tickets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL,
+    titulo VARCHAR(250) NOT NULL,
+    rango_lexicografico VARCHAR(100) NOT NULL,
+    tareas_json JSONB DEFAULT '[]'::jsonb,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    deleted_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Habilitar RLS
+ALTER TABLE agil.tickets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY tickets_tenant_isolation ON agil.tickets
+    FOR ALL
+    USING (tenant_id = auth.uid());
+</example>
+
+<example type="invalid">
+-- INVÁLIDO: Eliminación física, campo EAV de base de datos, sin RLS.
+CREATE TABLE public.ticket_tareas (
+    id SERIAL PRIMARY KEY,
+    ticket_id INT NOT NULL,
+    clave_atributo VARCHAR(100), -- Antipatrón EAV
+    valor_atributo TEXT
+);
+
+-- Falla: No hay columna tenant_id, no se habilita RLS, y se asume eliminación física.
+</example>

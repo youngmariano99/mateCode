@@ -1,0 +1,34 @@
+# MateCode: Sistema Operativo de Gestión de Proyectos "Anti-Jira"
+
+> Sistema de gestión de proyectos tecnológicos de extrema eficiencia y fricción cercana a cero, construido con React 18, .NET 8/9 y PostgreSQL con soporte nativo de multi-tenancy.
+
+## Metadatos y Contexto del Dominio
+
+- [/CONTEXT.md](file:///c:/Users/mari_/OneDrive/Escritorio/t/PROYECTS/ACTIVOS/PERSONALES/MateCode/CONTEXT.md): Definición inmutable de restricciones operativas, de seguridad, pila tecnológica autorizada y convenciones de código.
+- [/README.md](file:///c:/Users/mari_/OneDrive/Escritorio/t/PROYECTS/ACTIVOS/PERSONALES/MateCode/README.md): Guía de inicialización, variables de entorno y comandos para desarrolladores.
+
+## Arquitectura y Estado (Modelo Arc42)
+
+- [/docs/architecture/01-contexto-y-alcance.md](file:///c:/Users/mari_/OneDrive/Escritorio/t/PROYECTS/ACTIVOS/PERSONALES/MateCode/docs/architecture/01-contexto-y-alcance.md): Mapeo de límites de interfaces externas y actores del sistema.
+- [/docs/architecture/02-restricciones.md](file:///c:/Users/mari_/OneDrive/Escritorio/t/PROYECTS/ACTIVOS/PERSONALES/MateCode/docs/architecture/02-restricciones.md): Restricciones regulatorias, RLS de PostgreSQL y políticas de borrado lógico.
+- [/docs/architecture/03-estrategia-despliegue.md](file:///c:/Users/mari_/OneDrive/Escritorio/t/PROYECTS/ACTIVOS/PERSONALES/MateCode/docs/architecture/03-estrategia-despliegue.md): Infraestructura de despliegues productivos (Render, Netlify y Supabase) y emulación local.
+
+## Registro Histórico de Decisiones (ADRs)
+
+- [/docs/adr/0000-plantilla-adr.md](file:///c:/Users/mari_/OneDrive/Escritorio/t/PROYECTS/ACTIVOS/PERSONALES/MateCode/docs/adr/0000-plantilla-adr.md): Plantilla base de registro en formato de pirámide invertida.
+- [/docs/adr/0001-migracion-arquitectura-hibrida-ia.md](file:///c:/Users/mari_/OneDrive/Escritorio/t/PROYECTS/ACTIVOS/PERSONALES/MateCode/docs/adr/0001-migracion-arquitectura-hibrida-ia.md): Registro de la adopción del estándar de documentación híbrida AI-First.
+- [/docs/adr/0002-adopcion-dotnet-clean-architecture.md](file:///c:/Users/mari_/OneDrive/Escritorio/t/PROYECTS/ACTIVOS/PERSONALES/MateCode/docs/adr/0002-adopcion-dotnet-clean-architecture.md): Registro histórico sobre la selección de .NET y Clean Architecture para el backend.
+- [/docs/adr/0003-migracion-spatial-os-3d.md](file:///c:/Users/mari_/OneDrive/Escritorio/t/PROYECTS/ACTIVOS/PERSONALES/MateCode/docs/adr/0003-migracion-spatial-os-3d.md): Registro histórico del salto hacia el modelado 3D inmersivo de oficinas.
+
+## Especificaciones y Referencias
+
+- [/docs/reference/modulos.md](file:///c:/Users/mari_/OneDrive/Escritorio/t/PROYECTS/ACTIVOS/PERSONALES/MateCode/docs/reference/modulos.md): Detalle técnico y funcional de los 20 módulos de negocio del sistema.
+
+## Guías de Desarrollo (How-To)
+
+- [/docs/how-to/desarrollar-nuevo-endpoint-dotnet.md](file:///c:/Users/mari_/OneDrive/Escritorio/t/PROYECTS/ACTIVOS/PERSONALES/MateCode/docs/how-to/desarrollar-nuevo-endpoint-dotnet.md): Guía procedural paso a paso para añadir servicios y endpoints en C#.
+- [/docs/how-to/crear-nuevo-modulo-visual.md](file:///c:/Users/mari_/OneDrive/Escritorio/t/PROYECTS/ACTIVOS/PERSONALES/MateCode/docs/how-to/crear-nuevo-modulo-visual.md): Guía práctica de desarrollo de UI interactiva y Spatial OS en React.
+
+## Tutoriales y Onboarding
+
+- [/docs/tutorials/onboarding-desarrolladores.md](file:///c:/Users/mari_/OneDrive/Escritorio/t/PROYECTS/ACTIVOS/PERSONALES/MateCode/docs/tutorials/onboarding-desarrolladores.md): Tutorial paso a paso para el levantamiento inicial de la base de código.

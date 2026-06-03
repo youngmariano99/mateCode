@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "LOgVpkKPTaU=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\PROYECTS\\ACTIVOS\\PERSONALES\\MateCode\\backend\\scratch\\Migrator\\Migrator.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\mari_\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\9.0.0\\microsoft.extensions.dependencyinjection.abstractions.9.0.0.nupkg.sha512",
+    "C:\\Users\\mari_\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\9.0.0\\microsoft.extensions.logging.abstractions.9.0.0.nupkg.sha512",
+    "C:\\Users\\mari_\\.nuget\\packages\\npgsql\\10.0.3\\npgsql.10.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

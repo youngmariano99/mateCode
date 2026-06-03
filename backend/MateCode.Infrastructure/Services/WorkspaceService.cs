@@ -38,13 +38,14 @@ namespace MateCode.Infrastructure.Services
             return owned.Concat(memberOf).DistinctBy(et => et.Id);
         }
 
-        public async Task<EspacioTrabajo> CreateWorkspaceAsync(Guid ownerId, string name)
+        public async Task<EspacioTrabajo> CreateWorkspaceAsync(Guid ownerId, string name, Guid? agencyId = null)
         {
             var workspace = new EspacioTrabajo
             {
                 Id = Guid.NewGuid(),
                 Nombre = name,
                 PropietarioId = ownerId,
+                AgenciaId = agencyId,
                 FechaCreacion = DateTime.UtcNow
             };
 

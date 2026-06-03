@@ -1,9 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { ProjectProvider } from './context/ProjectContext';
 
-// --------- Layouts de Revelación Progresiva ---------
-import { GlobalLayout } from './layouts/GlobalLayout';
-import { FocusLayout } from './layouts/FocusLayout';
+// --------- Layouts ---------
 import { SpatialLayout } from './layouts/SpatialLayout';
 
 // --------- Vistas Públicas ---------
@@ -13,31 +11,9 @@ import FormInjectableView from './pages/public/FormInjectableView';
 import ClientPortal from './pages/client/ClientPortal';
 import { PublicLeadForm } from './pages/public/PublicLeadForm';
 
-// --------- Vistas de Negocio (Global) ---------
-import CrmDashboard from './pages/crm/CrmDashboard';
-import TeamManagement from './pages/team/TeamManagement';
-import Dashboard from './pages/dashboard/Dashboard';
-import ProjectsList from './pages/projects/ProjectsList';
-import Vault from './pages/vault/Vault';
-import Portfolio from './pages/portfolio/Portfolio';
-import { PromptLibrary } from './pages/vault/PromptLibrary';
-import { FormLibrary } from './pages/vault/FormLibrary';
-import { StandardLibrary } from './pages/vault/StandardLibrary';
-import { BlueprintWizard } from './pages/vault/BlueprintWizard';
-import { ProjectFactory } from './pages/vault/ProjectFactory';
-
-// --------- Vistas del Taller (Fases) ---------
-import Phase0Feasibility from './pages/projects/Phase0Feasibility';
-import Phase1Requirements from './pages/projects/Phase1Requirements';
-import Phase2Design from './pages/projects/Phase2Design';
-import Phase3Implementation from './pages/projects/Phase3Implementation';
-import Phase4Testing from './pages/projects/Phase4Testing';
-import Phase5Deployment from './pages/projects/Phase5Deployment';
-import ProjectDashboard from './pages/projects/ProjectDashboard';
-
-// --------- DevHub (Colaboración) ---------
-import { DevHubLayout } from './components/devhub/DevHubLayout';
+// --------- Workspace Selector ---------
 import { WorkspaceSelectorPage } from './pages/WorkspaceSelectorPage';
+import AgencyDashboard from './pages/agency/AgencyDashboard';
 
 import { PresenceProvider } from './context/PresenceContext';
 import { supabase } from './lib/supabase';
@@ -140,41 +116,14 @@ export default function App() {
               {/* --- 2. Rutas Protegidas --- */}
               <Route element={<AuthGuard><Outlet /></AuthGuard>}>
                 <Route path="/workspace-selector" element={<WorkspaceSelectorPage />} />
+                <Route path="/agency/dashboard" element={<AgencyDashboard />} />
                 
-                {/* Rutas del Ecosistema Global */}
-                <Route element={<GlobalLayout children={<Outlet />} />}>
-                  <Route path="/app/dashboard" element={<Dashboard />} />
-                  <Route path="/app/projects" element={<ProjectsList />} />
-                  <Route path="/app/crm/leads" element={<CrmDashboard />} />
-                  <Route path="/app/crm/clients" element={<CrmDashboard />} />
-                  <Route path="/app/team" element={<TeamManagement />} />
-                  <Route path="/app/vault" element={<Vault />} />
-                  <Route path="/app/vault/prompts" element={<PromptLibrary />} />
-                  <Route path="/app/vault/forms" element={<FormLibrary />} />
-                  <Route path="/app/vault/standards" element={<StandardLibrary />} />
-                  <Route path="/app/projects/blueprint" element={<BlueprintWizard />} />
-                  <Route path="/app/projects/factory" element={<ProjectFactory />} />
-                  <Route path="/app/portfolio" element={<Portfolio />} />
-                </Route>
-
-                {/* Rutas del Taller */}
-                <Route path="/projects/:id" element={<FocusLayout phaseTitle="Context Hub" children={<ProjectDashboard />} />} />
-                <Route path="/projects/:id/phase-0-feasibility" element={<FocusLayout phaseTitle="ADN" children={<Phase0Feasibility />} />} />
-                <Route path="/projects/:id/phase-1-requirements" element={<FocusLayout phaseTitle="Requisitos" children={<Phase1Requirements />} />} />
-                <Route path="/projects/:id/phase-2-design" element={<FocusLayout phaseTitle="Diseño" children={<Phase2Design />} />} />
-                <Route path="/projects/:id/phase-3-implementation" element={<FocusLayout phaseTitle="Desarrollo" children={<Phase3Implementation />} />} />
-                <Route path="/projects/:id/phase-4-testing" element={<FocusLayout phaseTitle="Testing" children={<Phase4Testing />} />} />
-                <Route path="/projects/:id/phase-5-deploy" element={<FocusLayout phaseTitle="Cosecha" children={<Phase5Deployment />} />} />
-
-                {/* DevHub */}
-                <Route path="/projects/:projectId/devhub" element={<DevHubLayout />} />
-
                 {/* Spatial OS */}
                 <Route path="/workspace/:workspaceId" element={<SpatialLayout />} />
               </Route>
 
               {/* Fallback General */}
-              <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
+              <Route path="*" element={<Navigate to="/workspace-selector" replace />} />
             </Routes>
           </BrowserRouter>
         </BackendGuard>

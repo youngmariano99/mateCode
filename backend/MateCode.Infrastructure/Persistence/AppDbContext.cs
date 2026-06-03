@@ -30,6 +30,18 @@ namespace MateCode.Infrastructure.Persistence
         public DbSet<FormularioPlantilla> FormulariosPlantilla { get; set; }
         public DbSet<TecnologiaCatalogo> TecnologiasCatalogo { get; set; }
 
+        // Módulos de Agencia/Empresa
+        public DbSet<Agencia> Agencias { get; set; }
+        public DbSet<MiembroAgencia> MiembrosAgencia { get; set; }
+        public DbSet<LeadAgencia> LeadsAgencia { get; set; }
+        public DbSet<Objetivo> Objetivos { get; set; }
+        public DbSet<Recurso> Recursos { get; set; }
+        public DbSet<TareaOperativa> TareasOperativas { get; set; }
+        public DbSet<CredencialSegura> CredencialesSeguras { get; set; }
+        public DbSet<PlanificadorContenido> PlanificadorContenidos { get; set; }
+        public DbSet<TransaccionAgencia> TransaccionesAgencia { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
+
         // Colab
         public DbSet<Decision> Decisiones { get; set; }
         public DbSet<VotoDecision> VotosDecision { get; set; }
@@ -62,6 +74,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(et => et.Id).HasColumnName("id");
                 e.Property(et => et.Nombre).HasColumnName("nombre");
                 e.Property(et => et.PropietarioId).HasColumnName("propietario_id");
+                e.Property(et => et.AgenciaId).HasColumnName("agencia_id");
                 e.Property(et => et.FechaCreacion).HasColumnName("fecha_creacion");
             });
 
@@ -399,6 +412,142 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(l => l.TipoEvento).HasColumnName("tipo_evento");
                 e.Property(l => l.Detalles).HasColumnName("detalles").HasColumnType("jsonb");
                 e.Property(l => l.Fecha).HasColumnName("fecha");
+            });
+
+            // Mapeos de Agencia
+            modelBuilder.Entity<Agencia>(e => {
+                e.ToTable("agencias", "nucleo");
+                e.Property(a => a.Id).HasColumnName("id");
+                e.Property(a => a.Nombre).HasColumnName("nombre");
+                e.Property(a => a.PropietarioId).HasColumnName("propietario_id");
+                e.Property(a => a.Tipo).HasColumnName("tipo");
+                e.Property(a => a.LlaveCifrado).HasColumnName("llave_cifrado");
+                e.Property(a => a.FechaCreacion).HasColumnName("fecha_creacion");
+            });
+
+            modelBuilder.Entity<MiembroAgencia>(e => {
+                e.ToTable("miembros_agencia", "nucleo");
+                e.HasKey(ma => new { ma.AgenciaId, ma.UsuarioId });
+                e.Property(ma => ma.AgenciaId).HasColumnName("agencia_id");
+                e.Property(ma => ma.UsuarioId).HasColumnName("usuario_id");
+                e.Property(ma => ma.Rol).HasColumnName("rol");
+                e.Property(ma => ma.PermisosJson).HasColumnName("permisos_json").HasColumnType("jsonb");
+                e.Property(ma => ma.EstadoInvitacion).HasColumnName("estado_invitacion");
+            });
+
+            modelBuilder.Entity<LeadAgencia>(e => {
+                e.ToTable("leads_agencia", "crm");
+                e.Property(l => l.Id).HasColumnName("id");
+                e.Property(l => l.AgenciaId).HasColumnName("agencia_id");
+                e.Property(l => l.Nombre).HasColumnName("nombre");
+                e.Property(l => l.Email).HasColumnName("email");
+                e.Property(l => l.Categoria).HasColumnName("categoria");
+                e.Property(l => l.Calificacion).HasColumnName("calificacion");
+                e.Property(l => l.OrigenContacto).HasColumnName("origen_contacto");
+                e.Property(l => l.MotivoContacto).HasColumnName("motivo_contacto");
+                e.Property(l => l.Descripcion).HasColumnName("descripcion");
+                e.Property(l => l.Notas).HasColumnName("notas").HasColumnType("jsonb");
+                e.Property(l => l.RangoLexicografico).HasColumnName("rango_lexicografico");
+                e.Property(l => l.FechaCreacion).HasColumnName("fecha_creacion");
+            });
+
+            modelBuilder.Entity<Objetivo>(e => {
+                e.ToTable("objetivos", "organizacion");
+                e.Property(o => o.Id).HasColumnName("id");
+                e.Property(o => o.AgenciaId).HasColumnName("agencia_id");
+                e.Property(o => o.UsuarioAsignadoId).HasColumnName("usuario_asignado_id");
+                e.Property(o => o.CreadorId).HasColumnName("creador_id");
+                e.Property(o => o.Titulo).HasColumnName("titulo");
+                e.Property(o => o.Descripcion).HasColumnName("descripcion");
+                e.Property(o => o.TipoPeriodo).HasColumnName("tipo_periodo");
+                e.Property(o => o.FechaLimite).HasColumnName("fecha_limite");
+                e.Property(o => o.Completado).HasColumnName("completado");
+                e.Property(o => o.FechaCreacion).HasColumnName("fecha_creacion");
+            });
+
+            modelBuilder.Entity<Recurso>(e => {
+                e.ToTable("recursos", "organizacion");
+                e.Property(r => r.Id).HasColumnName("id");
+                e.Property(r => r.AgenciaId).HasColumnName("agencia_id");
+                e.Property(r => r.Titulo).HasColumnName("titulo");
+                e.Property(r => r.Contenido).HasColumnName("contenido");
+                e.Property(r => r.Tipo).HasColumnName("tipo");
+                e.Property(r => r.Etiquetas).HasColumnName("etiquetas").HasColumnType("jsonb");
+                e.Property(r => r.RolesPermitidos).HasColumnName("roles_permitidos").HasColumnType("jsonb");
+                e.Property(r => r.CreadorId).HasColumnName("creador_id");
+                e.Property(r => r.Favorito).HasColumnName("favorito");
+                e.Property(r => r.Categoria).HasColumnName("categoria");
+                e.Property(r => r.FechaCreacion).HasColumnName("fecha_creacion");
+            });
+
+            modelBuilder.Entity<TareaOperativa>(e => {
+                e.ToTable("tareas_operativas", "organizacion");
+                e.Property(t => t.Id).HasColumnName("id");
+                e.Property(t => t.AgenciaId).HasColumnName("agencia_id");
+                e.Property(t => t.Titulo).HasColumnName("titulo");
+                e.Property(t => t.Descripcion).HasColumnName("descripcion");
+                e.Property(t => t.Estado).HasColumnName("estado");
+                e.Property(t => t.FechaPlanificada).HasColumnName("fecha_planificada");
+                e.Property(t => t.UsuarioAsignadoId).HasColumnName("usuario_asignado_id");
+                e.Property(t => t.RangoLexicografico).HasColumnName("rango_lexicografico");
+                e.Property(t => t.FechaCreacion).HasColumnName("fecha_creacion");
+            });
+
+            modelBuilder.Entity<CredencialSegura>(e => {
+                e.ToTable("credenciales_seguras", "organizacion");
+                e.Property(c => c.Id).HasColumnName("id");
+                e.Property(c => c.AgenciaId).HasColumnName("agencia_id");
+                e.Property(c => c.Servicio).HasColumnName("servicio");
+                e.Property(c => c.Usuario).HasColumnName("usuario");
+                e.Property(c => c.ClaveEncriptada).HasColumnName("clave_encriptada");
+                e.Property(c => c.UrlAcceso).HasColumnName("url_acceso");
+                e.Property(c => c.RolesPermitidos).HasColumnName("roles_permitidos").HasColumnType("jsonb");
+                e.Property(c => c.FechaCreacion).HasColumnName("fecha_creacion");
+                e.Property(c => c.FechaActualizacion).HasColumnName("fecha_actualizacion");
+            });
+
+            modelBuilder.Entity<PlanificadorContenido>(e => {
+                e.ToTable("planificador_contenido", "organizacion");
+                e.Property(p => p.Id).HasColumnName("id");
+                e.Property(p => p.AgenciaId).HasColumnName("agencia_id");
+                e.Property(p => p.MiembroId).HasColumnName("miembro_id");
+                e.Property(p => p.Titulo).HasColumnName("titulo");
+                e.Property(p => p.Plataformas).HasColumnName("plataformas").HasColumnType("jsonb");
+                e.Property(p => p.GuionPlantilla).HasColumnName("guion_plantilla");
+                e.Property(p => p.Dialogo).HasColumnName("dialogo");
+                e.Property(p => p.ProcedimientoEstandar).HasColumnName("procedimiento_estandar");
+                e.Property(p => p.Estado).HasColumnName("estado");
+                e.Property(p => p.NotasMejora).HasColumnName("notas_mejora");
+                e.Property(p => p.ResumenAnalitico).HasColumnName("resumen_analitico").HasColumnType("jsonb");
+                e.Property(p => p.FechaPublicacion).HasColumnName("fecha_publicacion");
+                e.Property(p => p.FechaCreacion).HasColumnName("fecha_creacion");
+            });
+
+            modelBuilder.Entity<TransaccionAgencia>(e => {
+                e.ToTable("transacciones_agencia", "finanzas");
+                e.Property(t => t.Id).HasColumnName("id");
+                e.Property(t => t.AgenciaId).HasColumnName("agencia_id");
+                e.Property(t => t.Tipo).HasColumnName("tipo");
+                e.Property(t => t.Monto).HasColumnName("monto");
+                e.Property(t => t.Concepto).HasColumnName("concepto");
+                e.Property(t => t.Descripcion).HasColumnName("descripcion");
+                e.Property(t => t.Fecha).HasColumnName("fecha");
+                e.Property(t => t.Categoria).HasColumnName("categoria");
+                e.Property(t => t.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(t => t.FechaCreacion).HasColumnName("fecha_creacion");
+            });
+
+            modelBuilder.Entity<AuditLog>(e => {
+                e.ToTable("audit_logs", "organizacion");
+                e.Property(a => a.Id).HasColumnName("id");
+                e.Property(a => a.AgenciaId).HasColumnName("agencia_id");
+                e.Property(a => a.UsuarioId).HasColumnName("usuario_id");
+                e.Property(a => a.NombreUsuario).HasColumnName("nombre_usuario");
+                e.Property(a => a.Modulo).HasColumnName("modulo");
+                e.Property(a => a.Accion).HasColumnName("accion");
+                e.Property(a => a.RegistroId).HasColumnName("registro_id");
+                e.Property(a => a.Detalles).HasColumnName("detalles").HasColumnType("jsonb");
+                e.Property(a => a.Fecha).HasColumnName("fecha");
             });
         }
     }

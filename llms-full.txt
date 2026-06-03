@@ -1,0 +1,87 @@
+# Compilación Técnica de Contexto: Ecosistema MateCode ("Anti-Jira")
+
+Este documento contiene la especificación consolidada y de alta densidad para todos los módulos funcionales, fases de desarrollo, bases de datos y topología del sistema MateCode. Diseñado como referencia semántica absoluta para agentes autónomos y desarrolladores.
+
+---
+
+## 1. Módulos de Identidad, Seguridad y Acceso (Esquema: `nucleo`)
+
+Maneja la autenticación asíncrona, multitenancy estricto a nivel de fila (RLS) y la matriz granular de permisos.
+
+### Registro, Autenticación y Miembros
+*   **Identidad:** Gestionada mediante Supabase Auth con firma de claves asimétricas JWT ECC P-256 (sincronizada en tiempo de ejecución local en .NET mediante el middleware de autoridad JWKS).
+*   **Espacios de Trabajo (Workspaces):** Aislamiento físico de datos a través de la columna `tenant_id` (o `espacio_trabajo_id`). Toda consulta SQL generada por Entity Framework Core intercepta el contexto mediante Global Query Filters para evitar la fuga de datos transaccionales.
+*   **Matriz de Permisos:** Almacenada como un objeto plano JSONB en `miembros_espacio.matriz_permisos`. Permite configurar roles genéricos (SM, PO, Dev) y asignar banderas de accesibilidad de forma modular y dinámica.
+
+---
+
+## 2. Fase 0: Factibilidad y CRM (Esquema: `crm` y `proyectos`)
+
+Captura sistemática de oportunidades de desarrollo y enlace interactivo con el cliente.
+
+### Captura de Leads y Formularios Dinámicos
+*   **SurveyJS Integrado:** Motor de encuestas inyectables cargadas vía Lazy-Loading en `/form/[template_id]` (sin scripts redundantes). La estructura del formulario y los campos de datos se almacenan en formato JSONB indexado en la tabla `formularios_plantilla`.
+*   **Portal de Clientes (Magic Link):** Acceso seguro sin contraseñas mediante un endpoint protegido por token UUID en `/client/[magic_token]`. Permite al cliente visualizar demos en tiempo real, presenciar avances técnicos y registrar comentarios.
+*   **Bandeja de Leads CRM:** Automatización del flujo. Al completarse un formulario de cliente, se almacena un registro en `clientes.contexto_json` (calificado bajo marco BANT). Su aprobación por un administrador muta el estado del Lead, creando de forma automática el `proyecto` y su `feasibility_data` base (el ADN del proyecto).
+
+---
+
+## 3. Fase 1: Requisitos y Story Mapping (Esquema: `agil`)
+
+Modelado bidimensional de la lógica del producto, asignación de perfiles de usuario e ingeniería BDD.
+
+### User Story Mapping 2D
+*   **Tablero de Historias (Jeff Patton Style):** Visualización interactiva con tres niveles jerárquicos: Épicas (Backbone), Features (Narrativa de funcionalidades) y Releases (Swimlanes/versiones de entrega).
+*   **Parser de Importación:** Servicio que traduce esquemas de JSON externos y los mapea transaccionalmente a la base de datos `agil`.
+*   **Editor reactivo BDD (Behavior Driven Development):** Interfaz fluida (`BddEditorPanel.tsx`) que permite definir criterios bajo el estándar "Dado que... / Cuando... / Entonces..." y guardarlos como un array JSONB en `epicas.criterios_bdd`.
+*   **Smart Merge:** Sistema de persistencia no-destructiva en `AgileService.cs` que conserva las modificaciones manuales hechas por el equipo en el tablero visual al realizar nuevas sincronizaciones o importaciones estructuradas.
+
+---
+
+## 4. Fase 2: Diseño de Arquitectura y Presupuesto (Esquema: `proyectos`, `boveda`)
+
+Modelado técnico visual, estructuración de base de datos y cotización multi-marca.
+
+### Workspace de Diseño e Inyección Técnica
+*   **Lienzo React Flow (`xyflow`):** Editor bidireccional interactivo de diagramación. Permite renderizar esquemas de base de datos DBML a componentes visuales interactivos y viceversa en tiempo real (Live Sync).
+*   **Algoritmos de Autodisposición:** Uso de Dagre y ElkJS de forma asíncrona para ordenar layouts de diagramas automáticamente.
+*   **Exportador Multiformato:** Genera PDF, SVG, PNG y JPEG. Realiza cálculos del Bounding Box (caja delimitadora) para ajustar la cámara del viewport antes de renderizar la captura (`html-to-image`), evitando recortes.
+*   **Wizard Presupuestador:** Módulo financiero en `FinanceService.cs` que procesa las historias de usuario y las traduce a una propuesta comercial. Genera reportes en PDF dinámicos integrando el perfil de marca correspondiente del cliente (logos, colores hexadecimales configurados).
+
+---
+
+## 5. Fase 3: Kanban, Sprints y Motor de Prompts (Esquema: `agil`, `boveda`)
+
+Centro neurálgico de ejecución ágil, tableros optimistas y traducción de contexto a directivas de IA.
+
+### Tablero Kanban y Sprints
+*   **Kanban UI Optimista:** Construido sobre la librería `@atlaskit/pragmatic-drag-and-drop` para prevenir repeticiones de renderizado en React ante volúmenes de datos densos.
+*   **Reordenación O(1):** Sistema de posicionamiento mediante cadenas lexicográficas (`rango_lexicografico`) en la base de datos, evitando la actualización en cascada de múltiples filas al arrastrar tarjetas.
+*   **Simulación Histórica:** Permite forzar la creación de Sprints pasados configurando fechas de inicio arbitrarias. El cierre de cada sprint calcula de manera asíncrona el *Cycle Time* de los tickets e invoca un modal obligatorio de Triage para reubicar tareas sueltas.
+
+### Motor de Prompts Mágicos
+*   **Semantic Kernel & Scriban:** Orquestador en C# que utiliza plantillas `.scriban` guardadas en `boveda.plantillas_prompt` procesadas a nivel zero-allocation en memoria.
+*   **Generador Contextual:** Al presionar "Prompt Mágico" en un ticket, el backend inyecta en la plantilla el ADN del proyecto (Fase 0), los diagramas y el stack tecnológico (Fase 2), los criterios de aceptación BDD (Fase 1) y el requerimiento actual del desarrollador para compilar un prompt listo para ser inyectado a LLMs comerciales o locales (Ollama).
+
+---
+
+## 6. Módulos de Colaboración Spatial OS y Virtual HQ (Esquema: `nucleo`)
+
+Entorno inmersivo y visualización espacial en tiempo real del equipo de desarrollo.
+
+### Spatial OS y Centro de Mando
+*   **Mapa 2D/3D Dual:** Interfaz interactiva implementada en `WorkspaceMap.tsx` usando coordenadas espaciales y regiones poligonales. Permite alternar mediante un botón entre la vista plana interactiva y un entorno 3D tridimensional de alta fidelidad renderizado con React Three Fiber (R3F).
+*   **Presencia Síncrona:** Sistema de avatares en tiempo real alimentado por conexiones SignalR, con interpolaciones de movimiento suaves (lerp) y tarjetas flotantes de tipo Glassmorphism.
+*   **Ritual de Carga (Mate PBR):** Pantalla de carga inmersiva con renderizado realista de termo, agua y mate usando texturas y gradientes PBR aplicados a SVG.
+*   **Sala de Guerra y Dossier:** Centro de mandos interactivo para auditar bugs, tareas técnicas y actas de reunión a través de filtros eficientes en paneles paginados. Permite lanzar votaciones en vivo sincronizadas con los miembros de la sala.
+
+---
+
+## 7. Fase 4, 5 y Bóveda: Testing, Cosecha y Portafolio (Esquema: `boveda`)
+
+Control de calidad, cierre de ciclo de desarrollo y empaquetado de conocimiento reutilizable.
+
+### Testing y Reporte de Bugs
+*   **Checklist de Pruebas:** Genera de forma automática Casos de Prueba mapeados a partir de los criterios BDD de la Fase 1. La detección de un fallo en la Checklist inserta directamente un ticket de tipo Bug en el Kanban de la Fase 3.
+*   **Cosecha Exponencial (Vault):** Wizard que al finalizar un proyecto (`Phase5Deployment.tsx`) permite empaquetar el stack de tecnologías y los esquemas DBML en `boveda.plantillas_stack` para ser reutilizados en futuros proyectos mediante un solo clic.
+*   **Exportación a Portafolio:** Almacena proyectos en la sección pública para permitir a las agencias/desarrolladores exponer su portfolio técnico de forma automática.

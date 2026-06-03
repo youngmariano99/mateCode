@@ -1,0 +1,115 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using MateCode.Application.Services;
+using System;
+using System.Threading.Tasks;
+using System.Text.Json;
+
+namespace MateCode.API.Controllers
+{
+    [Authorize]
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AgencyCrmController : ControllerBase
+    {
+        private readonly IAgencyService _agencyService;
+
+        public AgencyCrmController(IAgencyService agencyService)
+        {
+            _agencyService = agencyService;
+        }
+
+        private Guid GetAgencyId()
+        {
+            var agencyHeader = Request.Headers["X-Agency-Id"].ToString();
+            if (string.IsNullOrEmpty(agencyHeader) || !Guid.TryParse(agencyHeader, out var agencyId))
+                throw new ArgumentException("X-Agency-Id header es requerido e inválido.");
+            return agencyId;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetLeads()
+        {
+            try {
+                var agencyId = GetAgencyId();
+                var leads = await _agencyService.GetLeadsAsync(agencyId);
+                return Ok(leads);
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+
+        public class CreateLeadRequest
+        {
+            public string Nombre { get; set; } = string.Empty;
+            public string Email { get; set; } = string.Empty;
+            public string Categoria { get; set; } = "Lead";
+            public string Calificacion { get; set; } = "Calificado";
+            public string OrigenContacto { get; set; } = string.Empty;
+            public string MotivoContacto { get; set; } = string.Empty;
+            public string Descripcion { get; set; } = string.Empty;
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateLeadRequest req)
+        {
+            try {
+                var agencyId = GetAgencyId();
+                var lead = await _agencyService.CreateLeadAsync(
+                    agencyId, req.Nombre, req.Email, req.Categoria, req.Calificacion, req.OrigenContacto, req.MotivoContacto, req.Descripcion);
+                return Ok(lead);
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+
+        public class UpdateLeadStatusRequest
+        {
+            public string Categoria { get; set; } = string.Empty;
+            public string Posicion { get; set; } = "a";
+        }
+
+        [HttpPut("status/{id}")]
+        public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateLeadStatusRequest req)
+        {
+            try {
+                var success = await _agencyService.UpdateLeadStatusAsync(id, req.Categoria, req.Posicion);
+                return success ? Ok() : NotFound("Lead no encontrado.");
+            }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+
+        public class UpdateLeadRequest
+        {
+            public string Nombre { get; set; } = string.Empty;
+            public string Email { get; set; } = string.Empty;
+            public string Categoria { get; set; } = "Lead";
+            public string Calificacion { get; set; } = "Calificado";
+            public string OrigenContacto { get; set; } = string.Empty;
+            public string MotivoContacto { get; set; } = string.Empty;
+            public string Descripcion { get; set; } = string.Empty;
+            public JsonElement Notas { get; set; }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateLeadRequest req)
+        {
+            try {
+                var success = await _agencyService.UpdateLeadAsync(
+                    id, req.Nombre, req.Email, req.Categoria, req.Calificacion, req.OrigenContacto, req.MotivoContacto, req.Descripcion, req.Notas);
+                return success ? Ok() : NotFound("Lead no encontrado.");
+            }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            try {
+                var success = await _agencyService.DeleteLeadAsync(id);
+                return success ? Ok() : NotFound("Lead no encontrado.");
+            }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+    }
+}

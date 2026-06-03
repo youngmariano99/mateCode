@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { PromptLibrary } from '../../pages/vault/PromptLibrary';
-import { FormLibrary } from '../../pages/vault/FormLibrary';
-import { StandardLibrary } from '../../pages/vault/StandardLibrary';
+import { PromptLibrary } from './PromptLibrary';
+import { FormLibrary } from './FormLibrary';
+import { StandardLibrary } from './StandardLibrary';
 import { BookOpen, Sparkles, FileText, ShieldCheck, LayoutGrid, Database } from 'lucide-react';
 import { VaultTechCatalog } from './VaultTechCatalog';
 import { VaultStackTemplates } from './VaultStackTemplates';

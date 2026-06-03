@@ -1,0 +1,78 @@
+---
+description: Reglas de arquitectura backend en .NET 8/9 C#, patrones de diseño y asincronía.
+globs: ["backend/**/*.cs"]
+alwaysApply: false
+priority: 2
+tags: [backend, dotnet, csharp, clean-architecture]
+version: 1.0.0
+---
+
+# Directivas de Desarrollo Backend (.NET C#)
+
+## Propósito y Activación
+Esta regla se activa condicionalmente al editar archivos en el subdirectorio de backend. Garantiza que toda la lógica de servidor esté estructurada bajo Clean Architecture y sea totalmente asíncrona.
+
+## Requisitos Innegociables
+- **Asincronía Obligatoria:** Todas las firmas de métodos que involucren I/O (consultas de base de datos, llamadas HTTP, lecturas de archivos) deben ser asíncronas, retornando `Task` o `Task<T>` y utilizando `async/await`.
+- **Estructura en Capas:**
+    *   `Core`: Entidades de dominio y agregados independientes de persistencia.
+    *   `Application`: Casos de uso y contratos de servicios (`Interfaces`).
+    *   `Infrastructure`: Persistencia (EF Core DbContext), repositorios y servicios externos.
+    *   `API`: Controladores que validan DTOs y delegan la ejecución.
+- **Inyección de Dependencias (DI):** Todos los servicios se inyectan a través de sus respectivas interfaces en los constructores. Prohibido instanciar clases concretas con lógica de negocio.
+- **Eliminación de Condicionales Masivos:** Utilizar patrones de comportamiento como **Strategy** o **State** para la lógica mutacional de tickets o flujos del CRM.
+- **Validación de Datos:** Los controladores no deben contener lógica de negocio ni manipulación directa de base de datos. Deben validar DTOs y transferirlos al servicio de aplicación correspondiente.
+
+## Ejemplos Formativos
+<example>
+// VÁLIDO: Servicio asíncrono e inyectado con validación de contrato.
+namespace MateCode.Application.Services;
+
+public interface IProyectoService
+{
+    Task<ProyectoDto> ObtenerProyectoPorIdAsync(Guid id, Guid tenantId);
+}
+
+public class ProyectoService : IProyectoService
+{
+    private readonly IProyectoRepository _proyectoRepository;
+
+    public ProyectoService(IProyectoRepository proyectoRepository)
+    {
+        _proyectoRepository = proyectoRepository;
+    }
+
+    public async Task<ProyectoDto> ObtenerProyectoPorIdAsync(Guid id, Guid tenantId)
+    {
+        var proyecto = await _proyectoRepository.GetByIdAsync(id, tenantId);
+        if (proyecto == null)
+        {
+            throw new EntidadNoEncontradaException("El proyecto no existe en este espacio.");
+        }
+        return new ProyectoDto(proyecto.Id, proyecto.Nombre);
+    }
+}
+</example>
+
+<example type="invalid">
+// INVÁLIDO: Método síncrono, acceso a EF directo en controlador, sin interfaces.
+[ApiController]
+[Route("api/projects")]
+public class ProyectoController : ControllerBase
+{
+    private readonly AppDbContext _db; // Violación: Inyección directa de contexto en API
+
+    public ProyectoController(AppDbContext db)
+    {
+        _db = db;
+    }
+
+    [HttpGet("{id}")]
+    public Proyecto ObtenerProyecto(Guid id) // Violación: Método síncrono
+    {
+        var proyecto = _db.Proyectos.FirstOrDefault(p => p.Id == id); // Violación: Bloqueo de hilo
+        if (proyecto == null) throw new Exception("Error"); // Violación: Excepción genérica
+        return proyecto;
+    }
+}
+</example>

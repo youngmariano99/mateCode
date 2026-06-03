@@ -1,0 +1,70 @@
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Threading.Tasks;
+using MateCode.Core.Entities;
+
+namespace MateCode.Application.Services
+{
+    public interface IAgencyService
+    {
+        // --- AGENCIA Y MIEMBROS ---
+        Task<IEnumerable<Agencia>> GetAgenciesByUserAsync(Guid userId);
+        Task<Agencia> CreateAgencyAsync(string name, Guid ownerId);
+        Task<IEnumerable<object>> GetAgencyMembersAsync(Guid agencyId);
+        Task<bool> AddMemberToAgencyAsync(Guid agencyId, Guid userId, string role, JsonElement permissions);
+        Task<bool> InviteMemberToAgencyAsync(Guid agencyId, string email);
+        Task<bool> UpdateMemberPermissionsAsync(Guid agencyId, Guid userId, string role, JsonElement permissions);
+        Task<IEnumerable<object>> GetPendingInvitationsAsync(Guid userId);
+        Task<bool> AcceptInvitationAsync(Guid userId, Guid agencyId);
+        Task<bool> RejectInvitationAsync(Guid userId, Guid agencyId);
+        Task<IEnumerable<EspacioTrabajo>> GetWorkspacesByAgencyAsync(Guid agencyId);
+
+        // --- CRM CLIENTES Y LEADS ---
+        Task<IEnumerable<LeadAgencia>> GetLeadsAsync(Guid agencyId);
+        Task<LeadAgencia> CreateLeadAsync(Guid agencyId, string nombre, string email, string category, string qualification, string origen, string motivo, string descripcion);
+        Task<bool> UpdateLeadStatusAsync(Guid leadId, string category, string position);
+        Task<bool> UpdateLeadAsync(Guid leadId, string nombre, string email, string category, string qualification, string origen, string motivo, string descripcion, JsonElement notas);
+        Task<bool> DeleteLeadAsync(Guid leadId);
+
+        // --- OBJETIVOS ---
+        Task<IEnumerable<Objetivo>> GetGoalsAsync(Guid agencyId, Guid? userId = null);
+        Task<Objetivo> CreateGoalAsync(Guid agencyId, Guid assignedUserId, Guid creatorId, string titulo, string descripcion, string periodType, DateTime? limitDate);
+        Task<bool> ToggleGoalAsync(Guid goalId, bool completed);
+
+        // --- RECURSOS ---
+        Task<IEnumerable<Recurso>> GetResourcesAsync(Guid agencyId);
+        Task<Recurso> CreateResourceAsync(Guid agencyId, Guid creatorId, string titulo, string contenido, string tipo, JsonElement etiquetas, JsonElement rolesPermitidos, string categoria = "General");
+        Task<bool> UpdateResourceAsync(Guid resourceId, string titulo, string contenido, string tipo, JsonElement etiquetas, JsonElement rolesPermitidos, string categoria = "General", bool favorito = false);
+        Task<bool> ToggleResourceFavoriteAsync(Guid resourceId, bool favorito);
+        Task<bool> DeleteResourceAsync(Guid resourceId);
+
+        // --- TAREAS OPERATIVAS ---
+        Task<IEnumerable<TareaOperativa>> GetTasksAsync(Guid agencyId);
+        Task<TareaOperativa> CreateTaskAsync(Guid agencyId, string titulo, string descripcion, string estado, DateTime? planificada, Guid? assignedUserId);
+        Task<bool> UpdateTaskStatusAsync(Guid taskId, string estado, string position);
+        Task<bool> UpdateTaskAsync(Guid taskId, string titulo, string descripcion, string estado, DateTime? planificada, Guid? assignedUserId);
+        Task<bool> DeleteTaskAsync(Guid taskId);
+
+        // --- ACCESOS SEGUROS (SECRETS) ---
+        Task<IEnumerable<object>> GetSecretsListAsync(Guid agencyId);
+        Task<string> RevealSecretAsync(Guid secretId, Guid userId, string userName);
+        Task<CredencialSegura> CreateSecretAsync(Guid agencyId, string servicio, string usuario, string plaintextPassword, string urlAcceso, JsonElement rolesPermitidos);
+        Task<bool> DeleteSecretAsync(Guid secretId);
+
+        // --- PLANIFICADOR DE CONTENIDO ---
+        Task<IEnumerable<PlanificadorContenido>> GetContentsAsync(Guid agencyId);
+        Task<PlanificadorContenido> CreateContentAsync(Guid agencyId, Guid memberId, string titulo, JsonElement plataformas, string guion, string dialogo, string procedimiento, string estado, string notasMejora);
+        Task<bool> UpdateContentAsync(Guid contentId, string titulo, JsonElement plataformas, string guion, string dialogo, string procedimiento, string estado, string notasMejora, JsonElement resumenAnalitico, DateTime? publishDate);
+        Task<bool> DeleteContentAsync(Guid contentId);
+
+        // --- FINANZAS ---
+        Task<object> GetFinanceDashboardAsync(Guid agencyId);
+        Task<TransaccionAgencia> CreateTransactionAsync(Guid agencyId, string tipo, decimal monto, string concepto, string descripcion, DateTime fecha, string categoria, Guid? proyectoId);
+        Task<bool> DeleteTransactionAsync(Guid transactionId);
+
+        // --- AUDITORÍA ---
+        Task<IEnumerable<AuditLog>> GetAuditLogsAsync(Guid agencyId);
+        Task LogActivityAsync(Guid agencyId, Guid userId, string userName, string modulo, string accion, Guid? registroId, object detalles);
+    }
+}

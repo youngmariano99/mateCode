@@ -11,7 +11,7 @@ import { GeneradorPromptDesignModal } from './GeneradorPromptDesignModal';
 import { UniversalErdWorkspace } from './UniversalErdWorkspace';
 import { UniversalSitemapBrandingWorkspace } from './UniversalSitemapBrandingWorkspace';
 import { RolesMatrixView } from './RolesMatrixView';
-import { SyncProviderModal } from '../../pages/vault/SyncProviderModal';
+import { SyncProviderModal } from '../vault/SyncProviderModal';
 import { Globe } from 'lucide-react';
 
 

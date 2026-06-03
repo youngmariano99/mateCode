@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MateCode.Infrastructure", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MateCode.API", "MateCode.API\MateCode.API.csproj", "{206028BC-12E7-482D-AB5B-53773A03DE52}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MateCode.Tests", "MateCode.Tests\MateCode.Tests.csproj", "{E5DD117F-7EE1-40EA-9BB6-EA9659646DF9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,18 @@ Global
 		{206028BC-12E7-482D-AB5B-53773A03DE52}.Release|x64.Build.0 = Release|Any CPU
 		{206028BC-12E7-482D-AB5B-53773A03DE52}.Release|x86.ActiveCfg = Release|Any CPU
 		{206028BC-12E7-482D-AB5B-53773A03DE52}.Release|x86.Build.0 = Release|Any CPU
+		{E5DD117F-7EE1-40EA-9BB6-EA9659646DF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E5DD117F-7EE1-40EA-9BB6-EA9659646DF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E5DD117F-7EE1-40EA-9BB6-EA9659646DF9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E5DD117F-7EE1-40EA-9BB6-EA9659646DF9}.Debug|x64.Build.0 = Debug|Any CPU
+		{E5DD117F-7EE1-40EA-9BB6-EA9659646DF9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E5DD117F-7EE1-40EA-9BB6-EA9659646DF9}.Debug|x86.Build.0 = Debug|Any CPU
+		{E5DD117F-7EE1-40EA-9BB6-EA9659646DF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E5DD117F-7EE1-40EA-9BB6-EA9659646DF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E5DD117F-7EE1-40EA-9BB6-EA9659646DF9}.Release|x64.ActiveCfg = Release|Any CPU
+		{E5DD117F-7EE1-40EA-9BB6-EA9659646DF9}.Release|x64.Build.0 = Release|Any CPU
+		{E5DD117F-7EE1-40EA-9BB6-EA9659646DF9}.Release|x86.ActiveCfg = Release|Any CPU
+		{E5DD117F-7EE1-40EA-9BB6-EA9659646DF9}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

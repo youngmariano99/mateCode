@@ -1,0 +1,79 @@
+---
+description: Reglas de renderizado de UI, gestión de estado y convenciones de componentes en React.
+globs: ["frontend/src/**/*.tsx", "frontend/src/**/*.ts"]
+alwaysApply: false
+priority: 2
+tags: [frontend, react, ui, components]
+version: 1.0.0
+---
+
+# Directivas de Desarrollo Frontend (React / Next.js / Vite)
+
+## Propósito y Activación
+Esta regla se activa condicionalmente al editar archivos en el subdirectorio de frontend. Asegura un renderizado reactivo libre de sobrecarga cognitiva y consistencia en el sistema de diseño monocromático.
+
+## Requisitos Innegociables
+- **Componentes Funcionales:** Crear exclusivamente componentes declarados mediante funciones flecha (`const`). Prohibida la sintaxis de clases.
+- **Tipado de Props:** Definir Props explícitamente mediante interfaces de TypeScript. Evitar `React.FC` y destructurar directamente los argumentos:
+  ```typescript
+  export interface BotonProps {
+    etiqueta: string;
+    onClick: () => void;
+  }
+  export const Boton = ({ etiqueta, onClick }: BotonProps) => { ... }
+  ```
+- **Exportaciones Nombradas:** Prohibido `export default`. Utilizar Named Exports en todos los archivos para búsquedas deterministas de símbolos en el AST.
+- **Data Fetching:** Realizar peticiones asíncronas de red exclusivamente mediante TanStack Query (React Query). Queda prohibido el uso de `useEffect` para el manejo de consultas y mutaciones de APIs.
+- **Abstracción de Lógica:** Si un componente supera las 3 funciones manejadoras de eventos (`handleEvent`) o las 200 líneas de código, se debe encapsular su lógica de estado en un Custom Hook en un archivo separado.
+- **Capa Estilos:** Aplicar únicamente Tailwind CSS, Radix UI y componentes reutilizables de `/components/ui`. Prohibido crear archivos `.css` o `.scss` locales.
+
+## Ejemplos Formativos
+<example>
+// VÁLIDO: Named Export, Props directas, Custom Hook para lógica compleja.
+import { useProyectosActivos } from '../hooks/useProyectosActivos';
+
+export interface TarjetaProyectoProps {
+  proyectoId: string;
+  nombre: string;
+}
+
+export const TarjetaProyecto = ({ proyectoId, nombre }: TarjetaProyectoProps) => {
+  const { mutarFase, estaCargando } = useProyectosActivos(proyectoId);
+
+  return (
+    <div className="p-4 border border-zinc-800 rounded bg-zinc-950">
+      <h3 className="text-sm font-medium text-zinc-100">{nombre}</h3>
+      <button 
+        onClick={() => mutarFase("Fase1")} 
+        disabled={estaCargando}
+        className="mt-2 text-xs text-indigo-400 hover:text-indigo-300"
+      >
+        Avanzar fase
+      </button>
+    </div>
+  );
+};
+</example>
+
+<example type="invalid">
+// INVÁLIDO: Export default, useEffect para fetching, estilos en línea.
+import React, { useEffect, useState } from 'react';
+
+const TarjetaProyecto = (props: any) => {
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => { // Violación: Fetching directo con useEffect
+    fetch('http://localhost:5241/api/projects/' + props.id)
+      .then(res => res.json())
+      .then(json => setData(json));
+  }, [props.id]);
+
+  return (
+    <div style={{ padding: '10px', background: 'black' }}> {/* Violación: Estilo inline */}
+      <h2>{props.name}</h2>
+    </div>
+  );
+};
+
+export default TarjetaProyecto; // Violación: Export default
+</example>

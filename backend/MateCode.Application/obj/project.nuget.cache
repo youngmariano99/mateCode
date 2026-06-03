@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "9GsTP7YDJq0=",
+  "dgSpecHash": "dWUtybiI/Io=",
   "success": true,
-  "projectFilePath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\MateCode\\backend\\MateCode.Application\\MateCode.Application.csproj",
+  "projectFilePath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\PROYECTS\\ACTIVOS\\PERSONALES\\MateCode\\backend\\MateCode.Application\\MateCode.Application.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\mari_\\.nuget\\packages\\azure.ai.openai\\2.9.0-beta.1\\azure.ai.openai.2.9.0-beta.1.nupkg.sha512",
     "C:\\Users\\mari_\\.nuget\\packages\\azure.core\\1.51.1\\azure.core.1.51.1.nupkg.sha512",
@@ -40,5 +40,18 @@
     "C:\\Users\\mari_\\.nuget\\packages\\system.text.json\\10.0.4\\system.text.json.10.0.4.nupkg.sha512",
     "C:\\Users\\mari_\\.nuget\\packages\\system.threading.channels\\10.0.4\\system.threading.channels.10.0.4.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "NU1903",
+      "level": "Warning",
+      "message": "El paquete \"Scriban\" 7.1.0 tiene una vulnerabilidad de gravedad alta conocida, https://github.com/advisories/GHSA-24c8-4792-22hx",
+      "projectPath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\PROYECTS\\ACTIVOS\\PERSONALES\\MateCode\\backend\\MateCode.Application\\MateCode.Application.csproj",
+      "warningLevel": 1,
+      "filePath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\PROYECTS\\ACTIVOS\\PERSONALES\\MateCode\\backend\\MateCode.Application\\MateCode.Application.csproj",
+      "libraryId": "Scriban",
+      "targetGraphs": [
+        "net9.0"
+      ]
+    }
+  ]
 }

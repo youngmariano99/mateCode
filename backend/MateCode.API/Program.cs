@@ -84,6 +84,8 @@ builder.Services.AddCors(options =>
 });
 
 // Inyección de Dependencias
+builder.Services.AddSingleton<IEncryptionUtility, EncryptionUtility>();
+builder.Services.AddScoped<IAgencyService, AgencyService>();
 builder.Services.AddScoped<ICrmService, CrmService>();
 builder.Services.AddScoped<IAgileService, AgileService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
@@ -195,6 +197,14 @@ using (var scope = app.Services.CreateScope())
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'inyecta_blueprint') THEN
                     ALTER TABLE boveda.plantillas_prompt ADD COLUMN inyecta_blueprint BOOLEAN DEFAULT FALSE;
                 END IF;
+
+                -- Columnas para Recursos extendidos (Ingeniería de Prompts)
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'recursos' AND column_name = 'favorito') THEN
+                    ALTER TABLE organizacion.recursos ADD COLUMN favorito BOOLEAN DEFAULT FALSE;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'recursos' AND column_name = 'categoria') THEN
+                    ALTER TABLE organizacion.recursos ADD COLUMN categoria VARCHAR(100) DEFAULT 'General';
+                END IF;
             END $$;";
         context.Database.ExecuteSqlRaw(sql);
         Console.WriteLine("✅ Infraestructura de Bóveda y Stacks verificada exitosamente.");
@@ -205,6 +215,7 @@ using (var scope = app.Services.CreateScope())
 
 // Pipeline de Middleware
 app.UseCors("AllowFrontend");
+app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 

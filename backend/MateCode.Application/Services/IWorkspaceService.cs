@@ -8,7 +8,7 @@ namespace MateCode.Application.Services
     public interface IWorkspaceService
     {
         Task<IEnumerable<EspacioTrabajo>> GetWorkspacesByUserAsync(Guid userId);
-        Task<EspacioTrabajo> CreateWorkspaceAsync(Guid ownerId, string name);
+        Task<EspacioTrabajo> CreateWorkspaceAsync(Guid ownerId, string name, Guid? agencyId = null);
         Task SyncUserAsync(Guid userId, string email, string nombreCompleto);
         Task<IEnumerable<object>> GetPendingInvitationsAsync(Guid userId);
         Task<bool> AcceptInvitationAsync(Guid userId, Guid workspaceId);
