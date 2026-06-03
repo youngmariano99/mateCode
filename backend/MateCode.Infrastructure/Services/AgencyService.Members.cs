@@ -96,12 +96,13 @@ namespace MateCode.Infrastructure.Services
             return await _context.SaveChangesAsync() > 0;
         }
 
-        public async Task<bool> InviteMemberToAgencyAsync(Guid agencyId, string email)
+        public async Task<bool> InviteMemberToAgencyAsync(Guid agencyId, string email, string role = "Colaborador", JsonElement? permissions = null)
         {
             var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
             if (user == null) return false;
 
-            return await AddMemberToAgencyAsync(agencyId, user.Id, "Colaborador", JsonSerializer.Deserialize<JsonElement>("{}"));
+            var permJson = permissions ?? JsonSerializer.Deserialize<JsonElement>("{}");
+            return await AddMemberToAgencyAsync(agencyId, user.Id, role, permJson);
         }
 
         public async Task<bool> UpdateMemberPermissionsAsync(Guid agencyId, Guid userId, string role, JsonElement permissions)

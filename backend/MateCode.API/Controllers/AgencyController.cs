@@ -71,13 +71,15 @@ namespace MateCode.API.Controllers
         public class InviteMemberRequest
         {
             public string Email { get; set; } = string.Empty;
+            public string Rol { get; set; } = "Colaborador";
+            public JsonElement? Permisos { get; set; }
         }
 
         [HttpPost("{id}/invite")]
         public async Task<IActionResult> Invite(Guid id, [FromBody] InviteMemberRequest req)
         {
             try {
-                var success = await _agencyService.InviteMemberToAgencyAsync(id, req.Email);
+                var success = await _agencyService.InviteMemberToAgencyAsync(id, req.Email, req.Rol, req.Permisos);
                 return success ? Ok(new { message = "Invitación enviada con éxito." }) : BadRequest("No se pudo invitar al usuario (¿no existe en el sistema?).");
             }
             catch (Exception ex) { return StatusCode(500, ex.Message); }

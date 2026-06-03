@@ -38,7 +38,7 @@ interface AgencyState {
   acceptInvitation: (id: string) => Promise<boolean>;
   rejectInvitation: (id: string) => Promise<boolean>;
   fetchMembers: (id: string) => Promise<Member[]>;
-  inviteMember: (id: string, email: string) => Promise<boolean>;
+  inviteMember: (id: string, email: string, rol?: string, permisos?: any) => Promise<boolean>;
   updateMemberPermissions: (id: string, userId: string, rol: string, permisos: any) => Promise<boolean>;
   getAgencyWorkspaces: (id: string) => Promise<any[]>;
   createWorkspaceInAgency: (id: string, nombre: string) => Promise<any>;
@@ -155,9 +155,9 @@ export const useAgencyStore = create<AgencyState>((set, get) => ({
     }
   },
 
-  inviteMember: async (id, email) => {
+  inviteMember: async (id, email, rol = 'Colaborador', permisos = {}) => {
     try {
-      await api.post(`/Agency/${id}/invite`, { Email: email });
+      await api.post(`/Agency/${id}/invite`, { Email: email, Rol: rol, Permisos: permisos });
       return true;
     } catch (err) {
       console.error(err);

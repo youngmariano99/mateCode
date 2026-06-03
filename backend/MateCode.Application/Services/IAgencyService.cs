@@ -13,7 +13,7 @@ namespace MateCode.Application.Services
         Task<Agencia> CreateAgencyAsync(string name, Guid ownerId);
         Task<IEnumerable<object>> GetAgencyMembersAsync(Guid agencyId);
         Task<bool> AddMemberToAgencyAsync(Guid agencyId, Guid userId, string role, JsonElement permissions);
-        Task<bool> InviteMemberToAgencyAsync(Guid agencyId, string email);
+        Task<bool> InviteMemberToAgencyAsync(Guid agencyId, string email, string role = "Colaborador", JsonElement? permissions = null);
         Task<bool> UpdateMemberPermissionsAsync(Guid agencyId, Guid userId, string role, JsonElement permissions);
         Task<IEnumerable<object>> GetPendingInvitationsAsync(Guid userId);
         Task<bool> AcceptInvitationAsync(Guid userId, Guid agencyId);

@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Building, Briefcase, Users, Target, FileText, Calendar, Key, Video,
-  DollarSign, ShieldAlert, ArrowLeft, Shield, Layout
+  DollarSign, ShieldAlert, ArrowLeft, Shield, Layout, Search
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { api } from '../../lib/apiClient';
 import { useAgencyStore } from '../../store/useAgencyStore';
 import type { Member } from '../../store/useAgencyStore';
 
@@ -42,7 +43,29 @@ export const AgencyDashboard: React.FC = () => {
 
   // Form Fields State
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRol, setInviteRol] = useState('Colaborador');
+  const [invitePerms, setInvitePerms] = useState({ crm: 'write', secrets: 'none', finances: 'none', tasks: 'read' });
+  const [inviteSearchTerm, setInviteSearchTerm] = useState('');
+  const [inviteSearchResults, setInviteSearchResults] = useState<any[]>([]);
+  const [isInviteSearching, setIsInviteSearching] = useState(false);
   const [permForm, setPermForm] = useState({ rol: 'Colaborador', crm: 'write', secrets: 'none', finances: 'none', tasks: 'read' });
+
+  const handleSearchUsers = async (query: string) => {
+    setInviteSearchTerm(query);
+    if (query.length < 3) {
+      setInviteSearchResults([]);
+      return;
+    }
+    setIsInviteSearching(true);
+    try {
+      const results = await api.get(`/Team/search?q=${query}`);
+      setInviteSearchResults(results as any[]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsInviteSearching(false);
+    }
+  };
 
   useEffect(() => {
     if (!currentAgencyId) {
@@ -68,11 +91,15 @@ export const AgencyDashboard: React.FC = () => {
     e.preventDefault();
     if (!currentAgencyId) return;
     try {
-      const ok = await inviteMember(currentAgencyId, inviteEmail);
+      const ok = await inviteMember(currentAgencyId, inviteEmail, inviteRol, invitePerms);
       if (ok) {
         Swal.fire({ title: 'Éxito', text: 'Invitación enviada con éxito.', icon: 'success', background: '#09090b', color: '#f4f4f5' });
         setIsInviteModalOpen(false);
         setInviteEmail('');
+        setInviteSearchTerm('');
+        setInviteSearchResults([]);
+        setInviteRol('Colaborador');
+        setInvitePerms({ crm: 'write', secrets: 'none', finances: 'none', tasks: 'read' });
         await loadData();
       } else {
         Swal.fire({ title: 'Aviso', text: 'No se pudo enviar la invitación. Asegúrate de que el email corresponda a un usuario registrado.', icon: 'warning', background: '#09090b', color: '#f4f4f5' });
@@ -222,21 +249,108 @@ export const AgencyDashboard: React.FC = () => {
 
       {/* Modals */}
       {isInviteModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 overflow-y-auto">
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 w-full max-w-md space-y-4"
+            className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 w-full max-w-lg space-y-4 my-8"
           >
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
               <Users className="text-emerald-400" />
               <span>Invitar Miembro a la Agencia</span>
             </h3>
+            
+            {/* Buscador de usuarios registrados */}
+            <div className="space-y-1.5 relative">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">Buscar Usuario Registrado</label>
+              <div className="flex items-center bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white">
+                <Search size={14} className="text-zinc-500 mr-2" />
+                <input
+                  type="text"
+                  placeholder="Escribe nombre o email (min. 3 caracteres)..."
+                  value={inviteSearchTerm}
+                  onChange={e => handleSearchUsers(e.target.value)}
+                  className="bg-transparent border-none outline-none w-full text-xs text-white placeholder:text-zinc-650"
+                />
+                {isInviteSearching && <div className="w-3.5 h-3.5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />}
+              </div>
+
+              {inviteSearchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden z-[100] max-h-48 overflow-y-auto">
+                  {inviteSearchResults.map(u => (
+                    <div
+                      key={u.id}
+                      onClick={() => {
+                        setInviteEmail(u.email);
+                        setInviteSearchTerm(u.nombreCompleto);
+                        setInviteSearchResults([]);
+                      }}
+                      className="p-2.5 hover:bg-emerald-500/10 cursor-pointer flex items-center justify-between text-xs transition-colors"
+                    >
+                      <div>
+                        <p className="font-bold text-white">{u.nombreCompleto}</p>
+                        <p className="text-[10px] text-zinc-500">{u.email}</p>
+                      </div>
+                      <Plus size={14} className="text-emerald-400" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <form onSubmit={handleInviteSubmit} className="space-y-4">
               <div>
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Email del Colaborador</label>
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Email del Colaborador (Destinatario)</label>
                 <input required type="email" placeholder="ejemplo@correo.com" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" />
               </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Rol en la Organización</label>
+                <select value={inviteRol} onChange={e => setInviteRol(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white">
+                  <option value="Administrador">Administrador</option>
+                  <option value="Colaborador">Colaborador</option>
+                </select>
+              </div>
+
+              <div className="space-y-2 border-t border-zinc-800 pt-3">
+                <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Matriz de Acceso Inicial</h4>
+
+                <div className="flex justify-between items-center bg-zinc-950/40 p-2 rounded-xl border border-zinc-900">
+                  <span className="text-xs text-zinc-300">Clientes/CRM</span>
+                  <select value={invitePerms.crm} onChange={e => setInvitePerms({ ...invitePerms, crm: e.target.value })} className="bg-zinc-900 border border-zinc-800 p-1.5 rounded-lg text-[10px] text-white">
+                    <option value="none">Ninguno</option>
+                    <option value="read">Solo Ver</option>
+                    <option value="write">Editar / Crear</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-between items-center bg-zinc-950/40 p-2 rounded-xl border border-zinc-900">
+                  <span className="text-xs text-zinc-300">Accesos Vault</span>
+                  <select value={invitePerms.secrets} onChange={e => setInvitePerms({ ...invitePerms, secrets: e.target.value })} className="bg-zinc-900 border border-zinc-800 p-1.5 rounded-lg text-[10px] text-white">
+                    <option value="none">Prohibido</option>
+                    <option value="read">Permitido Revelar</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-between items-center bg-zinc-950/40 p-2 rounded-xl border border-zinc-900">
+                  <span className="text-xs text-zinc-300">Finanzas</span>
+                  <select value={invitePerms.finances} onChange={e => setInvitePerms({ ...invitePerms, finances: e.target.value })} className="bg-zinc-900 border border-zinc-800 p-1.5 rounded-lg text-[10px] text-white">
+                    <option value="none">Ninguno</option>
+                    <option value="read">Solo Ver</option>
+                    <option value="write">Registrar</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-between items-center bg-zinc-950/40 p-2 rounded-xl border border-zinc-900">
+                  <span className="text-xs text-zinc-300">Tareas Operativas</span>
+                  <select value={invitePerms.tasks} onChange={e => setInvitePerms({ ...invitePerms, tasks: e.target.value })} className="bg-zinc-900 border border-zinc-800 p-1.5 rounded-lg text-[10px] text-white">
+                    <option value="none">Ninguno</option>
+                    <option value="read">Solo Ver</option>
+                    <option value="write">Organizar</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={() => setIsInviteModalOpen(false)} className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-xl text-xs font-bold">Cancelar</button>
                 <button type="submit" className="px-4 py-2 bg-emerald-500 text-black rounded-xl text-xs font-bold">Enviar Invitación</button>
