@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Building, Briefcase, Users, Target, FileText, Calendar, Key, Video,
-  DollarSign, ShieldAlert, ArrowLeft, Shield
+  DollarSign, ShieldAlert, ArrowLeft, Shield, Layout
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAgencyStore } from '../../store/useAgencyStore';
@@ -167,11 +167,18 @@ export const AgencyDashboard: React.FC = () => {
 
         <div className="pt-6 border-t border-zinc-800/80 flex flex-col gap-2">
           <button
+            onClick={() => navigate('/workspace-selector?view=workspaces')}
+            className="w-full py-2.5 px-4 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2"
+          >
+            <Layout size={14} />
+            <span>Espacios de Trabajo</span>
+          </button>
+          <button
             onClick={() => navigate('/workspace-selector')}
-            className="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2"
           >
             <ArrowLeft size={14} />
-            <span>Volver a Espacios</span>
+            <span>Cambiar Empresa</span>
           </button>
         </div>
       </div>

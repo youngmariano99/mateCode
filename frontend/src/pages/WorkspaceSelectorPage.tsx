@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useProject } from '../context/ProjectContext';
 import { api } from '../lib/apiClient';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,6 +35,7 @@ export const WorkspaceSelectorPage = () => {
   } = useAgencyStore();
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [isWorkspacesLoading, setIsWorkspacesLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'agency' | 'workspace'>('agency');
@@ -49,6 +50,16 @@ export const WorkspaceSelectorPage = () => {
     };
     init();
   }, []);
+
+  // Si viene del dashboard con ?view=workspaces y hay una agencia activa, saltar directo a sus workspaces
+  useEffect(() => {
+    const goToWorkspaces = searchParams.get('view') === 'workspaces';
+    const savedId = localStorage.getItem('mc_current_agency_id');
+    if (goToWorkspaces && savedId && agencies.length > 0) {
+      const agency = agencies.find(a => a.id === savedId);
+      if (agency) handleSelectAgency(agency, true);
+    }
+  }, [agencies, searchParams]);
 
   // Al seleccionar una agencia, cargar sus espacios de trabajo
   const handleSelectAgency = async (agency: Agency, autoEnterWorkspaces = true) => {
