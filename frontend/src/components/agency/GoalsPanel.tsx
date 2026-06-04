@@ -126,9 +126,13 @@ export const GoalsPanel: React.FC<GoalsPanelProps> = ({ agencyMembers }) => {
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Colaborador Asignado</label>
                 <select required value={form.usuario_asignado_id} onChange={e => setForm({ ...form, usuario_asignado_id: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white">
                   <option value="">Selecciona miembro...</option>
-                  {agencyMembers.map(m => (
-                    <option key={m.usuario_id} value={m.usuario_id}>{m.usuario?.nombre_completo}</option>
-                  ))}
+                  {agencyMembers.map(m => {
+                    const userId = m.usuario_id || m.usuarioId || m.usuario?.id;
+                    const userName = m.usuario?.nombre_completo || m.usuario?.nombreCompleto || m.usuario?.nombre || 'Colaborador';
+                    return (
+                      <option key={userId} value={userId}>{userName}</option>
+                    );
+                  })}
                 </select>
               </div>
               <div>

@@ -30,6 +30,7 @@ namespace MateCode.Infrastructure.Persistence
         public DbSet<FormularioPlantilla> FormulariosPlantilla { get; set; }
         public DbSet<TecnologiaCatalogo> TecnologiasCatalogo { get; set; }
         public DbSet<ContratoAgencia> ContratosAgencia { get; set; }
+        public DbSet<ContratoHistorial> ContratosHistorial { get; set; }
 
         // Módulos de Agencia/Empresa
         public DbSet<Agencia> Agencias { get; set; }
@@ -112,6 +113,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(c => c.Notas).HasColumnName("notas").HasColumnType("jsonb");
                 e.Property(c => c.RangoLexicografico).HasColumnName("rango_lexicografico");
                 e.Property(c => c.FechaCreacion).HasColumnName("fecha_creacion");
+                e.Property(c => c.Activo).HasColumnName("activo");
             });
 
             modelBuilder.Entity<Proyecto>(e => {
@@ -326,14 +328,28 @@ namespace MateCode.Infrastructure.Persistence
                 e.ToTable("contratos_agencia", "crm");
                 e.Property(c => c.Id).HasColumnName("id");
                 e.Property(c => c.AgenciaId).HasColumnName("agencia_id");
-                e.Property(c => c.ClienteId).HasColumnName("cliente_id");
+                e.Property(c => c.ClienteId).HasColumnName("cliente_id").IsRequired(false);
                 e.Property(c => c.Titulo).HasColumnName("titulo");
                 e.Property(c => c.Contenido).HasColumnName("contenido");
                 e.Property(c => c.Estado).HasColumnName("estado");
                 e.Property(c => c.FechaCreacion).HasColumnName("fecha_creacion");
                 e.Property(c => c.FechaFirma).HasColumnName("fecha_firma");
                 e.Property(c => c.HuellaCriptografica).HasColumnName("huella_criptografica");
-                e.HasOne(c => c.Cliente).WithMany().HasForeignKey(c => c.ClienteId);
+                e.Property(c => c.TipoContrato).HasColumnName("tipo_contrato");
+                e.Property(c => c.MiembrosIds).HasColumnName("miembros_ids").HasColumnType("jsonb");
+                e.HasOne(c => c.Cliente).WithMany().HasForeignKey(c => c.ClienteId).IsRequired(false);
+            });
+
+            modelBuilder.Entity<ContratoHistorial>(e => {
+                e.ToTable("contratos_historial", "crm");
+                e.Property(h => h.Id).HasColumnName("id");
+                e.Property(h => h.ContratoId).HasColumnName("contrato_id");
+                e.Property(h => h.UsuarioId).HasColumnName("usuario_id");
+                e.Property(h => h.NombreUsuario).HasColumnName("nombre_usuario");
+                e.Property(h => h.ContenidoAnterior).HasColumnName("contenido_anterior");
+                e.Property(h => h.ContenidoNuevo).HasColumnName("contenido_nuevo");
+                e.Property(h => h.FechaCambio).HasColumnName("fecha_cambio");
+                e.HasOne(h => h.Contrato).WithMany().HasForeignKey(h => h.ContratoId).OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<EstandarCatalogo>(e => {

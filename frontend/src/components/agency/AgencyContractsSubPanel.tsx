@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCrmStore, type Contract } from '../../store/useCrmStore';
-import { Plus, Trash2, Edit, CheckCircle, ExternalLink, ArrowLeft, PenTool, Hash } from 'lucide-react';
+import { useAgencyStore } from '../../store/useAgencyStore';
+import { api } from '../../lib/apiClient';
+import { Plus, Trash2, Edit, CheckCircle, ExternalLink, ArrowLeft, PenTool, Hash, History, Printer } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const TEMPLATE_CONTRATO_BASE = `# CONTRATO DE PRESTACIÓN DE SERVICIOS DIGITALES
@@ -24,14 +26,19 @@ Firmado digitalmente por ambas partes en conformidad de los términos establecid
 
 export const AgencyContractsSubPanel: React.FC = () => {
   const { leads, fetchLeads, contracts, fetchContracts, createContract, updateContract, deleteContract, signContract } = useCrmStore();
+  const { activeAgency } = useAgencyStore();
   const [viewingContract, setViewingContract] = useState<Contract | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [members, setMembers] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
   const [form, setForm] = useState({
     id: '',
     clienteId: '',
     titulo: '',
     contenido: '',
-    estado: 'Borrador'
+    estado: 'Borrador',
+    tipoContrato: 'Cliente',
+    miembrosIds: [] as string[]
   });
 
   // Canvas para firma
@@ -43,6 +50,36 @@ export const AgencyContractsSubPanel: React.FC = () => {
     fetchContracts();
   }, []);
 
+  useEffect(() => {
+    const loadMembers = async () => {
+      if (!activeAgency?.id) return;
+      try {
+        const res = await api.get('/AgencyOperations/members');
+        setMembers(res || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    loadMembers();
+  }, [activeAgency?.id]);
+
+  useEffect(() => {
+    if (viewingContract) {
+      loadHistory(viewingContract.id);
+    } else {
+      setHistory([]);
+    }
+  }, [viewingContract]);
+
+  const loadHistory = async (contractId: string) => {
+    try {
+      const data = await api.get(`/AgencyContract/${contractId}/history`);
+      setHistory(data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleCreateNew = () => {
     const firstClient = leads[0]?.id || '';
     setForm({
@@ -50,18 +87,31 @@ export const AgencyContractsSubPanel: React.FC = () => {
       clienteId: firstClient,
       titulo: 'Contrato de Servicios de Desarrollo Web - ' + (leads[0]?.nombre || ''),
       contenido: TEMPLATE_CONTRATO_BASE,
-      estado: 'Borrador'
+      estado: 'Borrador',
+      tipoContrato: 'Cliente',
+      miembrosIds: []
     });
     setIsFormOpen(true);
   };
 
   const handleEdit = (c: Contract) => {
+    let mIds: string[] = [];
+    if (c.miembrosIds) {
+      try {
+        mIds = typeof c.miembrosIds === 'string' ? JSON.parse(c.miembrosIds) : c.miembrosIds;
+        if (!Array.isArray(mIds)) mIds = [];
+      } catch {
+        mIds = [];
+      }
+    }
     setForm({
       id: c.id,
-      clienteId: c.clienteId,
+      clienteId: c.clienteId || '',
       titulo: c.titulo,
       contenido: c.contenido,
-      estado: c.estado
+      estado: c.estado,
+      tipoContrato: c.tipoContrato || 'Cliente',
+      miembrosIds: mIds
     });
     setIsFormOpen(true);
   };
@@ -83,13 +133,14 @@ export const AgencyContractsSubPanel: React.FC = () => {
     if (result.isConfirmed) {
       await deleteContract(id);
       Swal.fire({ title: 'Contrato eliminado', icon: 'success', background: '#09090b', color: '#f4f4f5' });
+      fetchContracts();
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (!form.clienteId) {
+      if (form.tipoContrato === 'Cliente' && !form.clienteId) {
         throw new Error('Debes seleccionar un cliente.');
       }
       if (!form.titulo.trim() || !form.contenido.trim()) {
@@ -104,10 +155,12 @@ export const AgencyContractsSubPanel: React.FC = () => {
         });
       } else {
         await createContract({
-          clienteId: form.clienteId,
+          clienteId: form.tipoContrato === 'Cliente' ? form.clienteId : undefined,
           titulo: form.titulo,
           contenido: form.contenido,
-          estado: form.estado
+          estado: form.estado,
+          tipoContrato: form.tipoContrato,
+          miembrosIds: form.tipoContrato !== 'Cliente' ? form.miembrosIds : []
         });
       }
 
@@ -147,7 +200,7 @@ export const AgencyContractsSubPanel: React.FC = () => {
     const y = ('touches' in e) ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
 
     ctx.lineTo(x, y);
-    ctx.strokeStyle = '#ffffff'; // Blanco contrastante sobre fondo zinc oscuro
+    ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
     ctx.stroke();
@@ -168,7 +221,6 @@ export const AgencyContractsSubPanel: React.FC = () => {
     if (!viewingContract) return;
 
     try {
-      // Generar huella SHA-256 única
       const msgUint8 = new TextEncoder().encode(viewingContract.titulo + viewingContract.contenido + new Date().toISOString());
       const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -197,26 +249,59 @@ export const AgencyContractsSubPanel: React.FC = () => {
     }
   };
 
+  const getContractTargetLabel = (c: Contract) => {
+    if (c.tipoContrato === 'Cliente') {
+      return `Cliente: ${c.cliente?.nombre || 'No asignado'}`;
+    }
+    if (c.tipoContrato === 'Trabajo' || c.tipoContrato === 'Socios') {
+      let mIds: string[] = [];
+      if (c.miembrosIds) {
+        try {
+          mIds = typeof c.miembrosIds === 'string' ? JSON.parse(c.miembrosIds) : c.miembrosIds;
+        } catch {
+          mIds = [];
+        }
+      }
+      if (!Array.isArray(mIds)) mIds = [];
+      
+      const names = members
+        .filter(m => mIds.includes(m.usuario_id || m.usuarioId || m.usuario?.id))
+        .map(m => m.usuario?.nombreCompleto || m.usuario?.nombre_completo || m.usuario?.nombre)
+        .join(', ');
+      return `${c.tipoContrato === 'Socios' ? 'Socios' : 'Equipo'}: ${names || 'Varios miembros'}`;
+    }
+    return 'Acuerdo General / Institucional';
+  };
+
   return (
     <div className="space-y-6 flex-1 flex flex-col">
       {viewingContract ? (
-        /* Realistic A4 Document Visualizer */
+        /* A4 Document Visualizer */
         <div className="space-y-6 animate-in fade-in duration-300">
-          <div className="flex items-center gap-3 border-b border-zinc-800/80 pb-4">
-            <button
-              onClick={() => setViewingContract(null)}
-              className="p-2 hover:bg-zinc-800/50 rounded-xl text-zinc-400 hover:text-white transition-colors"
-            >
-              <ArrowLeft size={16} />
-            </button>
-            <div>
-              <h2 className="text-lg font-bold text-white">Visualizador de Contrato</h2>
-              <p className="text-zinc-500 text-[10px] uppercase tracking-wider">Acuerdo formal de desarrollo ágil de software</p>
+          <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setViewingContract(null)}
+                className="p-2 hover:bg-zinc-800/50 rounded-xl text-zinc-400 hover:text-white transition-colors"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h2 className="text-lg font-bold text-white">Visualizador de Contrato</h2>
+                <p className="text-zinc-550 text-[10px] uppercase tracking-wider">Acuerdo formal de la agencia</p>
+              </div>
             </div>
+            <button
+              onClick={() => window.print()}
+              className="px-3.5 py-2 bg-zinc-850 hover:bg-zinc-800 border border-zinc-700/60 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 transition-colors"
+            >
+              <Printer size={12} />
+              <span>Imprimir / PDF</span>
+            </button>
           </div>
 
           <div className="flex flex-col lg:flex-row gap-6 items-start">
-            {/* Realistic A4 Sheet Wrapper */}
+            {/* A4 Sheet Wrapper */}
             <div className="bg-zinc-900 border border-zinc-850 p-1 rounded-2xl shadow-2xl w-full max-w-[800px] overflow-hidden">
               <div className="bg-white text-zinc-900 p-10 md:p-16 aspect-[1/1.41] shadow-inner select-text font-serif leading-relaxed text-xs md:text-sm space-y-6 overflow-y-auto max-h-[85vh]">
                 <div className="flex justify-between items-start border-b border-zinc-350 pb-6 mb-6">
@@ -234,7 +319,7 @@ export const AgencyContractsSubPanel: React.FC = () => {
                 <div className="text-center py-4 mb-4">
                   <h2 className="text-lg font-black uppercase text-zinc-950 font-sans tracking-tight">{viewingContract.titulo}</h2>
                   <p className="text-[10px] text-zinc-550 font-sans font-bold uppercase mt-1">
-                    Cliente: {viewingContract.cliente?.nombre} ({viewingContract.cliente?.email})
+                    {getContractTargetLabel(viewingContract)}
                   </p>
                 </div>
 
@@ -250,7 +335,7 @@ export const AgencyContractsSubPanel: React.FC = () => {
                       </div>
                       <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest">Estado Legal</p>
                       <p className="text-xs font-black text-emerald-600 uppercase">Aprobado / Firmado</p>
-                      <p className="text-[9px] text-zinc-500">Fecha: {new Date(viewingContract.fechaFirma || '').toLocaleDateString()}</p>
+                      <p className="text-[9px] text-zinc-550">Fecha: {new Date(viewingContract.fechaFirma || '').toLocaleDateString()}</p>
                     </div>
                     <div className="space-y-1 bg-zinc-50 border border-zinc-200 p-4 rounded-xl">
                       <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1">
@@ -264,48 +349,85 @@ export const AgencyContractsSubPanel: React.FC = () => {
               </div>
             </div>
 
-            {/* Signature Drawer Control Panel */}
-            {viewingContract.estado !== 'Firmado' && (
-              <div className="w-full lg:w-80 bg-zinc-900 border border-zinc-850 p-6 rounded-2xl space-y-4">
-                <div className="flex items-center gap-2 text-white font-bold text-sm">
-                  <PenTool size={16} className="text-emerald-400" />
-                  <span>Firma Digital Interactiva</span>
-                </div>
-                <p className="text-[10px] text-zinc-500 leading-normal">
-                  Dibuja tu firma con el ratón o en tu pantalla táctil como aceptación formal de los términos declarados.
-                </p>
+            {/* Sidebar audit and sign controls */}
+            <div className="w-full lg:w-80 space-y-6">
+              {viewingContract.estado !== 'Firmado' && (
+                <div className="bg-zinc-900 border border-zinc-850 p-6 rounded-2xl space-y-4">
+                  <div className="flex items-center gap-2 text-white font-bold text-sm">
+                    <PenTool size={16} className="text-emerald-400" />
+                    <span>Firma Digital Interactiva</span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 leading-normal">
+                    Dibuja tu firma con el ratón o en tu pantalla táctil como aceptación formal de los términos declarados.
+                  </p>
 
-                <div className="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden relative">
-                  <canvas
-                    ref={canvasRef}
-                    width={280}
-                    height={150}
-                    onMouseDown={startDrawing}
-                    onMouseMove={draw}
-                    onMouseUp={stopDrawing}
-                    onMouseLeave={stopDrawing}
-                    onTouchStart={startDrawing}
-                    onTouchMove={draw}
-                    onTouchEnd={stopDrawing}
-                    className="cursor-crosshair bg-zinc-950 w-full"
-                  />
+                  <div className="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden relative">
+                    <canvas
+                      ref={canvasRef}
+                      width={280}
+                      height={150}
+                      onMouseDown={startDrawing}
+                      onMouseMove={draw}
+                      onMouseUp={stopDrawing}
+                      onMouseLeave={stopDrawing}
+                      onTouchStart={startDrawing}
+                      onTouchMove={draw}
+                      onTouchEnd={stopDrawing}
+                      className="cursor-crosshair bg-zinc-950 w-full"
+                    />
+                    <button
+                      onClick={clearCanvas}
+                      className="absolute top-2 right-2 px-2.5 py-1 bg-zinc-900/80 hover:bg-zinc-805 border border-zinc-800 text-[8px] font-bold text-zinc-400 uppercase rounded-md transition-colors"
+                    >
+                      Limpiar
+                    </button>
+                  </div>
+
                   <button
-                    onClick={clearCanvas}
-                    className="absolute top-2 right-2 px-2.5 py-1 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 text-[8px] font-bold text-zinc-400 uppercase rounded-md transition-colors"
+                    onClick={handleSignContract}
+                    className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-emerald-500/10 flex items-center justify-center gap-2"
                   >
-                    Limpiar
+                    <CheckCircle size={14} />
+                    <span>Firmar y Sellar Acuerdo</span>
                   </button>
                 </div>
+              )}
 
-                <button
-                  onClick={handleSignContract}
-                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-emerald-500/10 flex items-center justify-center gap-2"
-                >
-                  <CheckCircle size={14} />
-                  <span>Firmar y Sellar Acuerdo</span>
-                </button>
+              {/* Version audit history timeline */}
+              <div className="bg-zinc-900 border border-zinc-850 p-6 rounded-2xl space-y-4">
+                <div className="flex items-center gap-2 text-white font-bold text-sm">
+                  <History size={16} className="text-purple-400" />
+                  <span>Historial de Auditoría</span>
+                </div>
+                <div className="space-y-3 max-h-[250px] overflow-y-auto neon-scrollbar pr-1">
+                  {history.length === 0 ? (
+                    <p className="text-[10px] text-zinc-550 italic">No hay modificaciones registradas.</p>
+                  ) : (
+                    history.map((h, i) => (
+                      <div key={h.id || i} className="border-l-2 border-purple-500/30 pl-3 py-1 space-y-1 relative">
+                        <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-[5px] top-2" />
+                        <p className="text-[10px] font-bold text-white">{h.nombreUsuario || 'Usuario'}</p>
+                        <p className="text-[9px] text-zinc-400 font-medium">el {new Date(h.fechaCambio).toLocaleString()}</p>
+                        <button
+                          onClick={() => {
+                            Swal.fire({
+                              title: 'Visualización de Auditoría',
+                              html: `<pre class="text-left text-xs bg-zinc-950 p-4 rounded-xl overflow-x-auto text-zinc-300 max-h-[350px] whitespace-pre-wrap font-mono">${h.contenidoAnterior}</pre>`,
+                              confirmButtonColor: '#a855f7',
+                              background: '#09090b',
+                              color: '#fff'
+                            });
+                          }}
+                          className="text-[8px] text-purple-400 hover:text-purple-300 font-bold uppercase cursor-pointer"
+                        >
+                          Ver versión anterior
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       ) : isFormOpen ? (
@@ -322,12 +444,40 @@ export const AgencyContractsSubPanel: React.FC = () => {
               <h2 className="text-lg font-bold text-white">
                 {form.id ? 'Editar Contrato' : 'Crear Nuevo Contrato'}
               </h2>
-              <p className="text-zinc-500 text-[10px] uppercase tracking-wider">Redacción formal y asignación de clientes</p>
+              <p className="text-zinc-500 text-[10px] uppercase tracking-wider">Redacción formal y asignación de clientes/socios</p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="bg-zinc-950/40 border border-zinc-850 p-6 rounded-2xl space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Tipo de Contrato</label>
+                <select
+                  value={form.tipoContrato}
+                  onChange={e => setForm({ ...form, tipoContrato: e.target.value })}
+                  className="w-full bg-zinc-900 border border-zinc-800 p-2.5 rounded-xl text-xs text-white outline-none focus:ring-1 focus:ring-emerald-500"
+                >
+                  <option value="Cliente">Cliente / Externo</option>
+                  <option value="Trabajo">Contrato de Trabajo / Equipo</option>
+                  <option value="Socios">Acuerdo de Socios / Co-founding</option>
+                  <option value="General">Acuerdo General / Institucional</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Título del Contrato</label>
+                <input
+                  type="text"
+                  value={form.titulo}
+                  onChange={e => setForm({ ...form, titulo: e.target.value })}
+                  placeholder="Ej: Contrato de Desarrollo E-Commerce"
+                  className="w-full bg-zinc-900 border border-zinc-800 p-2.5 rounded-xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* Target Selectors */}
+            {form.tipoContrato === 'Cliente' ? (
               <div>
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Cliente Asociado</label>
                 <select
@@ -344,17 +494,38 @@ export const AgencyContractsSubPanel: React.FC = () => {
                   ))}
                 </select>
               </div>
+            ) : (form.tipoContrato === 'Trabajo' || form.tipoContrato === 'Socios') ? (
               <div>
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Título del Contrato</label>
-                <input
-                  type="text"
-                  value={form.titulo}
-                  onChange={e => setForm({ ...form, titulo: e.target.value })}
-                  placeholder="Ej: Contrato de Desarrollo E-Commerce"
-                  className="w-full bg-zinc-900 border border-zinc-800 p-2.5 rounded-xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Miembros / Socios Participantes</label>
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 max-h-[150px] overflow-y-auto neon-scrollbar grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {members.map(m => {
+                    const userId = m.usuario_id || m.usuarioId || m.usuario?.id;
+                    const userFullName = m.usuario?.nombreCompleto || m.usuario?.nombre_completo || m.usuario?.nombre || 'Miembro';
+                    const email = m.usuario?.email || '';
+                    const isSelected = form.miembrosIds.includes(userId);
+                    return (
+                      <label key={userId} className="flex items-center gap-3 cursor-pointer text-xs text-zinc-300 hover:text-white p-2 hover:bg-zinc-950 rounded-lg">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {
+                            const nextMembers = isSelected 
+                              ? form.miembrosIds.filter(id => id !== userId)
+                              : [...form.miembrosIds, userId];
+                            setForm({ ...form, miembrosIds: nextMembers });
+                          }}
+                          className="rounded border-zinc-800 bg-zinc-950 text-emerald-500 focus:ring-0 focus:ring-offset-0"
+                        />
+                        <div>
+                          <span className="font-bold block text-zinc-350">{userFullName}</span>
+                          <span className="text-[9px] text-zinc-550">{email}</span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            ) : null}
 
             <div>
               <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Contenido de la Propuesta / Contrato</label>
@@ -370,7 +541,7 @@ export const AgencyContractsSubPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsFormOpen(false)}
-                className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-xl text-xs font-bold"
+                className="px-4 py-2 bg-zinc-805 text-zinc-300 rounded-xl text-xs font-bold"
               >
                 Cancelar
               </button>
@@ -422,27 +593,27 @@ export const AgencyContractsSubPanel: React.FC = () => {
                         {c.estado !== 'Firmado' && (
                           <button
                             onClick={() => handleEdit(c)}
-                            className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                            className="p-1.5 hover:bg-zinc-805 rounded-lg text-zinc-400 hover:text-white transition-colors"
                           >
                             <Edit size={12} />
                           </button>
                         )}
                         <button
                           onClick={() => handleDelete(c.id)}
-                          className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-red-400 transition-colors"
+                          className="p-1.5 hover:bg-zinc-855 rounded-lg text-zinc-400 hover:text-red-400 transition-colors"
                         >
                           <Trash2 size={12} />
                         </button>
                       </div>
                     </div>
                     <h4 className="font-bold text-white text-xs line-clamp-1">{c.titulo}</h4>
-                    <p className="text-[10px] text-zinc-550">Cliente: {c.cliente?.nombre ?? 'Cliente Cargado'}</p>
+                    <p className="text-[10px] text-zinc-500 line-clamp-1">{getContractTargetLabel(c)}</p>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-zinc-850">
                     <span className="text-[9px] text-zinc-600 font-bold">{new Date(c.fechaCreacion).toLocaleDateString()}</span>
                     <button
                       onClick={() => setViewingContract(c)}
-                      className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-750 text-zinc-300 text-[10px] font-bold rounded-lg flex items-center gap-1 transition-colors"
+                      className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-750 text-zinc-300 text-[10px] font-bold rounded-lg flex items-center gap-1 transition-colors border border-zinc-750"
                     >
                       <ExternalLink size={10} />
                       <span>{c.estado === 'Firmado' ? 'Ver Contrato' : 'Firmar / Ver'}</span>
@@ -454,6 +625,29 @@ export const AgencyContractsSubPanel: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Estilos para impresión */}
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .bg-white, .bg-white * {
+            visibility: visible;
+          }
+          .bg-white {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: auto;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

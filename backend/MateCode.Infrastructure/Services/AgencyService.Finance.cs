@@ -49,7 +49,7 @@ namespace MateCode.Infrastructure.Services
                 Monto = monto,
                 Concepto = concepto,
                 Descripcion = descripcion,
-                Fecha = fecha,
+                Fecha = DateTime.SpecifyKind(fecha.Date, DateTimeKind.Utc),
                 Categoria = categoria,
                 ProyectoId = proyectoId,
                 FechaCreacion = DateTime.UtcNow

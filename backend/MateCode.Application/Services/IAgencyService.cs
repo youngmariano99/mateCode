@@ -56,15 +56,16 @@ namespace MateCode.Application.Services
 
         // --- PLANIFICADOR DE CONTENIDO ---
         Task<IEnumerable<PlanificadorContenido>> GetContentsAsync(Guid agencyId);
-        Task<PlanificadorContenido> CreateContentAsync(Guid agencyId, Guid memberId, string titulo, JsonElement plataformas, string guion, string dialogo, string procedimiento, string estado, string notasMejora);
+        Task<PlanificadorContenido> CreateContentAsync(Guid agencyId, Guid memberId, string titulo, JsonElement plataformas, string guion, string dialogo, string procedimiento, string estado, string notasMejora, DateTime? fechaPublicacion = null);
         Task<bool> UpdateContentAsync(Guid contentId, string titulo, JsonElement plataformas, string guion, string dialogo, string procedimiento, string estado, string notasMejora, JsonElement resumenAnalitico, DateTime? publishDate);
         Task<bool> DeleteContentAsync(Guid contentId);
 
         // --- CONTRATOS ---
         Task<IEnumerable<ContratoAgencia>> GetContractsAsync(Guid agencyId);
         Task<ContratoAgencia?> GetContractByIdAsync(Guid contractId, Guid agencyId);
-        Task<ContratoAgencia> CreateContractAsync(Guid agencyId, Guid clienteId, string titulo, string contenido, string estado);
-        Task<bool> UpdateContractAsync(Guid contractId, string titulo, string contenido, string estado);
+        Task<ContratoAgencia> CreateContractAsync(Guid agencyId, Guid? clienteId, string titulo, string contenido, string estado, string tipoContrato, JsonElement miembrosIds);
+        Task<bool> UpdateContractAsync(Guid contractId, string titulo, string contenido, string estado, Guid userId, string userName);
+        Task<IEnumerable<ContratoHistorial>> GetContractHistoryAsync(Guid contractId);
         Task<bool> DeleteContractAsync(Guid contractId);
         Task<bool> SignContractAsync(Guid contractId, DateTime fechaFirma, string huellaCriptografica);
 

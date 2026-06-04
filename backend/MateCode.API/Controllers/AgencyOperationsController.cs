@@ -5,6 +5,7 @@ using System;
 using System.Threading.Tasks;
 using System.Security.Claims;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MateCode.API.Controllers
 {
@@ -52,12 +53,25 @@ namespace MateCode.API.Controllers
 
         public class CreateResourceRequest
         {
+            [JsonPropertyName("titulo")]
             public string Titulo { get; set; } = string.Empty;
+
+            [JsonPropertyName("contenido")]
             public string Contenido { get; set; } = string.Empty;
+
+            [JsonPropertyName("tipo")]
             public string Tipo { get; set; } = "prompt";
+
+            [JsonPropertyName("etiquetas")]
             public JsonElement Etiquetas { get; set; }
+
+            [JsonPropertyName("roles_permitidos")]
             public JsonElement RolesPermitidos { get; set; }
+
+            [JsonPropertyName("categoria")]
             public string Categoria { get; set; } = "General";
+
+            [JsonPropertyName("favorito")]
             public bool Favorito { get; set; } = false;
         }
 
@@ -214,6 +228,7 @@ namespace MateCode.API.Controllers
             public string ProcedimientoEstandar { get; set; } = string.Empty;
             public string Estado { get; set; } = "Idea";
             public string NotasMejora { get; set; } = string.Empty;
+            public DateTime? FechaPublicacion { get; set; }
         }
 
         [HttpPost("contents")]
@@ -222,7 +237,7 @@ namespace MateCode.API.Controllers
             try {
                 var agencyId = GetAgencyId();
                 var content = await _agencyService.CreateContentAsync(
-                    agencyId, req.MiembroId, req.Titulo, req.Plataformas, req.GuionPlantilla, req.Dialogo, req.ProcedimientoEstandar, req.Estado, req.NotasMejora);
+                    agencyId, req.MiembroId, req.Titulo, req.Plataformas, req.GuionPlantilla, req.Dialogo, req.ProcedimientoEstandar, req.Estado, req.NotasMejora, req.FechaPublicacion);
                 return Ok(content);
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }

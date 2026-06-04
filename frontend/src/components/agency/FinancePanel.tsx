@@ -21,6 +21,13 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({ agencyWorkspaces }) 
     proyectoId: ''
   });
 
+  const uniqueCategorias = financeData?.transacciones
+    ? Array.from(new Set(financeData.transacciones.map(tx => tx.categoria).filter(Boolean)))
+    : [];
+  const uniqueConceptos = financeData?.transacciones
+    ? Array.from(new Set(financeData.transacciones.map(tx => tx.concepto).filter(Boolean)))
+    : [];
+
   useEffect(() => {
     fetchFinanceDashboard();
   }, []);
@@ -220,11 +227,36 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({ agencyWorkspaces }) 
               </div>
               <div>
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Concepto</label>
-                <input required type="text" placeholder="Ej: Pago de Hito 1, Hosting AWS" value={form.concepto} onChange={e => setForm({ ...form, concepto: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" />
+                <input 
+                  required 
+                  type="text" 
+                  placeholder="Ej: Pago de Hito 1, Hosting AWS" 
+                  value={form.concepto} 
+                  onChange={e => setForm({ ...form, concepto: e.target.value })} 
+                  className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" 
+                  list="conceptos-list"
+                />
+                <datalist id="conceptos-list">
+                  {uniqueConceptos.map((concept, idx) => (
+                    <option key={idx} value={concept} />
+                  ))}
+                </datalist>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Categoría</label>
-                <input type="text" placeholder="Ej: Infraestructura, Clientes, Servidores" value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" />
+                <input 
+                  type="text" 
+                  placeholder="Ej: Infraestructura, Clientes, Servidores" 
+                  value={form.categoria} 
+                  onChange={e => setForm({ ...form, categoria: e.target.value })} 
+                  className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" 
+                  list="categorias-list"
+                />
+                <datalist id="categorias-list">
+                  {uniqueCategorias.map((cat, idx) => (
+                    <option key={idx} value={cat} />
+                  ))}
+                </datalist>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

@@ -13,7 +13,7 @@ namespace MateCode.Infrastructure.Services
         public async Task<IEnumerable<Cliente>> GetLeadsAsync(Guid agencyId)
         {
             return await _context.Clientes
-                .Where(l => l.AgenciaId == agencyId)
+                .Where(l => l.AgenciaId == agencyId && l.Activo)
                 .OrderBy(l => l.RangoLexicografico)
                 .ToListAsync();
         }
@@ -37,7 +37,8 @@ namespace MateCode.Infrastructure.Services
                 RangoLexicografico = "a",
                 FechaCreacion = DateTime.UtcNow,
                 TokenEnlaceMagico = Guid.NewGuid().ToString("N"),
-                ContextoJson = JsonSerializer.Deserialize<JsonElement>("{}")
+                ContextoJson = JsonSerializer.Deserialize<JsonElement>("{}"),
+                Activo = true
             };
 
             await _context.Clientes.AddAsync(lead);
@@ -88,7 +89,7 @@ namespace MateCode.Infrastructure.Services
             var lead = await _context.Clientes.FindAsync(leadId);
             if (lead == null) return false;
 
-            _context.Clientes.Remove(lead);
+            lead.Activo = false;
             return await _context.SaveChangesAsync() > 0;
         }
     }

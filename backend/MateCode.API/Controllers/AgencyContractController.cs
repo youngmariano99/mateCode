@@ -4,6 +4,8 @@ using MateCode.Application.Services;
 using MateCode.Core.Entities;
 using System;
 using System.Threading.Tasks;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace MateCode.API.Controllers
 {
@@ -25,6 +27,18 @@ namespace MateCode.API.Controllers
             if (string.IsNullOrEmpty(agencyHeader) || !Guid.TryParse(agencyHeader, out var agencyId))
                 throw new ArgumentException("X-Agency-Id header es requerido e inválido.");
             return agencyId;
+        }
+
+        private Guid GetUserId()
+        {
+            var userIdStr = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr)) throw new UnauthorizedAccessException("Usuario no identificado.");
+            return Guid.Parse(userIdStr);
+        }
+
+        private string GetUserName()
+        {
+            return User.FindFirstValue("full_name") ?? User.Identity?.Name ?? User.FindFirstValue("email") ?? "Usuario";
         }
 
         [HttpGet]
@@ -52,12 +66,24 @@ namespace MateCode.API.Controllers
             catch (Exception ex) { return StatusCode(500, ex.Message); }
         }
 
+        [HttpGet("{id}/history")]
+        public async Task<IActionResult> GetContractHistory(Guid id)
+        {
+            try {
+                var history = await _agencyService.GetContractHistoryAsync(id);
+                return Ok(history);
+            }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+
         public class CreateContractRequest
         {
-            public Guid ClienteId { get; set; }
+            public Guid? ClienteId { get; set; }
             public string Titulo { get; set; } = string.Empty;
             public string Contenido { get; set; } = string.Empty;
             public string Estado { get; set; } = "Borrador";
+            public string TipoContrato { get; set; } = "Cliente";
+            public JsonElement MiembrosIds { get; set; }
         }
 
         [HttpPost]
@@ -65,7 +91,8 @@ namespace MateCode.API.Controllers
         {
             try {
                 var agencyId = GetAgencyId();
-                var contract = await _agencyService.CreateContractAsync(agencyId, req.ClienteId, req.Titulo, req.Contenido, req.Estado);
+                var contract = await _agencyService.CreateContractAsync(
+                    agencyId, req.ClienteId, req.Titulo, req.Contenido, req.Estado, req.TipoContrato, req.MiembrosIds);
                 return Ok(contract);
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
@@ -83,7 +110,9 @@ namespace MateCode.API.Controllers
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateContractRequest req)
         {
             try {
-                var success = await _agencyService.UpdateContractAsync(id, req.Titulo, req.Contenido, req.Estado);
+                var userId = GetUserId();
+                var userName = GetUserName();
+                var success = await _agencyService.UpdateContractAsync(id, req.Titulo, req.Contenido, req.Estado, userId, userName);
                 return success ? Ok() : NotFound("Contrato no encontrado.");
             }
             catch (Exception ex) { return StatusCode(500, ex.Message); }

@@ -14,12 +14,13 @@ export interface Lead {
   notas?: any[];
   rangoLexicografico?: string;
   fechaCreacion: string;
+  contextoJson?: any;
 }
 
 export interface Contract {
   id: string;
   agenciaId: string;
-  clienteId: string;
+  clienteId?: string;
   titulo: string;
   contenido: string;
   estado: string; // Borrador, Enviado, Firmado
@@ -27,6 +28,8 @@ export interface Contract {
   fechaFirma?: string;
   huellaCriptografica?: string;
   cliente?: { nombre: string; email: string };
+  tipoContrato?: string;
+  miembrosIds?: any;
 }
 
 interface CrmState {

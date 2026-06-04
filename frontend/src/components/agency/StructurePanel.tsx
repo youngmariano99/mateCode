@@ -167,7 +167,7 @@ export const StructurePanel: React.FC<StructurePanelProps> = ({
             </button>
           </div>
 
-          {subTab === 'team' && activeAgency?.tipo !== 'personal' && (
+          {subTab === 'team' && (
             <button
               onClick={onOpenInviteModal}
               className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold rounded-xl flex items-center gap-2 transition-colors"
@@ -247,7 +247,7 @@ export const StructurePanel: React.FC<StructurePanelProps> = ({
                     </div>
                   </div>
 
-                  {activeAgency?.tipo !== 'personal' && m.rol !== 'Propietario' && (
+                  {m.rol !== 'Propietario' && (
                     <button
                       onClick={() => onOpenPermModal(m)}
                       className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5"

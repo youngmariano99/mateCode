@@ -17,6 +17,8 @@ export const SecretsPanel: React.FC = () => {
     rolesPermitidos: ''
   });
 
+  const [showPasswordInput, setShowPasswordInput] = useState(false);
+
   useEffect(() => {
     fetchSecrets();
   }, []);
@@ -215,7 +217,12 @@ export const SecretsPanel: React.FC = () => {
               </div>
               <div>
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Clave Secreta / Token (Texto Plano)</label>
-                <input required type="password" value={form.passwordPlano} onChange={e => setForm({ ...form, passwordPlano: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" />
+                <div className="relative flex items-center">
+                  <input required type={showPasswordInput ? "text" : "password"} value={form.passwordPlano} onChange={e => setForm({ ...form, passwordPlano: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 pr-10 rounded-xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                  <button type="button" onClick={() => setShowPasswordInput(!showPasswordInput)} className="absolute right-3 text-zinc-500 hover:text-zinc-300 transition-colors">
+                    <Eye size={14} />
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">URL de Acceso</label>

@@ -103,7 +103,7 @@ interface OperationsState {
 
   // Contents
   fetchContents: () => Promise<void>;
-  createContent: (content: { miembroId: string; titulo: string; plataformas: string[]; guionPlantilla: string; dialogo: string; procedimientoEstandar: string; estado: string; notasMejora: string }) => Promise<void>;
+  createContent: (content: { miembroId: string; titulo: string; plataformas: string[]; guionPlantilla: string; dialogo: string; procedimientoEstandar: string; estado: string; notasMejora: string; fechaPublicacion?: string }) => Promise<void>;
   updateContent: (id: string, content: { titulo: string; plataformas: string[]; guionPlantilla: string; dialogo: string; procedimientoEstandar: string; estado: string; notasMejora: string; resumenAnalitico?: any; fechaPublicacion?: string }) => Promise<void>;
   deleteContent: (id: string) => Promise<void>;
 

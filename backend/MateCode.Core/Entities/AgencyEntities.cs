@@ -1,5 +1,6 @@
 using System;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MateCode.Core.Entities
 {
@@ -13,10 +14,16 @@ namespace MateCode.Core.Entities
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
         // Nuevos campos de Perfil y Branding (Ciclo 1)
+        [JsonPropertyName("redes_sociales")]
         public JsonElement RedesSociales { get; set; }
+
+        [JsonPropertyName("branding")]
         public JsonElement Branding { get; set; }
+
         public string Mision { get; set; } = string.Empty;
         public string Vision { get; set; } = string.Empty;
+
+        [JsonPropertyName("datos_marketing")]
         public JsonElement DatosMarketing { get; set; }
 
         // Relaciones

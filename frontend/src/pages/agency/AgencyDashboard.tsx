@@ -24,15 +24,15 @@ import { CalendarPanel } from '../../components/agency/CalendarPanel';
 import { DynamicWorkspace, type WorkspaceViewMode } from '../../components/spatial/DynamicWorkspace';
 
 const AGENCY_TABS = [
-  { id: 'structure', label: 'Estructura & Equipo', desc: 'Estructura & Equipo', icon: Briefcase, top: '6%', left: '6%', w: '26%', h: '24%' },
-  { id: 'crm', label: 'Clientes & Leads', desc: 'Clientes & CRM', icon: Users, top: '6%', left: '37%', w: '26%', h: '24%' },
-  { id: 'goals', label: 'Objetivos Cruzados', desc: 'Muro OKR', icon: Target, top: '6%', left: '68%', w: '26%', h: '24%' },
-  { id: 'resources', label: 'Recursos Vault', desc: 'Biblioteca Prompts', icon: FileText, top: '36%', left: '6%', w: '26%', h: '24%' },
-  { id: 'tasks', label: 'Tareas Operativas', desc: 'Tablero Kanban', icon: Calendar, top: '36%', left: '37%', w: '26%', h: '24%' },
-  { id: 'secrets', label: 'Accesos Cifrados', desc: 'Accesos Cifrados', icon: Key, top: '36%', left: '68%', w: '26%', h: '24%' },
-  { id: 'content', label: 'Planificador Contenido', desc: 'Plan de Contenido', icon: Video, top: '66%', left: '6%', w: '26%', h: '24%' },
-  { id: 'finance', label: 'Finanzas Dashboard', desc: 'Finanzas Corporativas', icon: DollarSign, top: '66%', left: '37%', w: '26%', h: '24%' },
-  { id: 'audit', label: 'Logs de Auditoría', desc: 'Logs de Seguridad', icon: ShieldAlert, top: '66%', left: '68%', w: '26%', h: '24%' },
+  { id: 'structure', label: 'Estructura & Equipo', desc: 'Estructura & Equipo', icon: Briefcase, top: '2%', left: '2%', w: '31%', h: '30.5%' },
+  { id: 'crm', label: 'Clientes & Leads', desc: 'Clientes & CRM', icon: Users, top: '2%', left: '34.5%', w: '31%', h: '30.5%' },
+  { id: 'goals', label: 'Objetivos Cruzados', desc: 'Objetivos', icon: Target, top: '2%', left: '67%', w: '31%', h: '30.5%' },
+  { id: 'resources', label: 'Recursos Vault', desc: 'Biblioteca Prompts', icon: FileText, top: '34.5%', left: '2%', w: '31%', h: '30.5%' },
+  { id: 'tasks', label: 'Tareas Operativas', desc: 'Tablero Kanban', icon: Calendar, top: '34.5%', left: '34.5%', w: '31%', h: '30.5%' },
+  { id: 'secrets', label: 'Accesos Cifrados', desc: 'Accesos Cifrados', icon: Key, top: '34.5%', left: '67%', w: '31%', h: '30.5%' },
+  { id: 'content', label: 'Planificador Contenido', desc: 'Plan de Contenido', icon: Video, top: '67%', left: '2%', w: '31%', h: '30.5%' },
+  { id: 'finance', label: 'Finanzas Dashboard', desc: 'Finanzas Corporativas', icon: DollarSign, top: '67%', left: '34.5%', w: '31%', h: '30.5%' },
+  { id: 'audit', label: 'Logs de Auditoría', desc: 'Logs de Seguridad', icon: ShieldAlert, top: '67%', left: '67%', w: '31%', h: '30.5%' },
   { id: 'calendar', label: 'Calendario Operativo', desc: 'Calendario Operativo', icon: CalendarDays, top: '0%', left: '0%', w: '0%', h: '0%', hideImmersiveMap: true },
 ];
 
@@ -384,11 +384,11 @@ export const AgencyDashboard: React.FC = () => {
               </div>
 
               {/* Contenedor del Mapa Inmersivo */}
-              <div className="relative w-full max-w-6xl aspect-[16/10] border border-zinc-800/80 rounded-[2rem] overflow-hidden shadow-2xl bg-zinc-950/80 backdrop-blur-sm z-10 flex-1 my-4 flex items-center justify-center">
+              <div className="relative w-full max-w-6xl aspect-[3/2] border border-zinc-800/80 rounded-[2rem] overflow-hidden shadow-2xl bg-zinc-950/80 backdrop-blur-sm z-10 flex-1 my-4 flex items-center justify-center">
                 <img
-                  src="/agenciaInterfaz.png"
+                  src="/agenciaInterfaz2.png"
                   alt="Oficina MateCode"
-                  className="absolute inset-0 w-full h-full object-cover opacity-90 select-none pointer-events-none"
+                  className="absolute inset-0 w-full h-full object-fill select-none pointer-events-none"
                 />
 
                 {/* Hotspots */}
@@ -408,13 +408,13 @@ export const AgencyDashboard: React.FC = () => {
                         width: spot.w,
                         height: spot.h
                       }}
-                      className="group border border-white/5 hover:border-sky-500/50 bg-zinc-950/20 hover:bg-sky-500/10 rounded-2xl transition-all duration-300 flex flex-col items-center justify-center p-3 text-center backdrop-blur-[0.5px] hover:backdrop-blur-[3px] hover:shadow-[0_0_25px_rgba(14,165,233,0.15)] cursor-pointer"
+                      className="group border border-transparent hover:border-emerald-500/20 bg-transparent hover:bg-emerald-500/5 rounded-[1.5rem] transition-all duration-300 flex flex-col items-center justify-center p-3 text-center cursor-pointer hover:shadow-[inset_0_0_20px_rgba(16,185,129,0.08),_0_0_30px_rgba(16,185,129,0.05)]"
                     >
-                      <div className="p-2 bg-zinc-900/80 border border-zinc-800 group-hover:border-sky-400/30 group-hover:bg-sky-500 group-hover:text-black rounded-xl transition-all mb-1 text-zinc-400">
+                      <div className="p-2.5 bg-zinc-950/90 border border-zinc-800/60 group-hover:border-emerald-500/40 group-hover:bg-emerald-500 group-hover:text-black rounded-xl transition-all shadow-md transform group-hover:scale-110 duration-300 text-zinc-400">
                         <Icon size={16} />
                       </div>
-                      <span className="text-[10px] font-black text-white uppercase tracking-wider group-hover:text-sky-300 transition-colors">{spot.desc}</span>
-                      <span className="text-[8px] text-zinc-500 font-bold uppercase mt-0.5 tracking-widest block opacity-0 group-hover:opacity-100 transition-opacity">{spot.label}</span>
+                      <span className="text-[10px] font-black text-white uppercase tracking-wider group-hover:text-emerald-400 transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] mt-1.5">{spot.desc}</span>
+                      <span className="text-[8px] text-zinc-400 font-bold uppercase mt-0.5 tracking-widest block opacity-0 group-hover:opacity-100 transition-opacity duration-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{spot.label}</span>
                     </button>
                   );
                 })}

@@ -197,7 +197,7 @@ namespace MateCode.Infrastructure.Services
                 .ToListAsync();
         }
 
-        public async Task<PlanificadorContenido> CreateContentAsync(Guid agencyId, Guid memberId, string titulo, JsonElement plataformas, string guion, string dialogo, string procedimiento, string estado, string notasMejora)
+        public async Task<PlanificadorContenido> CreateContentAsync(Guid agencyId, Guid memberId, string titulo, JsonElement plataformas, string guion, string dialogo, string procedimiento, string estado, string notasMejora, DateTime? fechaPublicacion = null)
         {
             var content = new PlanificadorContenido
             {
@@ -212,6 +212,7 @@ namespace MateCode.Infrastructure.Services
                 Estado = estado,
                 NotasMejora = notasMejora,
                 ResumenAnalitico = JsonSerializer.Deserialize<JsonElement>("{}"),
+                FechaPublicacion = fechaPublicacion,
                 FechaCreacion = DateTime.UtcNow
             };
 

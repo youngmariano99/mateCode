@@ -105,9 +105,7 @@ builder.Services.AddScoped<IColabService, ColabService>();
 builder.Services.AddScoped<IOracleService, OracleService>();
 builder.Services.AddScoped<IProjectImportService, ProjectImportService>();
 
-var app = builder.Build();
-
-// --- INICIALIZACIÓN DE BASE DE DATOS (AUTO-SAPPING) ---
+var app = builder.Build(); // --- INICIALIZACIÓN DE BASE DE DATOS (AUTO-SAPPING) ---
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -118,6 +116,14 @@ using (var scope = app.Services.CreateScope())
             BEGIN
                 IF NOT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'boveda') THEN
                     CREATE SCHEMA boveda;
+                END IF;
+
+                IF NOT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'organizacion') THEN
+                    CREATE SCHEMA organizacion;
+                END IF;
+
+                IF NOT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'finanzas') THEN
+                    CREATE SCHEMA finanzas;
                 END IF;
 
                 -- Catálogo de Tecnologías (Evolución)
@@ -185,97 +191,132 @@ using (var scope = app.Services.CreateScope())
                 END IF;
 
                 -- Infraestructura de Prompts Modulares
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'bloque_persona') THEN
-                    ALTER TABLE boveda.plantillas_prompt ADD COLUMN bloque_persona TEXT DEFAULT '';
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'bloque_tarea') THEN
-                    ALTER TABLE boveda.plantillas_prompt ADD COLUMN bloque_tarea TEXT DEFAULT '';
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'tipo_diagrama') THEN
-                    ALTER TABLE boveda.plantillas_prompt ADD COLUMN tipo_diagrama VARCHAR(50) DEFAULT 'General';
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'inyecta_blueprint') THEN
-                    ALTER TABLE boveda.plantillas_prompt ADD COLUMN inyecta_blueprint BOOLEAN DEFAULT FALSE;
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt') THEN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'bloque_persona') THEN
+                        ALTER TABLE boveda.plantillas_prompt ADD COLUMN bloque_persona TEXT DEFAULT '';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'bloque_tarea') THEN
+                        ALTER TABLE boveda.plantillas_prompt ADD COLUMN bloque_tarea TEXT DEFAULT '';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'tipo_diagrama') THEN
+                        ALTER TABLE boveda.plantillas_prompt ADD COLUMN tipo_diagrama VARCHAR(50) DEFAULT 'General';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'boveda' AND table_name = 'plantillas_prompt' AND column_name = 'inyecta_blueprint') THEN
+                        ALTER TABLE boveda.plantillas_prompt ADD COLUMN inyecta_blueprint BOOLEAN DEFAULT FALSE;
+                    END IF;
                 END IF;
 
                 -- Columnas para Recursos extendidos (Ingeniería de Prompts)
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'recursos' AND column_name = 'favorito') THEN
-                    ALTER TABLE organizacion.recursos ADD COLUMN favorito BOOLEAN DEFAULT FALSE;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'recursos' AND column_name = 'categoria') THEN
-                    ALTER TABLE organizacion.recursos ADD COLUMN categoria VARCHAR(100) DEFAULT 'General';
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'organizacion' AND table_name = 'recursos') THEN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'recursos' AND column_name = 'favorito') THEN
+                        ALTER TABLE organizacion.recursos ADD COLUMN favorito BOOLEAN DEFAULT FALSE;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'recursos' AND column_name = 'categoria') THEN
+                        ALTER TABLE organizacion.recursos ADD COLUMN categoria VARCHAR(100) DEFAULT 'General';
+                    END IF;
                 END IF;
 
                 -- Columnas para CRM de Agencia (Corrección de orden_posicion -> rango_lexicografico)
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'leads_agencia' AND column_name = 'orden_posicion') THEN
-                    ALTER TABLE crm.leads_agencia RENAME COLUMN orden_posicion TO rango_lexicografico;
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'crm' AND table_name = 'leads_agencia') THEN
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'leads_agencia' AND column_name = 'orden_posicion') THEN
+                        ALTER TABLE crm.leads_agencia RENAME COLUMN orden_posicion TO rango_lexicografico;
+                    END IF;
                 END IF;
 
                 -- Columnas para Perfil, Branding e Identidad de Agencia (Ciclo 1)
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'redes_sociales') THEN
-                    ALTER TABLE nucleo.agencias ADD COLUMN redes_sociales JSONB DEFAULT '{{}}';
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'branding') THEN
-                    ALTER TABLE nucleo.agencias ADD COLUMN branding JSONB DEFAULT '{{}}';
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'mision') THEN
-                    ALTER TABLE nucleo.agencias ADD COLUMN mision TEXT DEFAULT '';
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'vision') THEN
-                    ALTER TABLE nucleo.agencias ADD COLUMN vision TEXT DEFAULT '';
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'datos_marketing') THEN
-                    ALTER TABLE nucleo.agencias ADD COLUMN datos_marketing JSONB DEFAULT '{{}}';
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'nucleo' AND table_name = 'agencias') THEN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'redes_sociales') THEN
+                        ALTER TABLE nucleo.agencias ADD COLUMN redes_sociales JSONB DEFAULT '{}';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'branding') THEN
+                        ALTER TABLE nucleo.agencias ADD COLUMN branding JSONB DEFAULT '{}';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'mision') THEN
+                        ALTER TABLE nucleo.agencias ADD COLUMN mision TEXT DEFAULT '';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'vision') THEN
+                        ALTER TABLE nucleo.agencias ADD COLUMN vision TEXT DEFAULT '';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'datos_marketing') THEN
+                        ALTER TABLE nucleo.agencias ADD COLUMN datos_marketing JSONB DEFAULT '{}';
+                    END IF;
                 END IF;
 
                 -- Columnas y restricciones para Clientes y CRM centralizado (Ciclo 2)
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'agencia_id') THEN
-                    ALTER TABLE crm.clientes ADD COLUMN agencia_id UUID;
-                END IF;
-                ALTER TABLE crm.clientes ALTER COLUMN espacio_trabajo_id DROP NOT NULL;
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'crm' AND table_name = 'clientes') THEN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'agencia_id') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN agencia_id UUID;
+                    END IF;
+                    ALTER TABLE crm.clientes ALTER COLUMN espacio_trabajo_id DROP NOT NULL;
 
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'categoria') THEN
-                    ALTER TABLE crm.clientes ADD COLUMN categoria VARCHAR(100) DEFAULT 'Lead';
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'calificacion') THEN
-                    ALTER TABLE crm.clientes ADD COLUMN calificacion VARCHAR(50) DEFAULT 'Calificado';
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'origen_contacto') THEN
-                    ALTER TABLE crm.clientes ADD COLUMN origen_contacto TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'motivo_contacto') THEN
-                    ALTER TABLE crm.clientes ADD COLUMN motivo_contacto TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'descripcion') THEN
-                    ALTER TABLE crm.clientes ADD COLUMN descripcion TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'notas') THEN
-                    ALTER TABLE crm.clientes ADD COLUMN notas JSONB DEFAULT '[]';
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'rango_lexicografico') THEN
-                    ALTER TABLE crm.clientes ADD COLUMN rango_lexicografico VARCHAR(100) DEFAULT 'a';
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'fecha_creacion') THEN
-                    ALTER TABLE crm.clientes ADD COLUMN fecha_creacion TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'categoria') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN categoria VARCHAR(100) DEFAULT 'Lead';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'calificacion') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN calificacion VARCHAR(50) DEFAULT 'Calificado';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'origen_contacto') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN origen_contacto TEXT;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'motivo_contacto') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN motivo_contacto TEXT;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'descripcion') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN descripcion TEXT;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'notas') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN notas JSONB DEFAULT '[]';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'rango_lexicografico') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN rango_lexicografico VARCHAR(100) DEFAULT 'a';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'fecha_creacion') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN fecha_creacion TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'activo') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN activo BOOLEAN DEFAULT TRUE;
+                    END IF;
                 END IF;
 
                 -- Columnas y restricciones para Formularios centralizados (Ciclo 2)
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'formularios_plantilla' AND column_name = 'agencia_id') THEN
-                    ALTER TABLE crm.formularios_plantilla ADD COLUMN agencia_id UUID;
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'crm' AND table_name = 'formularios_plantilla') THEN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'formularios_plantilla' AND column_name = 'agencia_id') THEN
+                        ALTER TABLE crm.formularios_plantilla ADD COLUMN agencia_id UUID;
+                    END IF;
+                    ALTER TABLE crm.formularios_plantilla ALTER COLUMN tenant_id DROP NOT NULL;
                 END IF;
-                ALTER TABLE crm.formularios_plantilla ALTER COLUMN tenant_id DROP NOT NULL;
 
                 -- Tabla de Contratos de Agencia (Ciclo 3)
                 CREATE TABLE IF NOT EXISTS crm.contratos_agencia (
                     id UUID PRIMARY KEY,
                     agencia_id UUID NOT NULL,
-                    cliente_id UUID NOT NULL REFERENCES crm.clientes(id) ON DELETE CASCADE,
+                    cliente_id UUID REFERENCES crm.clientes(id) ON DELETE CASCADE,
                     titulo VARCHAR(255) NOT NULL,
                     contenido TEXT NOT NULL,
                     estado VARCHAR(50) NOT NULL,
                     fecha_creacion TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
                     fecha_firma TIMESTAMP WITHOUT TIME ZONE,
                     huella_criptografica TEXT
+                );
+
+                -- Asegurar campos para contratos multitipo
+                ALTER TABLE crm.contratos_agencia ALTER COLUMN cliente_id DROP NOT NULL;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'contratos_agencia' AND column_name = 'tipo_contrato') THEN
+                    ALTER TABLE crm.contratos_agencia ADD COLUMN tipo_contrato VARCHAR(50) NOT NULL DEFAULT 'Cliente';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'contratos_agencia' AND column_name = 'miembros_ids') THEN
+                    ALTER TABLE crm.contratos_agencia ADD COLUMN miembros_ids JSONB DEFAULT '[]'::jsonb;
+                END IF;
+
+                -- Tabla de Historial de Cambios de Contratos (Auditoría)
+                CREATE TABLE IF NOT EXISTS crm.contratos_historial (
+                    id UUID PRIMARY KEY,
+                    contrato_id UUID NOT NULL REFERENCES crm.contratos_agencia(id) ON DELETE CASCADE,
+                    usuario_id UUID NOT NULL REFERENCES nucleo.usuarios(id) ON DELETE CASCADE,
+                    nombre_usuario VARCHAR(255) NOT NULL,
+                    contenido_anterior TEXT NOT NULL,
+                    contenido_nuevo TEXT NOT NULL,
+                    fecha_cambio TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
                 );
 
                 -- Tabla de Calendario Operativo (Ciclo 4)
@@ -295,14 +336,16 @@ using (var scope = app.Services.CreateScope())
                 );
 
                 -- Columnas de relaciones en tareas operativas (Ciclo 5)
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'tareas_operativas' AND column_name = 'espacio_trabajo_id') THEN
-                    ALTER TABLE organizacion.tareas_operativas ADD COLUMN espacio_trabajo_id UUID REFERENCES nucleo.espacios_trabajo(id) ON DELETE SET NULL;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'tareas_operativas' AND column_name = 'proyecto_id') THEN
-                    ALTER TABLE organizacion.tareas_operativas ADD COLUMN proyecto_id UUID REFERENCES proyectos.proyectos(id) ON DELETE SET NULL;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'tareas_operativas' AND column_name = 'recurso_id') THEN
-                    ALTER TABLE organizacion.tareas_operativas ADD COLUMN recurso_id UUID REFERENCES organizacion.recursos(id) ON DELETE SET NULL;
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'organizacion' AND table_name = 'tareas_operativas') THEN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'tareas_operativas' AND column_name = 'espacio_trabajo_id') THEN
+                        ALTER TABLE organizacion.tareas_operativas ADD COLUMN espacio_trabajo_id UUID REFERENCES nucleo.espacios_trabajo(id) ON DELETE SET NULL;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'tareas_operativas' AND column_name = 'proyecto_id') THEN
+                        ALTER TABLE organizacion.tareas_operativas ADD COLUMN proyecto_id UUID REFERENCES proyectos.proyectos(id) ON DELETE SET NULL;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'tareas_operativas' AND column_name = 'recurso_id') THEN
+                        ALTER TABLE organizacion.tareas_operativas ADD COLUMN recurso_id UUID REFERENCES organizacion.recursos(id) ON DELETE SET NULL;
+                    END IF;
                 END IF;
 
                 -- Tablas de Columnas Kanban e Informes Semanales (Ciclo 5)
@@ -325,20 +368,36 @@ using (var scope = app.Services.CreateScope())
                 );
 
                 -- Sembrar columnas por defecto para agencias que no las tengan
-                INSERT INTO organizacion.kanban_columnas_operativas (id, agencia_id, nombre, orden, fecha_creacion)
-                SELECT gen_random_uuid(), a.id, 'Todo', 0, NOW() 
-                FROM nucleo.agencias a
-                WHERE NOT EXISTS (SELECT 1 FROM organizacion.kanban_columnas_operativas k WHERE k.agencia_id = a.id);
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'organizacion' AND table_name = 'kanban_columnas_operativas') THEN
+                    INSERT INTO organizacion.kanban_columnas_operativas (id, agencia_id, nombre, orden, fecha_creacion)
+                    SELECT gen_random_uuid(), a.id, 'Todo', 0, NOW() 
+                    FROM nucleo.agencias a
+                    WHERE NOT EXISTS (SELECT 1 FROM organizacion.kanban_columnas_operativas k WHERE k.agencia_id = a.id);
 
-                INSERT INTO organizacion.kanban_columnas_operativas (id, agencia_id, nombre, orden, fecha_creacion)
-                SELECT gen_random_uuid(), a.id, 'In Progress', 1, NOW() 
-                FROM nucleo.agencias a
-                WHERE NOT EXISTS (SELECT 1 FROM organizacion.kanban_columnas_operativas k WHERE k.agencia_id = a.id AND k.nombre = 'In Progress');
+                    INSERT INTO organizacion.kanban_columnas_operativas (id, agencia_id, nombre, orden, fecha_creacion)
+                    SELECT gen_random_uuid(), a.id, 'In Progress', 1, NOW() 
+                    FROM nucleo.agencias a
+                    WHERE NOT EXISTS (SELECT 1 FROM organizacion.kanban_columnas_operativas k WHERE k.agencia_id = a.id AND k.nombre = 'In Progress');
 
-                INSERT INTO organizacion.kanban_columnas_operativas (id, agencia_id, nombre, orden, fecha_creacion)
-                SELECT gen_random_uuid(), a.id, 'Done', 2, NOW() 
-                FROM nucleo.agencias a
-                WHERE NOT EXISTS (SELECT 1 FROM organizacion.kanban_columnas_operativas k WHERE k.agencia_id = a.id AND k.nombre = 'Done');
+                    INSERT INTO organizacion.kanban_columnas_operativas (id, agencia_id, nombre, orden, fecha_creacion)
+                    SELECT gen_random_uuid(), a.id, 'Done', 2, NOW() 
+                    FROM nucleo.agencias a
+                    WHERE NOT EXISTS (SELECT 1 FROM organizacion.kanban_columnas_operativas k WHERE k.agencia_id = a.id AND k.nombre = 'Done');
+                END IF;
+
+                -- Tabla de Finanzas Corporativas
+                CREATE TABLE IF NOT EXISTS finanzas.transacciones_agencia (
+                    id UUID PRIMARY KEY,
+                    agencia_id UUID NOT NULL REFERENCES nucleo.agencias(id) ON DELETE CASCADE,
+                    tipo VARCHAR(50) NOT NULL,
+                    monto DECIMAL(12,2) NOT NULL,
+                    concepto VARCHAR(255) NOT NULL,
+                    descripcion TEXT,
+                    fecha DATE NOT NULL,
+                    categoria VARCHAR(100),
+                    proyecto_id UUID REFERENCES proyectos.proyectos(id) ON DELETE SET NULL,
+                    fecha_creacion TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
 
                 -- Tabla de Presupuestos (Ciclo 6)
                 CREATE TABLE IF NOT EXISTS finanzas.presupuestos (

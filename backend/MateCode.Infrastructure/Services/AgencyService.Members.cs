@@ -75,12 +75,16 @@ namespace MateCode.Infrastructure.Services
                            where member.AgenciaId == agencyId
                            select new
                            {
-                               user.Id,
-                               user.NombreCompleto,
-                               user.Email,
-                               member.Rol,
-                               member.PermisosJson,
-                               member.EstadoInvitacion
+                               agencia_id = member.AgenciaId,
+                               usuario_id = member.UsuarioId,
+                               rol = member.Rol,
+                               estado_invitacion = member.EstadoInvitacion,
+                               permisos_json = member.PermisosJson,
+                               usuario = new {
+                                   id = user.Id,
+                                   email = user.Email,
+                                   nombre_completo = user.NombreCompleto
+                               }
                            }).ToListAsync();
         }
 

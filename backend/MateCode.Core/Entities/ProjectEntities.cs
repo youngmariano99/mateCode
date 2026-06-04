@@ -24,6 +24,7 @@ namespace MateCode.Core.Entities
         public JsonElement Notas { get; set; }
         public string RangoLexicografico { get; set; } = "a";
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+        public bool Activo { get; set; } = true;
     }
 
     public class Proyecto

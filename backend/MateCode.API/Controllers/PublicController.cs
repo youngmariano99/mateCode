@@ -33,12 +33,23 @@ namespace MateCode.API.Controllers
         }
 
         [HttpGet("agency-form/{agencyId:guid}")]
-        public async Task<IActionResult> GetAgencyForm(Guid agencyId, [FromQuery] string tipo = "lead")
+        public async Task<IActionResult> GetAgencyForm(Guid agencyId, [FromQuery] string tipo = "lead", [FromQuery] Guid? formId = null)
         {
-            var form = await _context.FormulariosPlantilla
-                .Where(f => f.AgenciaId == agencyId && f.Tipo == tipo)
-                .OrderByDescending(f => f.FechaCreacion)
-                .FirstOrDefaultAsync();
+            FormularioPlantilla form = null;
+
+            if (formId.HasValue)
+            {
+                form = await _context.FormulariosPlantilla
+                    .FirstOrDefaultAsync(f => f.Id == formId.Value && (f.AgenciaId == agencyId || f.AgenciaId == null));
+            }
+
+            if (form == null)
+            {
+                form = await _context.FormulariosPlantilla
+                    .Where(f => f.AgenciaId == agencyId && f.Tipo == tipo)
+                    .OrderByDescending(f => f.FechaCreacion)
+                    .FirstOrDefaultAsync();
+            }
 
             if (form == null)
             {
