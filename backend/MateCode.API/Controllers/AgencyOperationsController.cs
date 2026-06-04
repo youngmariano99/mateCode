@@ -134,6 +134,9 @@ namespace MateCode.API.Controllers
             public string Estado { get; set; } = "Todo";
             public DateTime? FechaPlanificada { get; set; }
             public Guid? UsuarioAsignadoId { get; set; }
+            public Guid? EspacioTrabajoId { get; set; }
+            public Guid? ProyectoId { get; set; }
+            public Guid? RecursoId { get; set; }
         }
 
         [HttpPost("tasks")]
@@ -142,7 +145,7 @@ namespace MateCode.API.Controllers
             try {
                 var agencyId = GetAgencyId();
                 var task = await _agencyService.CreateTaskAsync(
-                    agencyId, req.Titulo, req.Descripcion, req.Estado, req.FechaPlanificada, req.UsuarioAsignadoId);
+                    agencyId, req.Titulo, req.Descripcion, req.Estado, req.FechaPlanificada, req.UsuarioAsignadoId, req.EspacioTrabajoId, req.ProyectoId, req.RecursoId);
                 return Ok(task);
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
@@ -170,7 +173,7 @@ namespace MateCode.API.Controllers
         {
             try {
                 var success = await _agencyService.UpdateTaskAsync(
-                    id, req.Titulo, req.Descripcion, req.Estado, req.FechaPlanificada, req.UsuarioAsignadoId);
+                    id, req.Titulo, req.Descripcion, req.Estado, req.FechaPlanificada, req.UsuarioAsignadoId, req.EspacioTrabajoId, req.ProyectoId, req.RecursoId);
                 return success ? Ok() : NotFound("Tarea no encontrada.");
             }
             catch (Exception ex) { return StatusCode(500, ex.Message); }

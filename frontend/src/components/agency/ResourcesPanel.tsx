@@ -30,6 +30,21 @@ export function ResourcesPanel() {
     setTab('biblioteca');
   };
 
+  const handleNuevoRecurso = () => {
+    setEditando({
+      id: '',
+      agencia_id: '',
+      titulo: '',
+      contenido: '',
+      tipo: 'herramienta',
+      etiquetas: [],
+      roles_permitidos: [],
+      categoria: 'General',
+      favorito: false,
+      fecha_creacion: new Date().toISOString()
+    });
+  };
+
   const handleToggleFavorite = async (id: string, favorito: boolean): Promise<void> => {
     await toggleResourceFavorite(id, favorito);
   };
@@ -48,7 +63,7 @@ export function ResourcesPanel() {
     try {
       const form = e.currentTarget;
       const fd = new FormData(form);
-      await updateResource(editando.id, {
+      const payload = {
         titulo: fd.get('titulo') as string,
         contenido: fd.get('contenido') as string,
         tipo: fd.get('tipo') as string,
@@ -56,7 +71,13 @@ export function ResourcesPanel() {
         roles_permitidos: editando.roles_permitidos ?? [],
         categoria: fd.get('categoria') as string,
         favorito: editando.favorito,
-      });
+      };
+
+      if (editando.id) {
+        await updateResource(editando.id, payload);
+      } else {
+        await createResource(payload);
+      }
       setEditando(null);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al guardar';
@@ -71,18 +92,27 @@ export function ResourcesPanel() {
       {/* Page header */}
       <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-white">Biblioteca de Prompts</h1>
+          <h1 className="text-3xl font-black tracking-tight text-white">Biblioteca de Prompts & Herramientas</h1>
           <p className="mt-1 text-xs text-zinc-500">
-            Crea, edita y organiza tus prompts de IA. Usá la Pizarra para ingeniería de prompts avanzada.
+            Crea, edita y organiza tus prompts de IA y herramientas. Usá la Pizarra para ingeniería de prompts avanzada.
           </p>
         </div>
-        <button
-          onClick={() => setTab('biblioteca')}
-          className="flex items-center gap-2 rounded-xl bg-zinc-800 px-4 py-2 text-xs font-bold text-zinc-300 hover:bg-zinc-700 transition-colors"
-        >
-          <BookOpen size={14} />
-          <span>{resources.length} en biblioteca</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleNuevoRecurso}
+            className="flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 text-xs font-bold text-black hover:bg-emerald-400 transition-colors"
+          >
+            <Plus size={14} />
+            <span>Registrar Recurso</span>
+          </button>
+          <button
+            onClick={() => setTab('biblioteca')}
+            className="flex items-center gap-2 rounded-xl bg-zinc-800 px-4 py-2 text-xs font-bold text-zinc-300 hover:bg-zinc-700 transition-colors"
+          >
+            <BookOpen size={14} />
+            <span>{resources.length} en biblioteca</span>
+          </button>
+        </div>
       </div>
 
       {/* Tab switcher */}
@@ -103,7 +133,9 @@ export function ResourcesPanel() {
       {editando && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-3xl border border-zinc-800 bg-zinc-900 p-6 space-y-4">
-            <h3 className="text-base font-bold text-white">Editar Recurso</h3>
+            <h3 className="text-base font-bold text-white">
+              {editando.id ? 'Editar Recurso' : 'Registrar Nuevo Recurso'}
+            </h3>
             <form onSubmit={handleGuardarEdicion} className="space-y-3">
               <Field label="Título">
                 <input name="titulo" required defaultValue={editando.titulo}
@@ -113,6 +145,7 @@ export function ResourcesPanel() {
                 <select name="tipo" defaultValue={editando.tipo}
                   className="w-full rounded-xl border border-zinc-700 bg-zinc-950 p-2.5 text-xs text-zinc-200 outline-none">
                   <option value="prompt">Prompt IA</option>
+                  <option value="herramienta">Herramienta</option>
                   <option value="documento">Documento</option>
                   <option value="template">Plantilla</option>
                   <option value="otro">Otro</option>
@@ -126,8 +159,9 @@ export function ResourcesPanel() {
                   ))}
                 </select>
               </Field>
-              <Field label="Contenido">
+              <Field label="Contenido / Enlace">
                 <textarea name="contenido" rows={6} defaultValue={editando.contenido ?? ''}
+                  placeholder="Escribe el contenido del prompt o la URL de la herramienta..."
                   className="w-full rounded-xl border border-zinc-700 bg-zinc-950 p-2.5 text-xs text-white font-mono outline-none focus:border-emerald-500/60" />
               </Field>
               <Field label="Etiquetas (separadas por comas)">

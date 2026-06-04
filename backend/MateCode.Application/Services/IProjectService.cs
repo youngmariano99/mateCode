@@ -8,7 +8,7 @@ namespace MateCode.Application.Services
     {
         Task<IEnumerable<MateCode.Core.Entities.Proyecto>> GetAllProjectsAsync(Guid tenantId, Guid userId);
         Task<MateCode.Core.Entities.Proyecto> GetProjectByIdAsync(Guid projectId);
-        Task<MateCode.Core.Entities.Proyecto> CreateProjectAsync(Guid tenantId, string name, string description = "", Guid? plantillaStackId = null, Guid? clienteId = null);
+        Task<MateCode.Core.Entities.Proyecto> CreateProjectAsync(Guid tenantId, string name, string description = "", Guid? plantillaStackId = null, Guid? clienteId = null, string? plantillaWeb = null);
         Task UpdateProjectAsync(Guid projectId, string name, string description, Guid? clienteId = null);
         Task DeleteProjectAsync(Guid projectId);
         Task UpdateProjectFeasibilityAsync(Guid projectId, Guid tenantId, JsonElement feasibilityData);

@@ -29,6 +29,7 @@ namespace MateCode.Infrastructure.Persistence
         public DbSet<PlantillaPrompt> PlantillasPrompt { get; set; }
         public DbSet<FormularioPlantilla> FormulariosPlantilla { get; set; }
         public DbSet<TecnologiaCatalogo> TecnologiasCatalogo { get; set; }
+        public DbSet<ContratoAgencia> ContratosAgencia { get; set; }
 
         // Módulos de Agencia/Empresa
         public DbSet<Agencia> Agencias { get; set; }
@@ -37,10 +38,13 @@ namespace MateCode.Infrastructure.Persistence
         public DbSet<Objetivo> Objetivos { get; set; }
         public DbSet<Recurso> Recursos { get; set; }
         public DbSet<TareaOperativa> TareasOperativas { get; set; }
+        public DbSet<EventoCalendario> EventosCalendario { get; set; }
         public DbSet<CredencialSegura> CredencialesSeguras { get; set; }
         public DbSet<PlanificadorContenido> PlanificadorContenidos { get; set; }
         public DbSet<TransaccionAgencia> TransaccionesAgencia { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<KanbanColumnaOperativa> KanbanColumnasOperativas { get; set; }
+        public DbSet<InformeSemanal> InformesSemanales { get; set; }
 
         // Colab
         public DbSet<Decision> Decisiones { get; set; }
@@ -318,6 +322,20 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(f => f.FechaCreacion).HasColumnName("fecha_creacion");
             });
 
+            modelBuilder.Entity<ContratoAgencia>(e => {
+                e.ToTable("contratos_agencia", "crm");
+                e.Property(c => c.Id).HasColumnName("id");
+                e.Property(c => c.AgenciaId).HasColumnName("agencia_id");
+                e.Property(c => c.ClienteId).HasColumnName("cliente_id");
+                e.Property(c => c.Titulo).HasColumnName("titulo");
+                e.Property(c => c.Contenido).HasColumnName("contenido");
+                e.Property(c => c.Estado).HasColumnName("estado");
+                e.Property(c => c.FechaCreacion).HasColumnName("fecha_creacion");
+                e.Property(c => c.FechaFirma).HasColumnName("fecha_firma");
+                e.Property(c => c.HuellaCriptografica).HasColumnName("huella_criptografica");
+                e.HasOne(c => c.Cliente).WithMany().HasForeignKey(c => c.ClienteId);
+            });
+
             modelBuilder.Entity<EstandarCatalogo>(e => {
                 e.ToTable("estandares_catalogo", "boveda");
                 e.Property(ec => ec.Id).HasColumnName("id");
@@ -510,6 +528,54 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(t => t.UsuarioAsignadoId).HasColumnName("usuario_asignado_id");
                 e.Property(t => t.RangoLexicografico).HasColumnName("rango_lexicografico");
                 e.Property(t => t.FechaCreacion).HasColumnName("fecha_creacion");
+
+                e.Property(t => t.EspacioTrabajoId).HasColumnName("espacio_trabajo_id");
+                e.Property(t => t.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(t => t.RecursoId).HasColumnName("recurso_id");
+
+                e.HasOne(t => t.EspacioTrabajo).WithMany().HasForeignKey(t => t.EspacioTrabajoId).OnDelete(DeleteBehavior.SetNull);
+                e.HasOne(t => t.Proyecto).WithMany().HasForeignKey(t => t.ProyectoId).OnDelete(DeleteBehavior.SetNull);
+                e.HasOne(t => t.Recurso).WithMany().HasForeignKey(t => t.RecursoId).OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<KanbanColumnaOperativa>(e => {
+                e.ToTable("kanban_columnas_operativas", "organizacion");
+                e.Property(c => c.Id).HasColumnName("id");
+                e.Property(c => c.AgenciaId).HasColumnName("agencia_id");
+                e.Property(c => c.Nombre).HasColumnName("nombre");
+                e.Property(c => c.Orden).HasColumnName("orden");
+                e.Property(c => c.FechaCreacion).HasColumnName("fecha_creacion");
+            });
+
+            modelBuilder.Entity<InformeSemanal>(e => {
+                e.ToTable("informes_semanales", "organizacion");
+                e.Property(i => i.Id).HasColumnName("id");
+                e.Property(i => i.AgenciaId).HasColumnName("agencia_id");
+                e.Property(i => i.FechaInicio).HasColumnName("fecha_inicio");
+                e.Property(i => i.FechaFin).HasColumnName("fecha_fin");
+                e.Property(i => i.MetricasJson).HasColumnName("metricas_json").HasColumnType("jsonb");
+                e.Property(i => i.LeccionesAprendidas).HasColumnName("lecciones_aprendidas");
+                e.Property(i => i.FechaCreacion).HasColumnName("fecha_creacion");
+            });
+
+            modelBuilder.Entity<EventoCalendario>(e => {
+                e.ToTable("eventos_calendario", "organizacion");
+                e.Property(ec => ec.Id).HasColumnName("id");
+                e.Property(ec => ec.AgenciaId).HasColumnName("agencia_id");
+                e.Property(ec => ec.ClienteId).HasColumnName("cliente_id");
+                e.Property(ec => ec.ProyectoId).HasColumnName("proyecto_id");
+                e.Property(ec => ec.Titulo).HasColumnName("titulo");
+                e.Property(ec => ec.Descripcion).HasColumnName("descripcion");
+                e.Property(ec => ec.FechaInicio).HasColumnName("fecha_inicio");
+                e.Property(ec => ec.FechaFin).HasColumnName("fecha_fin");
+                e.Property(ec => ec.Tipo).HasColumnName("tipo");
+                e.Property(ec => ec.ColorHex).HasColumnName("color_hex");
+                e.Property(ec => ec.UsuarioResponsableId).HasColumnName("usuario_responsable_id");
+                e.Property(ec => ec.FechaCreacion).HasColumnName("fecha_creacion");
+
+                e.HasOne(ec => ec.Cliente).WithMany().HasForeignKey(ec => ec.ClienteId).OnDelete(DeleteBehavior.SetNull);
+                e.HasOne(ec => ec.Proyecto).WithMany().HasForeignKey(ec => ec.ProyectoId).OnDelete(DeleteBehavior.SetNull);
+                e.HasOne(ec => ec.UsuarioResponsable).WithMany().HasForeignKey(ec => ec.UsuarioResponsableId).OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<CredencialSegura>(e => {

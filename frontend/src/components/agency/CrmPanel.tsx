@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useCrmStore } from '../../store/useCrmStore';
 import { AgencyFormsPanel } from './AgencyFormsPanel';
+import { AgencyContractsSubPanel } from './AgencyContractsSubPanel';
 import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
 
 export const CrmPanel: React.FC = () => {
   const { leads, fetchLeads, createLead, updateLeadStatus, deleteLead } = useCrmStore();
-  const [activeTab, setActiveTab] = useState<'kanban' | 'forms'>('kanban');
+  const [activeTab, setActiveTab] = useState<'kanban' | 'forms' | 'contracts'>('kanban');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({
     nombre: '',
@@ -80,12 +81,18 @@ export const CrmPanel: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-black text-white tracking-tight">
-              {activeTab === 'kanban' ? 'Clientes & Leads (CRM)' : 'Formularios de Captación'}
+              {activeTab === 'kanban' 
+                ? 'Clientes & Leads (CRM)' 
+                : activeTab === 'forms' 
+                ? 'Formularios de Captación' 
+                : 'Contratos Digitales'}
             </h1>
             <p className="text-zinc-550 text-xs mt-1">
               {activeTab === 'kanban'
                 ? 'Arrastra y suelta prospectos para calificar tus oportunidades de venta de software.'
-                : 'Crea y administra los cuestionarios de relevamiento para captar clientes desde tu enlace mágico.'}
+                : activeTab === 'forms'
+                ? 'Crea y administra los cuestionarios de relevamiento para captar clientes desde tu enlace mágico.'
+                : 'Formaliza tus relaciones comerciales con firmas digitales criptográficas dibujables.'}
             </p>
           </div>
           {activeTab === 'kanban' && (
@@ -119,6 +126,17 @@ export const CrmPanel: React.FC = () => {
           >
             <span>Formularios de Captación</span>
             {activeTab === 'forms' && (
+              <motion.div layoutId="crmSubTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('contracts')}
+            className={`pb-2 px-4 text-xs font-bold transition-all relative ${
+              activeTab === 'contracts' ? 'text-emerald-400 font-extrabold' : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <span>Contratos Digitales</span>
+            {activeTab === 'contracts' && (
               <motion.div layoutId="crmSubTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />
             )}
           </button>
@@ -180,8 +198,10 @@ export const CrmPanel: React.FC = () => {
               </div>
             ))}
           </div>
-        ) : (
+        ) : activeTab === 'forms' ? (
           <AgencyFormsPanel />
+        ) : (
+          <AgencyContractsSubPanel />
         )}
       </div>
 

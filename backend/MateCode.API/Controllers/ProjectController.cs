@@ -72,7 +72,12 @@ namespace MateCode.API.Controllers
                 if (Guid.TryParse(cId.GetString(), out var gId)) clienteId = gId;
             }
 
-            var project = await _projectService.CreateProjectAsync(tenantId, name ?? "Proyecto", description ?? "", templateId, clienteId);
+            string? plantillaWeb = null;
+            if ((body.TryGetProperty("PlantillaWeb", out var pwProp) || body.TryGetProperty("plantillaWeb", out pwProp)) && pwProp.ValueKind != JsonValueKind.Null) {
+                plantillaWeb = pwProp.GetString();
+            }
+
+            var project = await _projectService.CreateProjectAsync(tenantId, name ?? "Proyecto", description ?? "", templateId, clienteId, plantillaWeb);
             return Ok(project);
         }
 

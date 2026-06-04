@@ -55,8 +55,9 @@ namespace MateCode.Infrastructure.Services
                 .FirstOrDefaultAsync(p => p.Id == projectId);
         }
 
-        public async Task<Proyecto> CreateProjectAsync(Guid tenantId, string name, string description = "", Guid? plantillaStackId = null, Guid? clienteId = null)
+        public async Task<Proyecto> CreateProjectAsync(Guid tenantId, string name, string description = "", Guid? plantillaStackId = null, Guid? clienteId = null, string? plantillaWeb = null)
         {
+            var defaultJson = GetDefaultContextJson(name, plantillaWeb);
             var proyecto = new Proyecto
             {
                 Id = Guid.NewGuid(),
@@ -66,7 +67,7 @@ namespace MateCode.Infrastructure.Services
                 Descripcion = description,
                 FaseActual = "Fase 0 - Factibilidad",
                 FechaCreacion = DateTime.UtcNow,
-                ContextoJson = JsonSerializer.Deserialize<JsonElement>("{}")
+                ContextoJson = JsonSerializer.Deserialize<JsonElement>(defaultJson)
             };
 
             await _context.Set<Proyecto>().AddAsync(proyecto);
@@ -104,12 +105,175 @@ namespace MateCode.Infrastructure.Services
                 }
             }
 
+            // Sembrar backlog si viene plantilla web
+            if (!string.IsNullOrEmpty(plantillaWeb))
+            {
+                SeedAgileTemplates(proyecto.Id, plantillaWeb);
+            }
+
             await _context.SaveChangesAsync();
 
             // Inicializar columnas por defecto
             await _kanbanService.InitializeDefaultColumnsAsync(proyecto.Id, tenantId);
 
             return proyecto;
+        }
+
+        private void SeedAgileTemplates(Guid projectId, string plantillaWeb)
+        {
+            var epicas = new List<Epica>();
+            var features = new List<Feature>();
+            var historias = new List<Historia>();
+
+            if (plantillaWeb.ToLower() == "landing")
+            {
+                var ep1 = new Epica { Id = Guid.NewGuid(), ProyectoId = projectId, Titulo = "Estructura & Diseño", ColorHex = "#10b981", OrdenPosicion = 0 };
+                var ep2 = new Epica { Id = Guid.NewGuid(), ProyectoId = projectId, Titulo = "Conversión & SEO", ColorHex = "#3b82f6", OrdenPosicion = 1 };
+                epicas.Add(ep1);
+                epicas.Add(ep2);
+
+                var f1 = new Feature { Id = Guid.NewGuid(), EpicaId = ep1.Id, Nombre = "Secciones Principales", ColorHex = "#10b981", OrdenPosicion = 0 };
+                var f2 = new Feature { Id = Guid.NewGuid(), EpicaId = ep2.Id, Nombre = "Formulario & Analytics", ColorHex = "#3b82f6", OrdenPosicion = 0 };
+                features.Add(f1);
+                features.Add(f2);
+
+                historias.Add(new Historia {
+                    Id = Guid.NewGuid(), ProyectoId = projectId, FeatureId = f1.Id,
+                    Titulo = "Diseñar e implementar sección Hero con propuesta de valor clara y CTA llamativo",
+                    UsuarioNarrativo = "Visitante", Prioridad = "MVP", CriteriosBdd = "Given que visito la web, When carga, Then veo el CTA principal"
+                });
+                historias.Add(new Historia {
+                    Id = Guid.NewGuid(), ProyectoId = projectId, FeatureId = f1.Id,
+                    Titulo = "Crear sección de características y beneficios clave del producto",
+                    UsuarioNarrativo = "Visitante", Prioridad = "MVP"
+                });
+                historias.Add(new Historia {
+                    Id = Guid.NewGuid(), ProyectoId = projectId, FeatureId = f2.Id,
+                    Titulo = "Implementar formulario de contacto con validación para captar leads",
+                    UsuarioNarrativo = "Administrador", Prioridad = "MVP"
+                });
+            }
+            else if (plantillaWeb.ToLower() == "institucional")
+            {
+                var ep1 = new Epica { Id = Guid.NewGuid(), ProyectoId = projectId, Titulo = "Arquitectura de Páginas", ColorHex = "#f59e0b", OrdenPosicion = 0 };
+                var ep2 = new Epica { Id = Guid.NewGuid(), ProyectoId = projectId, Titulo = "Blog & Novedades", ColorHex = "#8b5cf6", OrdenPosicion = 1 };
+                epicas.Add(ep1);
+                epicas.Add(ep2);
+
+                var f1 = new Feature { Id = Guid.NewGuid(), EpicaId = ep1.Id, Nombre = "Páginas Estáticas", ColorHex = "#f59e0b", OrdenPosicion = 0 };
+                var f2 = new Feature { Id = Guid.NewGuid(), EpicaId = ep2.Id, Nombre = "CMS de Novedades", ColorHex = "#8b5cf6", OrdenPosicion = 0 };
+                features.Add(f1);
+                features.Add(f2);
+
+                historias.Add(new Historia {
+                    Id = Guid.NewGuid(), ProyectoId = projectId, FeatureId = f1.Id,
+                    Titulo = "Desarrollar página 'Nosotros' detallando la visión, misión e integrantes de la empresa",
+                    UsuarioNarrativo = "Visitante", Prioridad = "MVP"
+                });
+                historias.Add(new Historia {
+                    Id = Guid.NewGuid(), ProyectoId = projectId, FeatureId = f1.Id,
+                    Titulo = "Crear página de servicios destacados con acordeones de información",
+                    UsuarioNarrativo = "Visitante", Prioridad = "MVP"
+                });
+                historias.Add(new Historia {
+                    Id = Guid.NewGuid(), ProyectoId = projectId, FeatureId = f2.Id,
+                    Titulo = "Publicar y administrar noticias o novedades desde panel administrador",
+                    UsuarioNarrativo = "Editor", Prioridad = "MVP"
+                });
+            }
+            else if (plantillaWeb.ToLower() == "tienda")
+            {
+                var ep1 = new Epica { Id = Guid.NewGuid(), ProyectoId = projectId, Titulo = "Catálogo & Compra", ColorHex = "#ec4899", OrdenPosicion = 0 };
+                var ep2 = new Epica { Id = Guid.NewGuid(), ProyectoId = projectId, Titulo = "Pasarela de Pago & Checkout", ColorHex = "#f43f5e", OrdenPosicion = 1 };
+                epicas.Add(ep1);
+                epicas.Add(ep2);
+
+                var f1 = new Feature { Id = Guid.NewGuid(), EpicaId = ep1.Id, Nombre = "Ficha & Carrito", ColorHex = "#ec4899", OrdenPosicion = 0 };
+                var f2 = new Feature { Id = Guid.NewGuid(), EpicaId = ep2.Id, Nombre = "Checkout", ColorHex = "#f43f5e", OrdenPosicion = 0 };
+                features.Add(f1);
+                features.Add(f2);
+
+                historias.Add(new Historia {
+                    Id = Guid.NewGuid(), ProyectoId = projectId, FeatureId = f1.Id,
+                    Titulo = "Desarrollar grilla de productos con filtros de categoría y ordenamiento por precio",
+                    UsuarioNarrativo = "Cliente", Prioridad = "MVP"
+                });
+                historias.Add(new Historia {
+                    Id = Guid.NewGuid(), ProyectoId = projectId, FeatureId = f1.Id,
+                    Titulo = "Visualizar el detalle de producto, variante (color/talle) y añadirlo al carrito",
+                    UsuarioNarrativo = "Cliente", Prioridad = "MVP"
+                });
+                historias.Add(new Historia {
+                    Id = Guid.NewGuid(), ProyectoId = projectId, FeatureId = f2.Id,
+                    Titulo = "Integrar checkout simplificado de cobro con pasarela de pagos (MercadoPago/Stripe)",
+                    UsuarioNarrativo = "Cliente", Prioridad = "MVP"
+                });
+            }
+
+            _context.Set<Epica>().AddRange(epicas);
+            _context.Set<Feature>().AddRange(features);
+            _context.Set<Historia>().AddRange(historias);
+        }
+
+        private string GetDefaultContextJson(string name, string? plantillaWeb)
+        {
+            string pagesJson = "";
+            if (plantillaWeb?.ToLower() == "landing")
+            {
+                pagesJson = @"[
+                    { ""id"": ""p1"", ""name"": ""Inicio / Landing"", ""route"": ""/"", ""sections"": [{ ""id"": ""s1"", ""title"": ""Hero Section"", ""description"": ""Presentación de propuesta de valor y CTA principal"" }, { ""id"": ""s2"", ""title"": ""Beneficios"", ""description"": ""Detalle de ventajas del producto"" }, { ""id"": ""s3"", ""title"": ""Contacto"", ""description"": ""Captura de leads"" }] }
+                ]";
+            }
+            else if (plantillaWeb?.ToLower() == "institucional")
+            {
+                pagesJson = @"[
+                    { ""id"": ""p1"", ""name"": ""Inicio"", ""route"": ""/"", ""sections"": [{ ""id"": ""s1"", ""title"": ""Hero Slider"", ""description"": ""Sliders principales e introducción"" }] },
+                    { ""id"": ""p2"", ""name"": ""Nosotros"", ""route"": ""/nosotros"", ""sections"": [{ ""id"": ""s2"", ""title"": ""Misión & Visión"", ""description"": ""Misión, visión y valores de la empresa"" }] },
+                    { ""id"": ""p3"", ""name"": ""Servicios"", ""route"": ""/servicios"", ""sections"": [{ ""id"": ""s3"", ""title"": ""Catálogo de Servicios"", ""description"": ""Detalle de servicios prestados"" }] },
+                    { ""id"": ""p4"", ""name"": ""Contacto"", ""route"": ""/contacto"", ""sections"": [{ ""id"": ""s4"", ""title"": ""Formulario de Contacto"", ""description"": ""Formulario de contacto y mapa de sucursales"" }] }
+                ]";
+            }
+            else if (plantillaWeb?.ToLower() == "tienda")
+            {
+                pagesJson = @"[
+                    { ""id"": ""p1"", ""name"": ""Inicio / Tienda"", ""route"": ""/"", ""sections"": [{ ""id"": ""s1"", ""title"": ""Banner Principal"", ""description"": ""Destacados y promociones"" }] },
+                    { ""id"": ""p2"", ""name"": ""Catálogo"", ""route"": ""/productos"", ""sections"": [{ ""id"": ""s2"", ""title"": ""Grilla de Productos"", ""description"": ""Filtros y paginación de catálogo"" }] },
+                    { ""id"": ""p3"", ""name"": ""Detalle de Producto"", ""route"": ""/producto/:id"", ""sections"": [{ ""id"": ""s3"", ""title"": ""Ficha de Producto"", ""description"": ""Fotos, variantes y descripción"" }] },
+                    { ""id"": ""p4"", ""name"": ""Carrito"", ""route"": ""/carrito"", ""sections"": [{ ""id"": ""s4"", ""title"": ""Resumen de Carrito"", ""description"": ""Detalle de items e importes"" }] },
+                    { ""id"": ""p5"", ""name"": ""Pago"", ""route"": ""/checkout"", ""sections"": [{ ""id"": ""s5"", ""title"": ""Pasarela de Pagos"", ""description"": ""Dirección de envío y pasarela"" }] }
+                ]";
+            }
+            else
+            {
+                pagesJson = @"[
+                    { ""id"": ""p1"", ""name"": ""Inicio"", ""route"": ""/"", ""sections"": [{ ""id"": ""s1"", ""title"": ""Hero"", ""description"": ""Presentación del producto"" }] }
+                ]";
+            }
+
+            return $$"""
+            {
+                "sitemap": {
+                    "project_name": "{{name}}",
+                    "pages": {{pagesJson}}
+                },
+                "branding": {
+                    "identity": { "name": "{{name}}", "purpose": "", "slogan": "", "personality": "" },
+                    "visuals": { 
+                        "primaryHex": "#10b981", 
+                        "secondaryHex": "#3b82f6", 
+                        "accentHex": "#f59e0b", 
+                        "backgroundHex": "#09090b",
+                        "headingFont": "Outfit",
+                        "bodyFont": "Inter",
+                        "numberFont": "JetBrains Mono",
+                        "imageStyle": "Minimalist"
+                    },
+                    "layout_rules": { "navbar_style": "sticky", "footer_style": "standard" },
+                    "voice": { "tone": "Professional", "prohibited_words": [], "slang_allowed": false },
+                    "restrictions": { "no_go_list": [] }
+                }
+            }
+            """;
         }
 
         public async Task UpdateProjectAsync(Guid projectId, string name, string description, Guid? clienteId = null)

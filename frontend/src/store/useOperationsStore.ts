@@ -25,6 +25,30 @@ export interface TaskOperative {
   usuario_asignado_id?: string;
   rango_lexicografico?: string;
   fecha_creacion: string;
+  espacio_trabajo_id?: string;
+  proyecto_id?: string;
+  recurso_id?: string;
+  espacio_trabajo?: { id: string; nombre: string };
+  proyecto?: { id: string; nombre: string };
+  recurso?: { id: string; titulo: string; tipo: string; contenido?: string };
+}
+
+export interface KanbanColumnaOperativa {
+  id: string;
+  agencia_id: string;
+  nombre: string;
+  orden: number;
+  fecha_creacion: string;
+}
+
+export interface WeeklyReport {
+  id: string;
+  agencia_id: string;
+  fechaInicio: string;
+  fechaFin: string;
+  metricasJson: string;
+  leccionesAprendidas: string;
+  fecha_creacion: string;
 }
 
 export interface ContentPlan {
@@ -60,6 +84,8 @@ interface OperationsState {
   tasks: TaskOperative[];
   contents: ContentPlan[];
   auditLogs: AuditLog[];
+  kanbanColumns: KanbanColumnaOperativa[];
+  weeklyReports: WeeklyReport[];
 
   // Resources
   fetchResources: () => Promise<void>;
@@ -70,9 +96,9 @@ interface OperationsState {
 
   // Tasks
   fetchTasks: () => Promise<void>;
-  createTask: (task: { titulo: string; descripcion: string; estado: string; fecha_planificada?: string; usuario_asignado_id?: string }) => Promise<void>;
+  createTask: (task: { titulo: string; descripcion: string; estado: string; fecha_planificada?: string; usuario_asignado_id?: string; espacioTrabajoId?: string; proyectoId?: string; recursoId?: string }) => Promise<void>;
   updateTaskStatus: (id: string, estado: string, posicion?: string) => Promise<void>;
-  updateTask: (id: string, task: { titulo: string; descripcion: string; estado: string; fecha_planificada?: string; usuario_asignado_id?: string }) => Promise<void>;
+  updateTask: (id: string, task: { titulo: string; descripcion: string; estado: string; fecha_planificada?: string; usuario_asignado_id?: string; espacioTrabajoId?: string; proyectoId?: string; recursoId?: string }) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
 
   // Contents
@@ -83,6 +109,19 @@ interface OperationsState {
 
   // Audit Logs
   fetchAuditLogs: () => Promise<void>;
+
+  // Kanban Columns
+  fetchKanbanColumns: () => Promise<void>;
+  createKanbanColumn: (nombre: string, orden: number) => Promise<void>;
+  updateKanbanColumnsOrder: (columnOrders: { key: string; value: number }[]) => Promise<void>;
+  updateKanbanColumnName: (id: string, nombre: string) => Promise<void>;
+  deleteKanbanColumn: (id: string) => Promise<void>;
+
+  // Weekly Reports
+  fetchWeeklyReports: () => Promise<void>;
+  createWeeklyReport: (fechaInicio: string, fechaFin: string, leccionesAprendidas: string) => Promise<void>;
+  deleteWeeklyReport: (id: string) => Promise<void>;
+  generateWeeklyMetricsPreview: (fechaInicio: string, fechaFin: string) => Promise<any>;
 }
 
 export const useOperationsStore = create<OperationsState>((set) => ({
@@ -90,6 +129,8 @@ export const useOperationsStore = create<OperationsState>((set) => ({
   tasks: [],
   contents: [],
   auditLogs: [],
+  kanbanColumns: [],
+  weeklyReports: [],
 
   // Resources Actions
   fetchResources: async () => {
@@ -171,9 +212,9 @@ export const useOperationsStore = create<OperationsState>((set) => ({
   updateTask: async (id, task) => {
     try {
       await api.put(`/AgencyOperations/tasks/${id}`, task);
-      set(state => ({
-        tasks: state.tasks.map(t => t.id === id ? { ...t, ...task } : t)
-      }));
+      // Refetch tasks to load includes correctly
+      const data = await api.get('/AgencyOperations/tasks');
+      set({ tasks: data });
     } catch (err) {
       console.error(err);
       throw err;
@@ -233,6 +274,95 @@ export const useOperationsStore = create<OperationsState>((set) => ({
       set({ auditLogs: data });
     } catch (err) {
       console.error(err);
+    }
+  },
+
+  // Kanban Columns Actions
+  fetchKanbanColumns: async () => {
+    try {
+      const data = await api.get('/AgencyOperationsUpdate/columns');
+      set({ kanbanColumns: data });
+    } catch (err) {
+      console.error(err);
+    }
+  },
+  createKanbanColumn: async (nombre, orden) => {
+    try {
+      const data = await api.post('/AgencyOperationsUpdate/columns', { nombre, orden });
+      set(state => ({ kanbanColumns: [...state.kanbanColumns, data].sort((a, b) => a.orden - b.orden) }));
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  },
+  updateKanbanColumnsOrder: async (columnOrders) => {
+    try {
+      await api.put('/AgencyOperationsUpdate/columns/order', columnOrders);
+      set(state => ({
+        kanbanColumns: state.kanbanColumns.map(c => {
+          const match = columnOrders.find(co => co.key === c.id);
+          return match ? { ...c, orden: match.value } : c;
+        }).sort((a, b) => a.orden - b.orden)
+      }));
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  },
+  updateKanbanColumnName: async (id, nombre) => {
+    try {
+      await api.put(`/AgencyOperationsUpdate/columns/${id}/name`, { nombre });
+      set(state => ({
+        kanbanColumns: state.kanbanColumns.map(c => c.id === id ? { ...c, nombre } : c)
+      }));
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  },
+  deleteKanbanColumn: async (id) => {
+    try {
+      await api.delete(`/AgencyOperationsUpdate/columns/${id}`);
+      set(state => ({ kanbanColumns: state.kanbanColumns.filter(c => c.id !== id) }));
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  },
+
+  // Weekly Reports Actions
+  fetchWeeklyReports: async () => {
+    try {
+      const data = await api.get('/AgencyOperationsUpdate/reports');
+      set({ weeklyReports: data });
+    } catch (err) {
+      console.error(err);
+    }
+  },
+  createWeeklyReport: async (fechaInicio, fechaFin, leccionesAprendidas) => {
+    try {
+      const data = await api.post('/AgencyOperationsUpdate/reports', { fechaInicio, fechaFin, leccionesAprendidas });
+      set(state => ({ weeklyReports: [data, ...state.weeklyReports] }));
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  },
+  deleteWeeklyReport: async (id) => {
+    try {
+      await api.delete(`/AgencyOperationsUpdate/reports/${id}`);
+      set(state => ({ weeklyReports: state.weeklyReports.filter(r => r.id !== id) }));
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  },
+  generateWeeklyMetricsPreview: async (fechaInicio, fechaFin) => {
+    try {
+      return await api.get(`/AgencyOperationsUpdate/metrics-helper?start=${fechaInicio}&end=${fechaFin}`);
+    } catch (err) {
+      console.error(err);
+      throw err;
     }
   }
 }));

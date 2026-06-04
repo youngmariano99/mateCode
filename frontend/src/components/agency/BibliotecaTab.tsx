@@ -81,6 +81,7 @@ export function BibliotecaTab({ resources, onDelete, onToggleFavorite, onEdit }:
           className="h-8 rounded-xl border border-zinc-700/60 bg-zinc-950/60 px-2.5 text-xs text-zinc-300 outline-none">
           <option value="todos">Todos los tipos</option>
           <option value="prompt">Prompt IA</option>
+          <option value="herramienta">Herramienta</option>
           <option value="documento">Documento</option>
           <option value="template">Plantilla</option>
           <option value="otro">Otro</option>

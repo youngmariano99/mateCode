@@ -43,9 +43,9 @@ namespace MateCode.Application.Services
 
         // --- TAREAS OPERATIVAS ---
         Task<IEnumerable<TareaOperativa>> GetTasksAsync(Guid agencyId);
-        Task<TareaOperativa> CreateTaskAsync(Guid agencyId, string titulo, string descripcion, string estado, DateTime? planificada, Guid? assignedUserId);
+        Task<TareaOperativa> CreateTaskAsync(Guid agencyId, string titulo, string descripcion, string estado, DateTime? planificada, Guid? assignedUserId, Guid? espacioTrabajoId = null, Guid? proyectoId = null, Guid? recursoId = null);
         Task<bool> UpdateTaskStatusAsync(Guid taskId, string estado, string position);
-        Task<bool> UpdateTaskAsync(Guid taskId, string titulo, string descripcion, string estado, DateTime? planificada, Guid? assignedUserId);
+        Task<bool> UpdateTaskAsync(Guid taskId, string titulo, string descripcion, string estado, DateTime? planificada, Guid? assignedUserId, Guid? espacioTrabajoId = null, Guid? proyectoId = null, Guid? recursoId = null);
         Task<bool> DeleteTaskAsync(Guid taskId);
 
         // --- ACCESOS SEGUROS (SECRETS) ---
@@ -60,6 +60,14 @@ namespace MateCode.Application.Services
         Task<bool> UpdateContentAsync(Guid contentId, string titulo, JsonElement plataformas, string guion, string dialogo, string procedimiento, string estado, string notasMejora, JsonElement resumenAnalitico, DateTime? publishDate);
         Task<bool> DeleteContentAsync(Guid contentId);
 
+        // --- CONTRATOS ---
+        Task<IEnumerable<ContratoAgencia>> GetContractsAsync(Guid agencyId);
+        Task<ContratoAgencia?> GetContractByIdAsync(Guid contractId, Guid agencyId);
+        Task<ContratoAgencia> CreateContractAsync(Guid agencyId, Guid clienteId, string titulo, string contenido, string estado);
+        Task<bool> UpdateContractAsync(Guid contractId, string titulo, string contenido, string estado);
+        Task<bool> DeleteContractAsync(Guid contractId);
+        Task<bool> SignContractAsync(Guid contractId, DateTime fechaFirma, string huellaCriptografica);
+
         // --- FINANZAS ---
         Task<object> GetFinanceDashboardAsync(Guid agencyId);
         Task<TransaccionAgencia> CreateTransactionAsync(Guid agencyId, string tipo, decimal monto, string concepto, string descripcion, DateTime fecha, string categoria, Guid? proyectoId);
@@ -68,5 +76,24 @@ namespace MateCode.Application.Services
         // --- AUDITORÍA ---
         Task<IEnumerable<AuditLog>> GetAuditLogsAsync(Guid agencyId);
         Task LogActivityAsync(Guid agencyId, Guid userId, string userName, string modulo, string accion, Guid? registroId, object detalles);
+
+        // --- CALENDARIO OPERATIVO ---
+        Task<IEnumerable<EventoCalendario>> GetCalendarEventsAsync(Guid agencyId);
+        Task<EventoCalendario> CreateCalendarEventAsync(Guid agencyId, string titulo, string? descripcion, DateTime fechaInicio, DateTime fechaFin, string tipo, string? colorHex, Guid? usuarioResponsableId, Guid? clienteId, Guid? proyectoId);
+        Task<bool> UpdateCalendarEventAsync(Guid eventId, string titulo, string? descripcion, DateTime fechaInicio, DateTime fechaFin, string tipo, string? colorHex, Guid? usuarioResponsableId, Guid? clienteId, Guid? proyectoId);
+        Task<bool> DeleteCalendarEventAsync(Guid eventId);
+
+        // --- COLUMNAS KANBAN DINÁMICAS ---
+        Task<IEnumerable<KanbanColumnaOperativa>> GetKanbanColumnsAsync(Guid agencyId);
+        Task<KanbanColumnaOperativa> CreateKanbanColumnAsync(Guid agencyId, string nombre, int orden);
+        Task<bool> UpdateKanbanColumnsOrderAsync(Guid agencyId, IEnumerable<KeyValuePair<Guid, int>> columnOrders);
+        Task<bool> UpdateKanbanColumnNameAsync(Guid columnId, string nombre);
+        Task<bool> DeleteKanbanColumnAsync(Guid columnId);
+
+        // --- INFORMES SEMANALES ---
+        Task<IEnumerable<InformeSemanal>> GetWeeklyReportsAsync(Guid agencyId);
+        Task<InformeSemanal> CreateWeeklyReportAsync(Guid agencyId, DateTime fechaInicio, DateTime fechaFin, string leccionesAprendidas);
+        Task<bool> DeleteWeeklyReportAsync(Guid reportId);
+        Task<object> GenerateWeeklyMetricsPreviewAsync(Guid agencyId, DateTime fechaInicio, DateTime fechaFin);
     }
 }

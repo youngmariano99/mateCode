@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
 import { useProject } from '../../context/ProjectContext';
 import { api } from '../../lib/apiClient';
 import Swal from 'sweetalert2';
-import { Cpu, Layers, Zap, Loader2, Save, Plus, RefreshCw, Copy, FileText } from 'lucide-react';
+import { Cpu, Layers, Zap, Loader2, Plus, RefreshCw, Copy, FileText, Palette, Calculator, Users } from 'lucide-react';
 import { TemplatePickerModal } from '../shared/TemplatePickerModal';
 import { ProjectStandardsAside } from './ProjectStandardsAside';
 import { StackBuilder } from './StackBuilder';
 import ArchitectureBlueprint from './ArchitectureBlueprint';
+import { BriefingPanel } from './BriefingPanel';
+import { BudgetPanel } from './BudgetPanel';
+import { CollaboratorsList } from './CollaboratorsList';
 
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { PromptBuilderModal } from './PromptBuilderModal';
@@ -26,13 +28,13 @@ export const FeasibilityForm = () => {
     const [isDirty, setIsDirty] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
-    const [isBrainstorming, setIsBrainstorming] = useState(false);
+
     const [availableForms, setAvailableForms] = useState<any[]>([]);
     const [adnTemplate, setAdnTemplate] = useState<any>(null);
     const [adnData, setAdnData] = useState<any>(null);
     const [showAdnSelector, setShowAdnSelector] = useState(false);
     const [showContextBuilder, setShowContextBuilder] = useState(false);
-    const [activeTab, setActiveTab] = useState<'engineering' | 'stack' | 'blueprint'>('engineering');
+    const [activeTab, setActiveTab] = useState<'engineering' | 'stack' | 'blueprint' | 'briefing' | 'budget' | 'collaborators'>('engineering');
     const [stackCount, setStackCount] = useState(0);
     const [standardsCount, setStandardsCount] = useState(0);
     const [projectStandards, setProjectStandards] = useState<any[]>([]);
@@ -74,7 +76,7 @@ export const FeasibilityForm = () => {
         return () => clearTimeout(timer);
     }, [adnData, isDirty]);
 
-    const { updateTechStack, setPendingStackImport, setPendingStandardsImport, updateCalidad } = useProjectBlueprintStore();
+    const { updateTechStack, setPendingStackImport, setPendingStandardsImport } = useProjectBlueprintStore();
 
     const fetchStatus = async () => {
         try {
@@ -335,24 +337,42 @@ Analizar el contexto del proyecto y su stack técnico, y definir exactamente 10 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 <div className="lg:col-span-2 space-y-8">
                     {/* TABS DE NAVEGACIÓN DE ADN */}
-                    <div className="flex bg-zinc-900/50 p-1.5 rounded-[2rem] border border-zinc-800 backdrop-blur-md sticky top-4 z-40 shadow-2xl">
+                    <div className="flex overflow-x-auto md:flex-wrap bg-zinc-900/50 p-1.5 rounded-[2rem] border border-zinc-800 backdrop-blur-md sticky top-4 z-40 shadow-2xl no-scrollbar">
                         <button
                             onClick={() => setActiveTab('engineering')}
-                            className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'engineering' ? 'bg-zinc-800 text-emerald-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            className={`flex-1 min-w-[130px] flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'engineering' ? 'bg-zinc-800 text-emerald-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
                         >
-                            <Cpu size={16} /> 1. Entender el Problema
+                            <Cpu size={16} /> 1. ADN/Viabilidad
                         </button>
                         <button
                             onClick={() => setActiveTab('stack')}
-                            className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'stack' ? 'bg-zinc-800 text-blue-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            className={`flex-1 min-w-[130px] flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'stack' ? 'bg-zinc-800 text-blue-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
                         >
-                            <Layers size={16} /> 2. Herramientas y Lenguajes
+                            <Layers size={16} /> 2. Stack Técnico
                         </button>
                         <button
                             onClick={() => setActiveTab('blueprint')}
-                            className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'blueprint' ? 'bg-zinc-800 text-purple-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            className={`flex-1 min-w-[130px] flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'blueprint' ? 'bg-zinc-800 text-purple-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
                         >
-                            <Zap size={16} /> 3. Reglas de Juego
+                            <Zap size={16} /> 3. Estándares
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('briefing')}
+                            className={`flex-1 min-w-[130px] flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'briefing' ? 'bg-zinc-800 text-emerald-400 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
+                        >
+                            <Palette size={16} /> 4. Relevamiento
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('budget')}
+                            className={`flex-1 min-w-[130px] flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'budget' ? 'bg-zinc-800 text-amber-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
+                        >
+                            <Calculator size={16} /> 5. Cotizaciones
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('collaborators')}
+                            className={`flex-1 min-w-[130px] flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'collaborators' ? 'bg-zinc-800 text-blue-400 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
+                        >
+                            <Users size={16} /> 6. Equipo
                         </button>
                     </div>
 
@@ -424,6 +444,24 @@ Analizar el contexto del proyecto y su stack técnico, y definir exactamente 10 
                         {activeTab === 'blueprint' && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <ArchitectureBlueprint projectId={projectId!} />
+                            </div>
+                        )}
+
+                        {activeTab === 'briefing' && projectId && (
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <BriefingPanel projectId={projectId} />
+                            </div>
+                        )}
+
+                        {activeTab === 'budget' && projectId && (
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <BudgetPanel projectId={projectId} />
+                            </div>
+                        )}
+
+                        {activeTab === 'collaborators' && projectId && (
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <CollaboratorsList projectId={projectId} />
                             </div>
                         )}
                     </div>

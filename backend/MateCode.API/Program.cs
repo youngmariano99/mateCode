@@ -213,10 +213,10 @@ using (var scope = app.Services.CreateScope())
 
                 -- Columnas para Perfil, Branding e Identidad de Agencia (Ciclo 1)
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'redes_sociales') THEN
-                    ALTER TABLE nucleo.agencias ADD COLUMN redes_sociales JSONB DEFAULT '{}';
+                    ALTER TABLE nucleo.agencias ADD COLUMN redes_sociales JSONB DEFAULT '{{}}';
                 END IF;
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'branding') THEN
-                    ALTER TABLE nucleo.agencias ADD COLUMN branding JSONB DEFAULT '{}';
+                    ALTER TABLE nucleo.agencias ADD COLUMN branding JSONB DEFAULT '{{}}';
                 END IF;
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'mision') THEN
                     ALTER TABLE nucleo.agencias ADD COLUMN mision TEXT DEFAULT '';
@@ -225,7 +225,7 @@ using (var scope = app.Services.CreateScope())
                     ALTER TABLE nucleo.agencias ADD COLUMN vision TEXT DEFAULT '';
                 END IF;
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'datos_marketing') THEN
-                    ALTER TABLE nucleo.agencias ADD COLUMN datos_marketing JSONB DEFAULT '{}';
+                    ALTER TABLE nucleo.agencias ADD COLUMN datos_marketing JSONB DEFAULT '{{}}';
                 END IF;
 
                 -- Columnas y restricciones para Clientes y CRM centralizado (Ciclo 2)
@@ -264,6 +264,90 @@ using (var scope = app.Services.CreateScope())
                     ALTER TABLE crm.formularios_plantilla ADD COLUMN agencia_id UUID;
                 END IF;
                 ALTER TABLE crm.formularios_plantilla ALTER COLUMN tenant_id DROP NOT NULL;
+
+                -- Tabla de Contratos de Agencia (Ciclo 3)
+                CREATE TABLE IF NOT EXISTS crm.contratos_agencia (
+                    id UUID PRIMARY KEY,
+                    agencia_id UUID NOT NULL,
+                    cliente_id UUID NOT NULL REFERENCES crm.clientes(id) ON DELETE CASCADE,
+                    titulo VARCHAR(255) NOT NULL,
+                    contenido TEXT NOT NULL,
+                    estado VARCHAR(50) NOT NULL,
+                    fecha_creacion TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+                    fecha_firma TIMESTAMP WITHOUT TIME ZONE,
+                    huella_criptografica TEXT
+                );
+
+                -- Tabla de Calendario Operativo (Ciclo 4)
+                CREATE TABLE IF NOT EXISTS organizacion.eventos_calendario (
+                    id UUID PRIMARY KEY,
+                    agencia_id UUID NOT NULL REFERENCES nucleo.agencias(id) ON DELETE CASCADE,
+                    cliente_id UUID REFERENCES crm.clientes(id) ON DELETE SET NULL,
+                    proyecto_id UUID REFERENCES proyectos.proyectos(id) ON DELETE SET NULL,
+                    titulo VARCHAR(255) NOT NULL,
+                    descripcion TEXT,
+                    fecha_inicio TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+                    fecha_fin TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+                    tipo VARCHAR(50) NOT NULL,
+                    color_hex VARCHAR(10),
+                    usuario_responsable_id UUID REFERENCES nucleo.usuarios(id) ON DELETE SET NULL,
+                    fecha_creacion TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+                );
+
+                -- Columnas de relaciones en tareas operativas (Ciclo 5)
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'tareas_operativas' AND column_name = 'espacio_trabajo_id') THEN
+                    ALTER TABLE organizacion.tareas_operativas ADD COLUMN espacio_trabajo_id UUID REFERENCES nucleo.espacios_trabajo(id) ON DELETE SET NULL;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'tareas_operativas' AND column_name = 'proyecto_id') THEN
+                    ALTER TABLE organizacion.tareas_operativas ADD COLUMN proyecto_id UUID REFERENCES proyectos.proyectos(id) ON DELETE SET NULL;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'tareas_operativas' AND column_name = 'recurso_id') THEN
+                    ALTER TABLE organizacion.tareas_operativas ADD COLUMN recurso_id UUID REFERENCES organizacion.recursos(id) ON DELETE SET NULL;
+                END IF;
+
+                -- Tablas de Columnas Kanban e Informes Semanales (Ciclo 5)
+                CREATE TABLE IF NOT EXISTS organizacion.kanban_columnas_operativas (
+                    id UUID PRIMARY KEY,
+                    agencia_id UUID NOT NULL REFERENCES nucleo.agencias(id) ON DELETE CASCADE,
+                    nombre VARCHAR(255) NOT NULL,
+                    orden INT NOT NULL,
+                    fecha_creacion TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+                );
+
+                CREATE TABLE IF NOT EXISTS organizacion.informes_semanales (
+                    id UUID PRIMARY KEY,
+                    agencia_id UUID NOT NULL REFERENCES nucleo.agencias(id) ON DELETE CASCADE,
+                    fecha_inicio TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+                    fecha_fin TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+                    metricas_json JSONB NOT NULL DEFAULT '{}',
+                    lecciones_aprendidas TEXT NOT NULL,
+                    fecha_creacion TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+                );
+
+                -- Sembrar columnas por defecto para agencias que no las tengan
+                INSERT INTO organizacion.kanban_columnas_operativas (id, agencia_id, nombre, orden, fecha_creacion)
+                SELECT gen_random_uuid(), a.id, 'Todo', 0, NOW() 
+                FROM nucleo.agencias a
+                WHERE NOT EXISTS (SELECT 1 FROM organizacion.kanban_columnas_operativas k WHERE k.agencia_id = a.id);
+
+                INSERT INTO organizacion.kanban_columnas_operativas (id, agencia_id, nombre, orden, fecha_creacion)
+                SELECT gen_random_uuid(), a.id, 'In Progress', 1, NOW() 
+                FROM nucleo.agencias a
+                WHERE NOT EXISTS (SELECT 1 FROM organizacion.kanban_columnas_operativas k WHERE k.agencia_id = a.id AND k.nombre = 'In Progress');
+
+                INSERT INTO organizacion.kanban_columnas_operativas (id, agencia_id, nombre, orden, fecha_creacion)
+                SELECT gen_random_uuid(), a.id, 'Done', 2, NOW() 
+                FROM nucleo.agencias a
+                WHERE NOT EXISTS (SELECT 1 FROM organizacion.kanban_columnas_operativas k WHERE k.agencia_id = a.id AND k.nombre = 'Done');
+
+                -- Tabla de Presupuestos (Ciclo 6)
+                CREATE TABLE IF NOT EXISTS finanzas.presupuestos (
+                    id UUID PRIMARY KEY,
+                    proyecto_id UUID NOT NULL REFERENCES proyectos.proyectos(id) ON DELETE CASCADE,
+                    perfil_id UUID NOT NULL,
+                    alcance_json JSONB NOT NULL DEFAULT '[]',
+                    monto_total DECIMAL(18,2) NOT NULL DEFAULT 0.00
+                );
             END $$;";
         context.Database.ExecuteSqlRaw(sql);
         Console.WriteLine("✅ Infraestructura de Bóveda y Stacks verificada exitosamente.");

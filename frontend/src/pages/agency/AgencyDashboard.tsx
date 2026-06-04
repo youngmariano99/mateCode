@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Building, Briefcase, Users, Target, FileText, Calendar, Key, Video,
+  Building, Briefcase, Users, Target, FileText, Calendar, CalendarDays, Key, Video,
   DollarSign, ShieldAlert, ArrowLeft, Shield, Layout, Search, Plus, X
 } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -20,6 +20,7 @@ import { SecretsPanel } from '../../components/agency/SecretsPanel';
 import { ContentPanel } from '../../components/agency/ContentPanel';
 import { FinancePanel } from '../../components/agency/FinancePanel';
 import { AuditPanel } from '../../components/agency/AuditPanel';
+import { CalendarPanel } from '../../components/agency/CalendarPanel';
 import { DynamicWorkspace, type WorkspaceViewMode } from '../../components/spatial/DynamicWorkspace';
 
 const AGENCY_TABS = [
@@ -32,6 +33,7 @@ const AGENCY_TABS = [
   { id: 'content', label: 'Planificador Contenido', desc: 'Plan de Contenido', icon: Video, top: '66%', left: '6%', w: '26%', h: '24%' },
   { id: 'finance', label: 'Finanzas Dashboard', desc: 'Finanzas Corporativas', icon: DollarSign, top: '66%', left: '37%', w: '26%', h: '24%' },
   { id: 'audit', label: 'Logs de Auditoría', desc: 'Logs de Seguridad', icon: ShieldAlert, top: '66%', left: '68%', w: '26%', h: '24%' },
+  { id: 'calendar', label: 'Calendario Operativo', desc: 'Calendario Operativo', icon: CalendarDays, top: '0%', left: '0%', w: '0%', h: '0%', hideImmersiveMap: true },
 ];
 
 export const AgencyDashboard: React.FC = () => {
@@ -82,6 +84,8 @@ export const AgencyDashboard: React.FC = () => {
         return <FinancePanel agencyWorkspaces={agencyWorkspaces} />;
       case 'audit':
         return <AuditPanel />;
+      case 'calendar':
+        return <CalendarPanel agencyMembers={agencyMembers} />;
       default:
         return null;
     }
@@ -346,6 +350,16 @@ export const AgencyDashboard: React.FC = () => {
 
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={() => {
+                      setActiveTab('calendar');
+                      setActiveModalTab('calendar');
+                    }}
+                    className="py-2 px-4 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
+                  >
+                    <CalendarDays size={14} />
+                    <span>Calendario</span>
+                  </button>
+                  <button
                     onClick={() => setDashboardMode('standard')}
                     className="py-2 px-4 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/20 text-sky-400 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
                   >
@@ -378,7 +392,7 @@ export const AgencyDashboard: React.FC = () => {
                 />
 
                 {/* Hotspots */}
-                {AGENCY_TABS.map(spot => {
+                {AGENCY_TABS.filter(spot => !spot.hideImmersiveMap).map(spot => {
                   const Icon = spot.icon;
                   return (
                     <button

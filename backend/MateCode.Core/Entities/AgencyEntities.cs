@@ -105,9 +105,16 @@ namespace MateCode.Core.Entities
         public string RangoLexicografico { get; set; } = "a";
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
+        public Guid? EspacioTrabajoId { get; set; }
+        public Guid? ProyectoId { get; set; }
+        public Guid? RecursoId { get; set; }
+
         // Relaciones
         public Agencia? Agencia { get; set; }
         public Usuario? UsuarioAsignado { get; set; }
+        public EspacioTrabajo? EspacioTrabajo { get; set; }
+        public Proyecto? Proyecto { get; set; }
+        public Recurso? Recurso { get; set; }
     }
 
     public class CredencialSegura
@@ -180,5 +187,53 @@ namespace MateCode.Core.Entities
         // Relaciones
         public Agencia? Agencia { get; set; }
         public Usuario? Usuario { get; set; }
+    }
+
+    public class EventoCalendario
+    {
+        public Guid Id { get; set; }
+        public Guid AgenciaId { get; set; }
+        public Guid? ClienteId { get; set; }
+        public Guid? ProyectoId { get; set; }
+        public string Titulo { get; set; } = string.Empty;
+        public string? Descripcion { get; set; }
+        public DateTime FechaInicio { get; set; }
+        public DateTime FechaFin { get; set; }
+        public string Tipo { get; set; } = "Interna"; // Reunion Cliente, Interna, Hito, Otro
+        public string? ColorHex { get; set; } = "#3b82f6";
+        public Guid? UsuarioResponsableId { get; set; }
+        public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+
+        // Relaciones
+        public Agencia? Agencia { get; set; }
+        public Cliente? Cliente { get; set; }
+        public Proyecto? Proyecto { get; set; }
+        public Usuario? UsuarioResponsable { get; set; }
+    }
+
+    public class KanbanColumnaOperativa
+    {
+        public Guid Id { get; set; }
+        public Guid AgenciaId { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+        public int Orden { get; set; }
+        public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+
+        // Relaciones
+        public Agencia? Agencia { get; set; }
+    }
+
+    public class InformeSemanal
+    {
+        public Guid Id { get; set; }
+        public Guid AgenciaId { get; set; }
+        public DateTime FechaInicio { get; set; }
+        public DateTime FechaFin { get; set; }
+        public string MetricasJson { get; set; } = "{}"; // JSON con las métricas automatizadas (tareas completadas/creadas, contenidos publicados, finanzas, leads)
+        public string LeccionesAprendidas { get; set; } = string.Empty;
+        public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+
+        // Relaciones
+        public Agencia? Agencia { get; set; }
     }
 }

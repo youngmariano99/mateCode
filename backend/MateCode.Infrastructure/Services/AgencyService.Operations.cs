@@ -120,12 +120,15 @@ namespace MateCode.Infrastructure.Services
         public async Task<IEnumerable<TareaOperativa>> GetTasksAsync(Guid agencyId)
         {
             return await _context.TareasOperativas
+                .Include(t => t.EspacioTrabajo)
+                .Include(t => t.Proyecto)
+                .Include(t => t.Recurso)
                 .Where(t => t.AgenciaId == agencyId)
                 .OrderBy(t => t.RangoLexicografico)
                 .ToListAsync();
         }
 
-        public async Task<TareaOperativa> CreateTaskAsync(Guid agencyId, string titulo, string descripcion, string estado, DateTime? planificada, Guid? assignedUserId)
+        public async Task<TareaOperativa> CreateTaskAsync(Guid agencyId, string titulo, string descripcion, string estado, DateTime? planificada, Guid? assignedUserId, Guid? espacioTrabajoId = null, Guid? proyectoId = null, Guid? recursoId = null)
         {
             var task = new TareaOperativa
             {
@@ -136,6 +139,9 @@ namespace MateCode.Infrastructure.Services
                 Estado = estado,
                 FechaPlanificada = planificada,
                 UsuarioAsignadoId = assignedUserId,
+                EspacioTrabajoId = espacioTrabajoId,
+                ProyectoId = proyectoId,
+                RecursoId = recursoId,
                 RangoLexicografico = "a",
                 FechaCreacion = DateTime.UtcNow
             };
@@ -156,7 +162,7 @@ namespace MateCode.Infrastructure.Services
             return await _context.SaveChangesAsync() > 0;
         }
 
-        public async Task<bool> UpdateTaskAsync(Guid taskId, string titulo, string descripcion, string estado, DateTime? planificada, Guid? assignedUserId)
+        public async Task<bool> UpdateTaskAsync(Guid taskId, string titulo, string descripcion, string estado, DateTime? planificada, Guid? assignedUserId, Guid? espacioTrabajoId = null, Guid? proyectoId = null, Guid? recursoId = null)
         {
             var task = await _context.TareasOperativas.FindAsync(taskId);
             if (task == null) return false;
@@ -166,6 +172,9 @@ namespace MateCode.Infrastructure.Services
             task.Estado = estado;
             task.FechaPlanificada = planificada;
             task.UsuarioAsignadoId = assignedUserId;
+            task.EspacioTrabajoId = espacioTrabajoId;
+            task.ProyectoId = proyectoId;
+            task.RecursoId = recursoId;
 
             return await _context.SaveChangesAsync() > 0;
         }
