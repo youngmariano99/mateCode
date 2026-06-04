@@ -6,7 +6,7 @@ import Swal from 'sweetalert2';
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5241';
 
 export const PublicLeadForm = () => {
-    const { tenantId, projectId } = useParams();
+    const { tenantId, projectId, agencyId } = useParams();
     const [formConfig, setFormConfig] = useState<any>(null);
     const [responses, setResponses] = useState<Record<string, any>>({});
     const [loading, setLoading] = useState(true);
@@ -18,6 +18,8 @@ export const PublicLeadForm = () => {
             try {
                 const url = projectId 
                     ? `${API_BASE}/api/Public/project-form/${projectId}`
+                    : agencyId
+                    ? `${API_BASE}/api/Public/agency-form/${agencyId}?tipo=lead`
                     : `${API_BASE}/api/Public/form/${tenantId}?tipo=lead`;
                     
                 const res = await fetch(url);
@@ -29,7 +31,7 @@ export const PublicLeadForm = () => {
             }
         };
         loadForm();
-    }, [tenantId, projectId]);
+    }, [tenantId, projectId, agencyId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,6 +39,8 @@ export const PublicLeadForm = () => {
         try {
             const url = projectId
                 ? `${API_BASE}/api/Public/project-lead/${projectId}`
+                : agencyId
+                ? `${API_BASE}/api/Public/agency-lead/${agencyId}`
                 : `${API_BASE}/api/Public/lead/${tenantId}`;
 
             const res = await fetch(url, {
@@ -48,7 +52,7 @@ export const PublicLeadForm = () => {
                 setSubmitted(true);
                 Swal.fire({
                     title: '¡Recibido!',
-                    text: 'Tus requerimientos han sido guardados en el ADN del proyecto.',
+                    text: 'Tus requerimientos han sido guardados.',
                     icon: 'success',
                     background: '#18181b',
                     color: '#fff'
@@ -114,26 +118,30 @@ export const PublicLeadForm = () => {
                         </div>
                     </div>
 
-                    {formConfig?.configuracionJson?.map((q: any, idx: number) => (
-                        <div key={idx}>
-                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2">{q.pregunta}</label>
-                            {q.tipo_input === 'textarea' ? (
-                                <textarea 
-                                    required
-                                    rows={4}
-                                    onChange={(e) => setResponses({...responses, [q.etiqueta_semantica]: e.target.value})}
-                                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
-                                />
-                            ) : (
-                                <input 
-                                    required
-                                    type={q.tipo_input}
-                                    onChange={(e) => setResponses({...responses, [q.etiqueta_semantica]: e.target.value})}
-                                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
-                                />
-                            )}
-                        </div>
-                    ))}
+                    {formConfig?.configuracionJson?.map((q: any, idx: number) => {
+                        const inputType = q.tipoInput || q.tipo_input || 'text';
+                        const semanticTag = q.etiquetaSemantica || q.etiqueta_semantica;
+                        return (
+                            <div key={idx}>
+                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2">{q.pregunta}</label>
+                                {inputType === 'textarea' ? (
+                                    <textarea 
+                                        required
+                                        rows={4}
+                                        onChange={(e) => setResponses({...responses, [semanticTag]: e.target.value})}
+                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
+                                    />
+                                ) : (
+                                    <input 
+                                        required
+                                        type={inputType}
+                                        onChange={(e) => setResponses({...responses, [semanticTag]: e.target.value})}
+                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
+                                    />
+                                )}
+                            </div>
+                        );
+                    })}
 
                     <button 
                         type="submit"

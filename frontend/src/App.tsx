@@ -109,6 +109,7 @@ export default function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/form/:template_id" element={<FormInjectableView />} />
                 <Route path="/public-form/:tenantId" element={<PublicLeadForm />} />
+                <Route path="/public-form/agency/:agencyId" element={<PublicLeadForm />} />
                 <Route path="/public/lead/:projectId" element={<PublicLeadForm />} />
                 <Route path="/client/:magic_token" element={<ClientPortal />} />
               </Route>

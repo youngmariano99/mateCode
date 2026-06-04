@@ -7,12 +7,23 @@ namespace MateCode.Core.Entities
     public class Cliente
     {
         public Guid Id { get; set; }
-        public Guid EspacioTrabajoId { get; set; }
+        public Guid? AgenciaId { get; set; }
+        public Guid? EspacioTrabajoId { get; set; }
         public string Nombre { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;
         public string TokenEnlaceMagico { get; set; } = string.Empty;
         public JsonElement ContextoJson { get; set; }
+
+        // Campos unificados de CRM / Leads
+        public string Categoria { get; set; } = "Lead";
+        public string Calificacion { get; set; } = "Calificado";
+        public string? OrigenContacto { get; set; }
+        public string? MotivoContacto { get; set; }
+        public string? Descripcion { get; set; }
+        public JsonElement Notas { get; set; }
+        public string RangoLexicografico { get; set; } = "a";
+        public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
     }
 
     public class Proyecto

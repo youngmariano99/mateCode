@@ -11,6 +11,7 @@ namespace MateCode.Application.Services
         // --- AGENCIA Y MIEMBROS ---
         Task<IEnumerable<Agencia>> GetAgenciesByUserAsync(Guid userId);
         Task<Agencia> CreateAgencyAsync(string name, Guid ownerId);
+        Task<bool> UpdateAgencyProfileAsync(Guid agencyId, string name, JsonElement redesSociales, JsonElement branding, string mision, string vision, JsonElement datosMarketing);
         Task<IEnumerable<object>> GetAgencyMembersAsync(Guid agencyId);
         Task<bool> AddMemberToAgencyAsync(Guid agencyId, Guid userId, string role, JsonElement permissions);
         Task<bool> InviteMemberToAgencyAsync(Guid agencyId, string email, string role = "Colaborador", JsonElement? permissions = null);
@@ -19,10 +20,11 @@ namespace MateCode.Application.Services
         Task<bool> AcceptInvitationAsync(Guid userId, Guid agencyId);
         Task<bool> RejectInvitationAsync(Guid userId, Guid agencyId);
         Task<IEnumerable<EspacioTrabajo>> GetWorkspacesByAgencyAsync(Guid agencyId);
+        Task<IEnumerable<object>> GetWorkspacesWithProjectsAsync(Guid agencyId);
 
         // --- CRM CLIENTES Y LEADS ---
-        Task<IEnumerable<LeadAgencia>> GetLeadsAsync(Guid agencyId);
-        Task<LeadAgencia> CreateLeadAsync(Guid agencyId, string nombre, string email, string category, string qualification, string origen, string motivo, string descripcion);
+        Task<IEnumerable<Cliente>> GetLeadsAsync(Guid agencyId);
+        Task<Cliente> CreateLeadAsync(Guid agencyId, string nombre, string email, string category, string qualification, string origen, string motivo, string descripcion);
         Task<bool> UpdateLeadStatusAsync(Guid leadId, string category, string position);
         Task<bool> UpdateLeadAsync(Guid leadId, string nombre, string email, string category, string qualification, string origen, string motivo, string descripcion, JsonElement notas);
         Task<bool> DeleteLeadAsync(Guid leadId);

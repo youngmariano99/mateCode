@@ -184,7 +184,7 @@ namespace MateCode.Application.Services
 
         public async Task<string> GenerarPromptBrainstormingAsync(string idea, Guid formularioId, Guid tenantId, Guid userId)
         {
-            var form = await _formLibrary.GetFormByIdAsync(formularioId, tenantId, userId);
+            var form = await _formLibrary.GetFormByIdAsync(formularioId, tenantId, null, userId);
             if (form == null) return "Error: Formulario no encontrado.";
 
             using var doc = JsonDocument.Parse(form.ConfiguracionJson.GetRawText());

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Rocket, Briefcase, FileText } from 'lucide-react';
+import { X, Save, Rocket, Briefcase, FileText, Users } from 'lucide-react';
 import { api } from '../../lib/apiClient';
+import { useCrmStore } from '../../store/useCrmStore';
 import Swal from 'sweetalert2';
 
 interface ProjectModalProps {
@@ -19,15 +20,25 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
 }) => {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [clienteId, setClienteId] = useState('');
   const [loading, setLoading] = useState(false);
+  const { leads, fetchLeads } = useCrmStore();
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchLeads();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (projectToEdit) {
       setNombre(projectToEdit.nombre);
       setDescripcion(projectToEdit.descripcion || '');
+      setClienteId(projectToEdit.cliente_id || '');
     } else {
       setNombre('');
       setDescripcion('');
+      setClienteId('');
     }
   }, [projectToEdit, isOpen]);
 
@@ -38,7 +49,11 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     setLoading(true);
     try {
       if (projectToEdit) {
-        await api.put(`/Project/${projectToEdit.id}`, { Nombre: nombre, Descripcion: descripcion });
+        await api.put(`/Project/${projectToEdit.id}`, { 
+          Nombre: nombre, 
+          Descripcion: descripcion,
+          ClienteId: clienteId || null
+        });
         Swal.fire({
           toast: true,
           position: 'top-end',
@@ -50,7 +65,11 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           color: '#fff'
         });
       } else {
-        await api.post('/Project', { Nombre: nombre, Descripcion: descripcion });
+        await api.post('/Project', { 
+          Nombre: nombre, 
+          Descripcion: descripcion,
+          ClienteId: clienteId || null
+        });
         Swal.fire({
           toast: true,
           position: 'top-end',
@@ -126,6 +145,33 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                       placeholder="Ej: Quantum ERP v2.0"
                       className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white text-sm focus:outline-none focus:border-emerald-500/50 transition-all placeholder:text-zinc-700"
                     />
+                  </div>
+                </div>
+
+                {/* Selector de Cliente de la Agencia */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] ml-2">Cliente / Lead</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-5 flex items-center text-zinc-500 pointer-events-none">
+                      <Users size={18} />
+                    </div>
+                    <select
+                      value={clienteId}
+                      onChange={(e) => setClienteId(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-10 text-white text-sm focus:outline-none focus:border-emerald-500/50 transition-all cursor-pointer appearance-none bg-zinc-950"
+                    >
+                      <option value="" className="bg-zinc-950 text-zinc-500">-- Vincular Cliente (Opcional) --</option>
+                      {leads.filter(l => l.categoria !== 'Rechazado').map((c) => (
+                        <option key={c.id} value={c.id} className="bg-zinc-950 text-white">
+                          {c.nombre} ({c.email || 'Sin Email'})
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none text-zinc-500">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
 

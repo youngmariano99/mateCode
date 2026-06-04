@@ -32,6 +32,50 @@ namespace MateCode.API.Controllers
             return Ok(form);
         }
 
+        [HttpGet("agency-form/{agencyId:guid}")]
+        public async Task<IActionResult> GetAgencyForm(Guid agencyId, [FromQuery] string tipo = "lead")
+        {
+            var form = await _context.FormulariosPlantilla
+                .Where(f => f.AgenciaId == agencyId && f.Tipo == tipo)
+                .OrderByDescending(f => f.FechaCreacion)
+                .FirstOrDefaultAsync();
+
+            if (form == null)
+            {
+                form = await _context.FormulariosPlantilla
+                    .Where(f => f.Tipo == tipo && f.AgenciaId == null && f.TenantId == null)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (form == null) return NotFound();
+            return Ok(form);
+        }
+
+        [HttpPost("agency-lead/{agencyId:guid}")]
+        public async Task<IActionResult> SubmitAgencyLead(Guid agencyId, [FromBody] JsonElement responses)
+        {
+            var cliente = new Cliente
+            {
+                Id = Guid.NewGuid(),
+                AgenciaId = agencyId,
+                EspacioTrabajoId = null,
+                Nombre = responses.TryGetProperty("nombre", out var n) ? n.GetString() : "Lead Público de Agencia",
+                Email = responses.TryGetProperty("email", out var e) ? e.GetString() : "",
+                Estado = "potencial",
+                Categoria = "Lead",
+                Calificacion = "Calificado",
+                RangoLexicografico = "a",
+                FechaCreacion = DateTime.UtcNow,
+                TokenEnlaceMagico = Guid.NewGuid().ToString("N"),
+                ContextoJson = JsonDocument.Parse(JsonSerializer.Serialize(responses)).RootElement
+            };
+
+            _context.Clientes.Add(cliente);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true, clienteId = cliente.Id });
+        }
+
         [HttpGet("project-form/{projectId:guid}")]
         public async Task<IActionResult> GetProjectForm(Guid projectId)
         {

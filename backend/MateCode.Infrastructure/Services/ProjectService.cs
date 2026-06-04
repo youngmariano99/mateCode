@@ -55,12 +55,13 @@ namespace MateCode.Infrastructure.Services
                 .FirstOrDefaultAsync(p => p.Id == projectId);
         }
 
-        public async Task<Proyecto> CreateProjectAsync(Guid tenantId, string name, string description = "", Guid? plantillaStackId = null)
+        public async Task<Proyecto> CreateProjectAsync(Guid tenantId, string name, string description = "", Guid? plantillaStackId = null, Guid? clienteId = null)
         {
             var proyecto = new Proyecto
             {
                 Id = Guid.NewGuid(),
                 TenantId = tenantId,
+                ClienteId = clienteId,
                 Nombre = name,
                 Descripcion = description,
                 FaseActual = "Fase 0 - Factibilidad",
@@ -69,6 +70,15 @@ namespace MateCode.Infrastructure.Services
             };
 
             await _context.Set<Proyecto>().AddAsync(proyecto);
+
+            if (clienteId.HasValue)
+            {
+                var client = await _context.Clientes.FindAsync(clienteId.Value);
+                if (client != null && !client.EspacioTrabajoId.HasValue)
+                {
+                    client.EspacioTrabajoId = tenantId;
+                }
+            }
             
             // Si viene una plantilla, clonamos el stack
             if (plantillaStackId.HasValue)
@@ -102,13 +112,23 @@ namespace MateCode.Infrastructure.Services
             return proyecto;
         }
 
-        public async Task UpdateProjectAsync(Guid projectId, string name, string description)
+        public async Task UpdateProjectAsync(Guid projectId, string name, string description, Guid? clienteId = null)
         {
             var project = await _context.Proyectos.FindAsync(projectId);
             if (project != null)
             {
                 project.Nombre = name;
                 project.Descripcion = description;
+                if (clienteId.HasValue)
+                {
+                    project.ClienteId = clienteId;
+
+                    var client = await _context.Clientes.FindAsync(clienteId.Value);
+                    if (client != null && !client.EspacioTrabajoId.HasValue)
+                    {
+                        client.EspacioTrabajoId = project.TenantId;
+                    }
+                }
                 await _context.SaveChangesAsync();
             }
         }

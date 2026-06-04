@@ -7,6 +7,11 @@ export interface Agency {
   propietario_id: string;
   tipo: 'personal' | 'agencia';
   fecha_creacion: string;
+  redes_sociales?: any;
+  branding?: any;
+  mision?: string;
+  vision?: string;
+  datos_marketing?: any;
 }
 
 export interface Member {
@@ -41,7 +46,9 @@ interface AgencyState {
   inviteMember: (id: string, email: string, rol?: string, permisos?: any) => Promise<boolean>;
   updateMemberPermissions: (id: string, userId: string, rol: string, permisos: any) => Promise<boolean>;
   getAgencyWorkspaces: (id: string) => Promise<any[]>;
+  getAgencyWorkspacesWithProjects: (id: string) => Promise<any[]>;
   createWorkspaceInAgency: (id: string, nombre: string) => Promise<any>;
+  updateAgencyProfile: (id: string, nombre: string, redesSociales: any, branding: any, mision: string, vision: string, datosMarketing: any) => Promise<boolean>;
 }
 
 export const useAgencyStore = create<AgencyState>((set, get) => ({
@@ -181,6 +188,33 @@ export const useAgencyStore = create<AgencyState>((set, get) => ({
     } catch (err) {
       console.error(err);
       return [];
+    }
+  },
+
+  getAgencyWorkspacesWithProjects: async (id) => {
+    try {
+      return await api.get(`/Agency/${id}/workspaces-with-projects`);
+    } catch (err) {
+      console.error(err);
+      return [];
+    }
+  },
+
+  updateAgencyProfile: async (id, nombre, redesSociales, branding, mision, vision, datosMarketing) => {
+    try {
+      await api.put(`/Agency/${id}/profile`, {
+        nombre,
+        redes_sociales: redesSociales,
+        branding,
+        mision,
+        vision,
+        datos_marketing: datosMarketing
+      });
+      await get().fetchAgencies();
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
     }
   },
 

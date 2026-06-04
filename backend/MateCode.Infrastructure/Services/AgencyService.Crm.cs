@@ -10,22 +10,24 @@ namespace MateCode.Infrastructure.Services
 {
     public partial class AgencyService
     {
-        public async Task<IEnumerable<LeadAgencia>> GetLeadsAsync(Guid agencyId)
+        public async Task<IEnumerable<Cliente>> GetLeadsAsync(Guid agencyId)
         {
-            return await _context.LeadsAgencia
+            return await _context.Clientes
                 .Where(l => l.AgenciaId == agencyId)
                 .OrderBy(l => l.RangoLexicografico)
                 .ToListAsync();
         }
 
-        public async Task<LeadAgencia> CreateLeadAsync(Guid agencyId, string nombre, string email, string category, string qualification, string origen, string motivo, string descripcion)
+        public async Task<Cliente> CreateLeadAsync(Guid agencyId, string nombre, string email, string category, string qualification, string origen, string motivo, string descripcion)
         {
-            var lead = new LeadAgencia
+            var lead = new Cliente
             {
                 Id = Guid.NewGuid(),
                 AgenciaId = agencyId,
+                EspacioTrabajoId = null,
                 Nombre = nombre,
                 Email = email,
+                Estado = "potencial",
                 Categoria = category,
                 Calificacion = qualification,
                 OrigenContacto = origen,
@@ -33,28 +35,35 @@ namespace MateCode.Infrastructure.Services
                 Descripcion = descripcion,
                 Notas = JsonSerializer.Deserialize<JsonElement>("[]"),
                 RangoLexicografico = "a",
-                FechaCreacion = DateTime.UtcNow
+                FechaCreacion = DateTime.UtcNow,
+                TokenEnlaceMagico = Guid.NewGuid().ToString("N"),
+                ContextoJson = JsonSerializer.Deserialize<JsonElement>("{}")
             };
 
-            await _context.LeadsAgencia.AddAsync(lead);
+            await _context.Clientes.AddAsync(lead);
             await _context.SaveChangesAsync();
             return lead;
         }
 
         public async Task<bool> UpdateLeadStatusAsync(Guid leadId, string category, string position)
         {
-            var lead = await _context.LeadsAgencia.FindAsync(leadId);
+            var lead = await _context.Clientes.FindAsync(leadId);
             if (lead == null) return false;
 
             lead.Categoria = category;
             lead.RangoLexicografico = position;
+
+            if (category.Equals("Aceptado", StringComparison.OrdinalIgnoreCase))
+            {
+                lead.Estado = "aprobado";
+            }
 
             return await _context.SaveChangesAsync() > 0;
         }
 
         public async Task<bool> UpdateLeadAsync(Guid leadId, string nombre, string email, string category, string qualification, string origen, string motivo, string descripcion, JsonElement notas)
         {
-            var lead = await _context.LeadsAgencia.FindAsync(leadId);
+            var lead = await _context.Clientes.FindAsync(leadId);
             if (lead == null) return false;
 
             lead.Nombre = nombre;
@@ -66,15 +75,20 @@ namespace MateCode.Infrastructure.Services
             lead.Descripcion = descripcion;
             lead.Notas = notas;
 
+            if (category.Equals("Aceptado", StringComparison.OrdinalIgnoreCase))
+            {
+                lead.Estado = "aprobado";
+            }
+
             return await _context.SaveChangesAsync() > 0;
         }
 
         public async Task<bool> DeleteLeadAsync(Guid leadId)
         {
-            var lead = await _context.LeadsAgencia.FindAsync(leadId);
+            var lead = await _context.Clientes.FindAsync(leadId);
             if (lead == null) return false;
 
-            _context.LeadsAgencia.Remove(lead);
+            _context.Clientes.Remove(lead);
             return await _context.SaveChangesAsync() > 0;
         }
     }

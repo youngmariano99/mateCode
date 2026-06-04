@@ -210,6 +210,60 @@ using (var scope = app.Services.CreateScope())
                 IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'leads_agencia' AND column_name = 'orden_posicion') THEN
                     ALTER TABLE crm.leads_agencia RENAME COLUMN orden_posicion TO rango_lexicografico;
                 END IF;
+
+                -- Columnas para Perfil, Branding e Identidad de Agencia (Ciclo 1)
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'redes_sociales') THEN
+                    ALTER TABLE nucleo.agencias ADD COLUMN redes_sociales JSONB DEFAULT '{}';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'branding') THEN
+                    ALTER TABLE nucleo.agencias ADD COLUMN branding JSONB DEFAULT '{}';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'mision') THEN
+                    ALTER TABLE nucleo.agencias ADD COLUMN mision TEXT DEFAULT '';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'vision') THEN
+                    ALTER TABLE nucleo.agencias ADD COLUMN vision TEXT DEFAULT '';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'datos_marketing') THEN
+                    ALTER TABLE nucleo.agencias ADD COLUMN datos_marketing JSONB DEFAULT '{}';
+                END IF;
+
+                -- Columnas y restricciones para Clientes y CRM centralizado (Ciclo 2)
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'agencia_id') THEN
+                    ALTER TABLE crm.clientes ADD COLUMN agencia_id UUID;
+                END IF;
+                ALTER TABLE crm.clientes ALTER COLUMN espacio_trabajo_id DROP NOT NULL;
+
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'categoria') THEN
+                    ALTER TABLE crm.clientes ADD COLUMN categoria VARCHAR(100) DEFAULT 'Lead';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'calificacion') THEN
+                    ALTER TABLE crm.clientes ADD COLUMN calificacion VARCHAR(50) DEFAULT 'Calificado';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'origen_contacto') THEN
+                    ALTER TABLE crm.clientes ADD COLUMN origen_contacto TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'motivo_contacto') THEN
+                    ALTER TABLE crm.clientes ADD COLUMN motivo_contacto TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'descripcion') THEN
+                    ALTER TABLE crm.clientes ADD COLUMN descripcion TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'notas') THEN
+                    ALTER TABLE crm.clientes ADD COLUMN notas JSONB DEFAULT '[]';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'rango_lexicografico') THEN
+                    ALTER TABLE crm.clientes ADD COLUMN rango_lexicografico VARCHAR(100) DEFAULT 'a';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'fecha_creacion') THEN
+                    ALTER TABLE crm.clientes ADD COLUMN fecha_creacion TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+                END IF;
+
+                -- Columnas y restricciones para Formularios centralizados (Ciclo 2)
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'formularios_plantilla' AND column_name = 'agencia_id') THEN
+                    ALTER TABLE crm.formularios_plantilla ADD COLUMN agencia_id UUID;
+                END IF;
+                ALTER TABLE crm.formularios_plantilla ALTER COLUMN tenant_id DROP NOT NULL;
             END $$;";
         context.Database.ExecuteSqlRaw(sql);
         Console.WriteLine("✅ Infraestructura de Bóveda y Stacks verificada exitosamente.");

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MateCode.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9df607f495a722b9adc5a9bbdb5de355710efd07")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0cdb1b924902a3a5d5d563fb27c7cd8ba4776b12")]
 [assembly: System.Reflection.AssemblyProductAttribute("MateCode.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MateCode.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

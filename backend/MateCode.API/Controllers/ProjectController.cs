@@ -58,26 +58,36 @@ namespace MateCode.API.Controllers
             var tenantHeader = Request.Headers["X-Tenant-Id"].ToString();
             if (!Guid.TryParse(tenantHeader, out Guid tenantId)) return BadRequest("Invalid Tenant");
 
-            // Leemos con PascalCase (backend style)
-            var name = body.TryGetProperty("Nombre", out var nProp) ? nProp.GetString() : "Nuevo Proyecto";
-            var description = body.TryGetProperty("Descripcion", out var dProp) ? dProp.GetString() : "";
+            // Leemos con PascalCase (backend style) o camelCase
+            var name = body.TryGetProperty("Nombre", out var nProp) || body.TryGetProperty("nombre", out nProp) ? nProp.GetString() : "Nuevo Proyecto";
+            var description = body.TryGetProperty("Descripcion", out var dProp) || body.TryGetProperty("descripcion", out dProp) ? dProp.GetString() : "";
             
             Guid? templateId = null;
-            if (body.TryGetProperty("PlantillaStackId", out var tId) && tId.ValueKind != JsonValueKind.Null) {
+            if ((body.TryGetProperty("PlantillaStackId", out var tId) || body.TryGetProperty("plantillaStackId", out tId)) && tId.ValueKind != JsonValueKind.Null) {
                 if (Guid.TryParse(tId.GetString(), out var gId)) templateId = gId;
             }
 
-            var project = await _projectService.CreateProjectAsync(tenantId, name ?? "Proyecto", description ?? "", templateId);
+            Guid? clienteId = null;
+            if ((body.TryGetProperty("ClienteId", out var cId) || body.TryGetProperty("clienteId", out cId)) && cId.ValueKind != JsonValueKind.Null) {
+                if (Guid.TryParse(cId.GetString(), out var gId)) clienteId = gId;
+            }
+
+            var project = await _projectService.CreateProjectAsync(tenantId, name ?? "Proyecto", description ?? "", templateId, clienteId);
             return Ok(project);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] JsonElement body)
         {
-            var name = body.TryGetProperty("Nombre", out var nProp) ? nProp.GetString() : "Proyecto";
-            var description = body.TryGetProperty("Descripcion", out var dProp) ? dProp.GetString() : "";
+            var name = body.TryGetProperty("Nombre", out var nProp) || body.TryGetProperty("nombre", out nProp) ? nProp.GetString() : "Proyecto";
+            var description = body.TryGetProperty("Descripcion", out var dProp) || body.TryGetProperty("descripcion", out dProp) ? dProp.GetString() : "";
 
-            await _projectService.UpdateProjectAsync(id, name ?? "Proyecto", description ?? "");
+            Guid? clienteId = null;
+            if ((body.TryGetProperty("ClienteId", out var cId) || body.TryGetProperty("clienteId", out cId)) && cId.ValueKind != JsonValueKind.Null) {
+                if (Guid.TryParse(cId.GetString(), out var gId)) clienteId = gId;
+            }
+
+            await _projectService.UpdateProjectAsync(id, name ?? "Proyecto", description ?? "", clienteId);
             return Ok(new { message = "Proyecto actualizado con éxito" });
         }
 

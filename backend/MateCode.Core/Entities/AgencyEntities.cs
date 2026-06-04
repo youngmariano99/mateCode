@@ -12,6 +12,13 @@ namespace MateCode.Core.Entities
         public string LlaveCifrado { get; set; } = string.Empty;
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
+        // Nuevos campos de Perfil y Branding (Ciclo 1)
+        public JsonElement RedesSociales { get; set; }
+        public JsonElement Branding { get; set; }
+        public string Mision { get; set; } = string.Empty;
+        public string Vision { get; set; } = string.Empty;
+        public JsonElement DatosMarketing { get; set; }
+
         // Relaciones
         public Usuario? Propietario { get; set; }
     }

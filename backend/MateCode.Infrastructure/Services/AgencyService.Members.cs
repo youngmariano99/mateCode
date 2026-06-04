@@ -33,6 +33,7 @@ namespace MateCode.Infrastructure.Services
             var rawAgencyKey = _encryptionUtility.GenerateRandomKey();
             var encryptedAgencyKey = _encryptionUtility.EncryptAgencyKey(rawAgencyKey);
 
+            var emptyJson = JsonSerializer.Deserialize<JsonElement>("{}");
             var agency = new Agencia
             {
                 Id = Guid.NewGuid(),
@@ -40,7 +41,12 @@ namespace MateCode.Infrastructure.Services
                 PropietarioId = ownerId,
                 Tipo = "agencia",
                 LlaveCifrado = encryptedAgencyKey,
-                FechaCreacion = DateTime.UtcNow
+                FechaCreacion = DateTime.UtcNow,
+                RedesSociales = emptyJson,
+                Branding = emptyJson,
+                Mision = "",
+                Vision = "",
+                DatosMarketing = emptyJson
             };
 
             await _context.Agencias.AddAsync(agency);
@@ -78,6 +84,130 @@ namespace MateCode.Infrastructure.Services
                            }).ToListAsync();
         }
 
+        private async Task SyncWorkspaceAndProjectMembersAsync(Guid agencyId, Guid userId, string invitationState, string role, JsonElement permissions)
+        {
+            string roleTag = "";
+            var workspacesDict = new Dictionary<Guid, bool>();
+            var projectsDict = new Dictionary<Guid, bool>();
+
+            if (permissions.ValueKind == JsonValueKind.Object)
+            {
+                if (permissions.TryGetProperty("roleTag", out var rtProp) && rtProp.ValueKind == JsonValueKind.String)
+                {
+                    roleTag = rtProp.GetString() ?? "";
+                }
+                
+                if (permissions.TryGetProperty("workspaces", out var wsProp) && wsProp.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var prop in wsProp.EnumerateObject())
+                    {
+                        if (Guid.TryParse(prop.Name, out var wsId))
+                        {
+                            workspacesDict[wsId] = prop.Value.ValueKind == JsonValueKind.True;
+                        }
+                    }
+                }
+
+                if (permissions.TryGetProperty("projects", out var projProp) && projProp.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var prop in projProp.EnumerateObject())
+                    {
+                        if (Guid.TryParse(prop.Name, out var projId))
+                        {
+                            projectsDict[projId] = prop.Value.ValueKind == JsonValueKind.True;
+                        }
+                    }
+                }
+            }
+
+            var agencyWorkspaces = await _context.EspaciosTrabajo
+                .Where(et => et.AgenciaId == agencyId)
+                .ToListAsync();
+
+            foreach (var ws in agencyWorkspaces)
+            {
+                bool hasWorkspaceAccess = workspacesDict.TryGetValue(ws.Id, out var wsAccess) && wsAccess;
+
+                var existingWsMember = await _context.MiembrosEspacio
+                    .FirstOrDefaultAsync(me => me.EspacioTrabajoId == ws.Id && me.UsuarioId == userId);
+
+                if (hasWorkspaceAccess)
+                {
+                    if (existingWsMember == null)
+                    {
+                        var newWsMember = new MiembroEspacio
+                        {
+                            EspacioTrabajoId = ws.Id,
+                            UsuarioId = userId,
+                            EtiquetaRol = roleTag,
+                            MatrizPermisos = JsonDocument.Parse("{}").RootElement,
+                            EstadoInvitacion = invitationState
+                        };
+                        await _context.MiembrosEspacio.AddAsync(newWsMember);
+                    }
+                    else
+                    {
+                        existingWsMember.EtiquetaRol = roleTag;
+                        existingWsMember.EstadoInvitacion = invitationState;
+                    }
+
+                    var wsProjects = await _context.Proyectos
+                        .Where(p => p.TenantId == ws.Id)
+                        .ToListAsync();
+
+                    foreach (var p in wsProjects)
+                    {
+                        bool hasProjAccess = projectsDict.TryGetValue(p.Id, out var projAccess) && projAccess;
+
+                        var existingProjMember = await _context.MiembrosProyecto
+                            .FirstOrDefaultAsync(pm => pm.ProyectoId == p.Id && pm.UsuarioId == userId);
+
+                        if (hasProjAccess)
+                        {
+                            if (existingProjMember == null)
+                            {
+                                var newProjMember = new ProyectoMiembro
+                                {
+                                    ProyectoId = p.Id,
+                                    UsuarioId = userId,
+                                    FechaAsignacion = DateTime.UtcNow
+                                };
+                                await _context.MiembrosProyecto.AddAsync(newProjMember);
+                            }
+                        }
+                        else
+                        {
+                            if (existingProjMember != null)
+                            {
+                                _context.MiembrosProyecto.Remove(existingProjMember);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (existingWsMember != null)
+                    {
+                        _context.MiembrosEspacio.Remove(existingWsMember);
+                    }
+
+                    var wsProjects = await _context.Proyectos
+                        .Where(p => p.TenantId == ws.Id)
+                        .ToListAsync();
+
+                    foreach (var p in wsProjects)
+                    {
+                        var existingProjMember = await _context.MiembrosProyecto
+                            .FirstOrDefaultAsync(pm => pm.ProyectoId == p.Id && pm.UsuarioId == userId);
+                        if (existingProjMember != null)
+                        {
+                            _context.MiembrosProyecto.Remove(existingProjMember);
+                        }
+                    }
+                }
+            }
+        }
+
         public async Task<bool> AddMemberToAgencyAsync(Guid agencyId, Guid userId, string role, JsonElement permissions)
         {
             var exists = await _context.MiembrosAgencia.AnyAsync(m => m.AgenciaId == agencyId && m.UsuarioId == userId);
@@ -93,6 +223,7 @@ namespace MateCode.Infrastructure.Services
             };
 
             await _context.MiembrosAgencia.AddAsync(newMember);
+            await SyncWorkspaceAndProjectMembersAsync(agencyId, userId, "Pendiente", role, permissions);
             return await _context.SaveChangesAsync() > 0;
         }
 
@@ -114,6 +245,8 @@ namespace MateCode.Infrastructure.Services
 
             member.Rol = role;
             member.PermisosJson = permissions;
+
+            await SyncWorkspaceAndProjectMembersAsync(agencyId, userId, member.EstadoInvitacion, role, permissions);
 
             return await _context.SaveChangesAsync() > 0;
         }
@@ -139,6 +272,9 @@ namespace MateCode.Infrastructure.Services
             if (member == null) return false;
 
             member.EstadoInvitacion = "Aceptada";
+
+            await SyncWorkspaceAndProjectMembersAsync(agencyId, userId, "Aceptada", member.Rol, member.PermisosJson);
+
             return await _context.SaveChangesAsync() > 0;
         }
 
@@ -150,6 +286,30 @@ namespace MateCode.Infrastructure.Services
             if (member == null) return false;
 
             _context.MiembrosAgencia.Remove(member);
+
+            // Limpiar en cascada
+            var workspaces = await _context.EspaciosTrabajo
+                .Where(et => et.AgenciaId == agencyId)
+                .Select(et => et.Id)
+                .ToListAsync();
+
+            var workspaceMemberships = await _context.MiembrosEspacio
+                .Where(me => me.UsuarioId == userId && workspaces.Contains(me.EspacioTrabajoId))
+                .ToListAsync();
+
+            _context.MiembrosEspacio.RemoveRange(workspaceMemberships);
+
+            var projectIds = await _context.Proyectos
+                .Where(p => workspaces.Contains(p.TenantId))
+                .Select(p => p.Id)
+                .ToListAsync();
+
+            var projectMemberships = await _context.MiembrosProyecto
+                .Where(pm => pm.UsuarioId == userId && projectIds.Contains(pm.ProyectoId))
+                .ToListAsync();
+
+            _context.MiembrosProyecto.RemoveRange(projectMemberships);
+
             return await _context.SaveChangesAsync() > 0;
         }
 
@@ -158,6 +318,46 @@ namespace MateCode.Infrastructure.Services
             return await _context.EspaciosTrabajo
                 .Where(et => et.AgenciaId == agencyId)
                 .ToListAsync();
+        }
+
+        public async Task<IEnumerable<object>> GetWorkspacesWithProjectsAsync(Guid agencyId)
+        {
+            var workspaces = await _context.EspaciosTrabajo
+                .Where(et => et.AgenciaId == agencyId)
+                .ToListAsync();
+
+            var result = new List<object>();
+            foreach (var ws in workspaces)
+            {
+                var projects = await _context.Proyectos
+                    .Where(p => p.TenantId == ws.Id)
+                    .Select(p => new { p.Id, p.Nombre })
+                    .ToListAsync();
+
+                result.Add(new
+                {
+                    ws.Id,
+                    ws.Nombre,
+                    Projects = projects
+                });
+            }
+
+            return result;
+        }
+
+        public async Task<bool> UpdateAgencyProfileAsync(Guid agencyId, string name, JsonElement redesSociales, JsonElement branding, string mision, string vision, JsonElement datosMarketing)
+        {
+            var agency = await _context.Agencias.FirstOrDefaultAsync(a => a.Id == agencyId);
+            if (agency == null) return false;
+
+            agency.Nombre = name;
+            agency.RedesSociales = redesSociales;
+            agency.Branding = branding;
+            agency.Mision = mision;
+            agency.Vision = vision;
+            agency.DatosMarketing = datosMarketing;
+
+            return await _context.SaveChangesAsync() > 0;
         }
     }
 }

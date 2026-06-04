@@ -91,12 +91,23 @@ namespace MateCode.Infrastructure.Persistence
             modelBuilder.Entity<Cliente>(e => {
                 e.ToTable("clientes", "crm");
                 e.Property(c => c.Id).HasColumnName("id");
-                e.Property(c => c.EspacioTrabajoId).HasColumnName("espacio_trabajo_id");
+                e.Property(c => c.AgenciaId).HasColumnName("agencia_id");
+                e.Property(c => c.EspacioTrabajoId).HasColumnName("espacio_trabajo_id").IsRequired(false);
                 e.Property(c => c.Nombre).HasColumnName("nombre");
                 e.Property(c => c.Email).HasColumnName("email");
                 e.Property(c => c.Estado).HasColumnName("estado");
                 e.Property(c => c.TokenEnlaceMagico).HasColumnName("token_enlace_magico");
                 e.Property(c => c.ContextoJson).HasColumnName("contexto_json").HasColumnType("jsonb");
+                
+                // Mapeo de campos de CRM unificados
+                e.Property(c => c.Categoria).HasColumnName("categoria");
+                e.Property(c => c.Calificacion).HasColumnName("calificacion");
+                e.Property(c => c.OrigenContacto).HasColumnName("origen_contacto");
+                e.Property(c => c.MotivoContacto).HasColumnName("motivo_contacto");
+                e.Property(c => c.Descripcion).HasColumnName("descripcion");
+                e.Property(c => c.Notas).HasColumnName("notas").HasColumnType("jsonb");
+                e.Property(c => c.RangoLexicografico).HasColumnName("rango_lexicografico");
+                e.Property(c => c.FechaCreacion).HasColumnName("fecha_creacion");
             });
 
             modelBuilder.Entity<Proyecto>(e => {
@@ -298,7 +309,8 @@ namespace MateCode.Infrastructure.Persistence
             modelBuilder.Entity<FormularioPlantilla>(e => {
                 e.ToTable("formularios_plantilla", "crm");
                 e.Property(f => f.Id).HasColumnName("id");
-                e.Property(f => f.TenantId).HasColumnName("tenant_id");
+                e.Property(f => f.AgenciaId).HasColumnName("agencia_id");
+                e.Property(f => f.TenantId).HasColumnName("tenant_id").IsRequired(false);
                 e.Property(f => f.Nombre).HasColumnName("nombre");
                 e.Property(f => f.Tipo).HasColumnName("tipo");
                 e.Property(f => f.ConfiguracionJson).HasColumnName("configuracion_json").HasColumnType("jsonb");
@@ -423,6 +435,13 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(a => a.Tipo).HasColumnName("tipo");
                 e.Property(a => a.LlaveCifrado).HasColumnName("llave_cifrado");
                 e.Property(a => a.FechaCreacion).HasColumnName("fecha_creacion");
+
+                // Mapeos de perfil y branding (Ciclo 1)
+                e.Property(a => a.RedesSociales).HasColumnName("redes_sociales").HasColumnType("jsonb");
+                e.Property(a => a.Branding).HasColumnName("branding").HasColumnType("jsonb");
+                e.Property(a => a.Mision).HasColumnName("mision");
+                e.Property(a => a.Vision).HasColumnName("vision");
+                e.Property(a => a.DatosMarketing).HasColumnName("datos_marketing").HasColumnType("jsonb");
             });
 
             modelBuilder.Entity<MiembroAgencia>(e => {

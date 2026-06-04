@@ -3,23 +3,23 @@ import { api } from '../lib/apiClient';
 
 export interface Lead {
   id: string;
-  agencia_id: string;
+  agenciaId?: string;
   nombre: string;
   email?: string;
   categoria: string;
   calificacion: string;
-  origen_contacto?: string;
-  motivo_contacto?: string;
+  origenContacto?: string;
+  motivoContacto?: string;
   descripcion?: string;
   notas?: any[];
-  orden_posicion?: string;
-  fecha_creacion: string;
+  rangoLexicografico?: string;
+  fechaCreacion: string;
 }
 
 interface CrmState {
   leads: Lead[];
   fetchLeads: () => Promise<void>;
-  createLead: (lead: Omit<Lead, 'id' | 'agencia_id' | 'fecha_creacion'>) => Promise<void>;
+  createLead: (lead: Omit<Lead, 'id' | 'agenciaId' | 'fechaCreacion'>) => Promise<void>;
   updateLeadStatus: (id: string, categoria: string, posicion?: string) => Promise<void>;
   updateLead: (id: string, lead: Partial<Lead>) => Promise<void>;
   deleteLead: (id: string) => Promise<void>;
@@ -48,7 +48,7 @@ export const useCrmStore = create<CrmState>((set) => ({
     try {
       await api.put(`/AgencyCrm/status/${id}`, { Categoria: categoria, Posicion: posicion });
       set(state => ({
-        leads: state.leads.map(l => l.id === id ? { ...l, categoria, orden_posicion: posicion } : l)
+        leads: state.leads.map(l => l.id === id ? { ...l, categoria, rangoLexicografico: posicion } : l)
       }));
     } catch (err) {
       console.error(err);

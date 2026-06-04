@@ -101,6 +101,37 @@ namespace MateCode.API.Controllers
             catch (Exception ex) { return StatusCode(500, ex.Message); }
         }
 
+        public class UpdateAgencyProfileRequest
+        {
+            [System.Text.Json.Serialization.JsonPropertyName("nombre")]
+            public string Nombre { get; set; } = string.Empty;
+
+            [System.Text.Json.Serialization.JsonPropertyName("redes_sociales")]
+            public JsonElement RedesSociales { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("branding")]
+            public JsonElement Branding { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("mision")]
+            public string Mision { get; set; } = string.Empty;
+
+            [System.Text.Json.Serialization.JsonPropertyName("vision")]
+            public string Vision { get; set; } = string.Empty;
+
+            [System.Text.Json.Serialization.JsonPropertyName("datos_marketing")]
+            public JsonElement DatosMarketing { get; set; }
+        }
+
+        [HttpPut("{id}/profile")]
+        public async Task<IActionResult> UpdateProfile(Guid id, [FromBody] UpdateAgencyProfileRequest req)
+        {
+            try {
+                var success = await _agencyService.UpdateAgencyProfileAsync(id, req.Nombre, req.RedesSociales, req.Branding, req.Mision, req.Vision, req.DatosMarketing);
+                return success ? Ok(new { message = "Perfil de la agencia actualizado correctamente." }) : BadRequest("No se pudo actualizar el perfil de la agencia.");
+            }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+
         [HttpGet("invitations")]
         public async Task<IActionResult> GetInvitations()
         {
@@ -143,6 +174,16 @@ namespace MateCode.API.Controllers
             try {
                 var workspaces = await _agencyService.GetWorkspacesByAgencyAsync(id);
                 return Ok(workspaces);
+            }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+
+        [HttpGet("{id}/workspaces-with-projects")]
+        public async Task<IActionResult> GetWorkspacesWithProjects(Guid id)
+        {
+            try {
+                var list = await _agencyService.GetWorkspacesWithProjectsAsync(id);
+                return Ok(list);
             }
             catch (Exception ex) { return StatusCode(500, ex.Message); }
         }

@@ -18,10 +18,22 @@ namespace MateCode.Infrastructure.Services
             _context = context;
         }
 
-        public async Task<IEnumerable<FormularioPlantilla>> GetFormsAsync(Guid tenantId, Guid userId, string? tipo = null)
+        public async Task<IEnumerable<FormularioPlantilla>> GetFormsAsync(Guid? tenantId, Guid? agencyId, Guid userId, string? tipo = null)
         {
-            var query = _context.FormulariosPlantilla
-                .Where(f => f.TenantId == tenantId || f.TenantId == Guid.Empty || f.CreadorId == userId);
+            var query = _context.FormulariosPlantilla.AsQueryable();
+
+            if (agencyId.HasValue)
+            {
+                query = query.Where(f => f.AgenciaId == agencyId.Value || (f.AgenciaId == null && f.TenantId == null) || f.CreadorId == userId);
+            }
+            else if (tenantId.HasValue)
+            {
+                query = query.Where(f => f.TenantId == tenantId.Value || f.TenantId == null || f.CreadorId == userId);
+            }
+            else
+            {
+                query = query.Where(f => f.TenantId == null || f.CreadorId == userId);
+            }
 
             if (!string.IsNullOrEmpty(tipo))
                 query = query.Where(f => f.Tipo == tipo);
@@ -29,10 +41,16 @@ namespace MateCode.Infrastructure.Services
             return await query.ToListAsync();
         }
 
-        public async Task<FormularioPlantilla> GetFormByIdAsync(Guid id, Guid tenantId, Guid userId)
+        public async Task<FormularioPlantilla> GetFormByIdAsync(Guid id, Guid? tenantId, Guid? agencyId, Guid userId)
         {
-            return await _context.FormulariosPlantilla
-                .FirstOrDefaultAsync(f => f.Id == id && (f.TenantId == tenantId || f.TenantId == Guid.Empty || f.CreadorId == userId));
+            var query = _context.FormulariosPlantilla.AsQueryable();
+
+            if (agencyId.HasValue)
+            {
+                return await query.FirstOrDefaultAsync(f => f.Id == id && (f.AgenciaId == agencyId.Value || (f.AgenciaId == null && f.TenantId == null) || f.CreadorId == userId));
+            }
+            
+            return await query.FirstOrDefaultAsync(f => f.Id == id && (f.TenantId == tenantId || f.TenantId == null || f.CreadorId == userId));
         }
 
         public async Task<FormularioPlantilla> CreateFormAsync(FormularioPlantilla form)
@@ -49,9 +67,18 @@ namespace MateCode.Infrastructure.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteFormAsync(Guid id, Guid tenantId, Guid userId)
+        public async Task DeleteFormAsync(Guid id, Guid? tenantId, Guid? agencyId, Guid userId)
         {
-            var form = await _context.FormulariosPlantilla.FirstOrDefaultAsync(f => f.Id == id && (f.TenantId == tenantId || f.CreadorId == userId));
+            FormularioPlantilla? form = null;
+            if (agencyId.HasValue)
+            {
+                form = await _context.FormulariosPlantilla.FirstOrDefaultAsync(f => f.Id == id && (f.AgenciaId == agencyId.Value || f.CreadorId == userId));
+            }
+            else
+            {
+                form = await _context.FormulariosPlantilla.FirstOrDefaultAsync(f => f.Id == id && (f.TenantId == tenantId || f.CreadorId == userId));
+            }
+
             if (form != null)
             {
                 _context.FormulariosPlantilla.Remove(form);

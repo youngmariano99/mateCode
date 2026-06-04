@@ -32,50 +32,69 @@ namespace MateCode.API.Controllers
             return string.IsNullOrEmpty(userIdStr) ? Guid.Empty : Guid.Parse(userIdStr);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetForms([FromHeader(Name = "X-Tenant-Id")] Guid tenantId, [FromQuery] string? tipo)
+        private Guid? GetAgencyIdHeader()
         {
-            var forms = await _formLibrary.GetFormsAsync(tenantId, GetUserId(), tipo);
+            var header = Request.Headers["X-Agency-Id"].ToString();
+            if (string.IsNullOrEmpty(header) || !Guid.TryParse(header, out var agencyId))
+                return null;
+            return agencyId;
+        }
+
+        private Guid? GetTenantIdHeader()
+        {
+            var header = Request.Headers["X-Tenant-Id"].ToString();
+            if (string.IsNullOrEmpty(header) || !Guid.TryParse(header, out var tenantId))
+                return null;
+            return tenantId;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetForms([FromQuery] string? tipo)
+        {
+            var forms = await _formLibrary.GetFormsAsync(GetTenantIdHeader(), GetAgencyIdHeader(), GetUserId(), tipo);
             return Ok(forms);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetFormById(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
+        public async Task<IActionResult> GetFormById(Guid id)
         {
-            var form = await _formLibrary.GetFormByIdAsync(id, tenantId, GetUserId());
+            var form = await _formLibrary.GetFormByIdAsync(id, GetTenantIdHeader(), GetAgencyIdHeader(), GetUserId());
             if (form == null) return NotFound();
             return Ok(form);
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateForm([FromBody] FormularioPlantilla form, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
+        public async Task<IActionResult> CreateForm([FromBody] FormularioPlantilla form)
         {
-            form.TenantId = tenantId;
+            form.TenantId = GetTenantIdHeader();
+            form.AgenciaId = GetAgencyIdHeader();
             form.CreadorId = GetUserId();
             var created = await _formLibrary.CreateFormAsync(form);
             return Ok(created);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateForm(Guid id, [FromBody] FormularioPlantilla form, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
+        public async Task<IActionResult> UpdateForm(Guid id, [FromBody] FormularioPlantilla form)
         {
             form.Id = id;
-            form.TenantId = tenantId;
+            form.TenantId = GetTenantIdHeader();
+            form.AgenciaId = GetAgencyIdHeader();
             form.CreadorId = GetUserId();
             await _formLibrary.UpdateFormAsync(form);
             return Ok();
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteForm(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
+        public async Task<IActionResult> DeleteForm(Guid id)
         {
-            await _formLibrary.DeleteFormAsync(id, tenantId, GetUserId());
+            await _formLibrary.DeleteFormAsync(id, GetTenantIdHeader(), GetAgencyIdHeader(), GetUserId());
             return Ok();
         }
 
         [HttpPost("generate-brainstorming")]
-        public async Task<IActionResult> GenerateBrainstorming([FromBody] BrainstormingRequest req, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
+        public async Task<IActionResult> GenerateBrainstorming([FromBody] BrainstormingRequest req)
         {
+            var tenantId = GetTenantIdHeader() ?? Guid.Empty;
             var prompt = await _promptEngine.GenerarPromptBrainstormingAsync(req.Idea, req.FormularioId, tenantId, GetUserId());
             return Ok(new { prompt });
         }
