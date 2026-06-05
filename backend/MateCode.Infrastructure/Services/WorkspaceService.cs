@@ -67,7 +67,7 @@ namespace MateCode.Infrastructure.Services
             return workspace;
         }
  
-        public async Task SyncUserAsync(Guid userId, string email, string nombreCompleto)
+        public async Task SyncUserAsync(Guid userId, string email, string nombreCompleto, string nombreUsuario)
         {
             var user = await _context.Usuarios.FindAsync(userId);
             if (user == null)
@@ -77,6 +77,7 @@ namespace MateCode.Infrastructure.Services
                     Id = userId,
                     Email = email,
                     NombreCompleto = nombreCompleto,
+                    NombreUsuario = nombreUsuario,
                     FechaCreacion = DateTime.UtcNow
                 };
                 await _context.Usuarios.AddAsync(user);
@@ -85,6 +86,10 @@ namespace MateCode.Infrastructure.Services
             {
                 user.Email = email;
                 user.NombreCompleto = nombreCompleto;
+                if (!string.IsNullOrEmpty(nombreUsuario))
+                {
+                    user.NombreUsuario = nombreUsuario;
+                }
             }
  
             await _context.SaveChangesAsync();

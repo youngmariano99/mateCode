@@ -231,7 +231,12 @@ export const StructurePanel: React.FC<StructurePanelProps> = ({
               {agencyMembers.map(m => (
                 <div key={m.usuario_id} className="p-4 bg-zinc-900/60 border border-zinc-800/60 rounded-2xl flex items-center justify-between">
                   <div>
-                    <p className="font-bold text-zinc-200">{m.usuario?.nombre_completo || 'Usuario'}</p>
+                    <p className="font-bold text-zinc-200">
+                      {m.usuario?.nombre_completo || 'Usuario'}
+                      {m.usuario?.nombre_usuario && (
+                        <span className="text-xs text-emerald-400 font-mono ml-1.5 font-normal">@{m.usuario.nombre_usuario}</span>
+                      )}
+                    </p>
                     <p className="text-xs text-zinc-500">{m.usuario?.email}</p>
                     <div className="flex gap-2 mt-2">
                       <span className="text-[9px] font-black uppercase bg-zinc-800 text-zinc-400 border border-zinc-700 px-2 py-0.5 rounded-full">

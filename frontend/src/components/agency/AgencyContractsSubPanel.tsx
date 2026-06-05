@@ -266,7 +266,11 @@ export const AgencyContractsSubPanel: React.FC = () => {
       
       const names = members
         .filter(m => mIds.includes(m.usuario_id || m.usuarioId || m.usuario?.id))
-        .map(m => m.usuario?.nombreCompleto || m.usuario?.nombre_completo || m.usuario?.nombre)
+        .map(m => {
+          const name = m.usuario?.nombreCompleto || m.usuario?.nombre_completo || m.usuario?.nombre;
+          const handle = m.usuario?.nombre_usuario || m.usuario?.nombreUsuario;
+          return name ? (handle ? `${name} (@${handle})` : name) : (handle ? `@${handle}` : 'Miembro');
+        })
         .join(', ');
       return `${c.tipoContrato === 'Socios' ? 'Socios' : 'Equipo'}: ${names || 'Varios miembros'}`;
     }
@@ -517,7 +521,9 @@ export const AgencyContractsSubPanel: React.FC = () => {
                           className="rounded border-zinc-800 bg-zinc-950 text-emerald-500 focus:ring-0 focus:ring-offset-0"
                         />
                         <div>
-                          <span className="font-bold block text-zinc-350">{userFullName}</span>
+                          <span className="font-bold block text-zinc-350">
+                            {userFullName} {m.usuario?.nombre_usuario || m.usuario?.nombreUsuario ? `(@${m.usuario?.nombre_usuario || m.usuario?.nombreUsuario})` : ''}
+                          </span>
                           <span className="text-[9px] text-zinc-550">{email}</span>
                         </div>
                       </label>

@@ -23,6 +23,7 @@ export interface Member {
     id: string;
     email: string;
     nombre_completo: string;
+    nombre_usuario?: string;
   };
   permisos_json?: any;
 }

@@ -223,6 +223,13 @@ using (var scope = app.Services.CreateScope())
                     END IF;
                 END IF;
 
+                -- Columna para Nombre de Usuario (nombre_usuario) en usuarios
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'nucleo' AND table_name = 'usuarios') THEN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'usuarios' AND column_name = 'nombre_usuario') THEN
+                        ALTER TABLE nucleo.usuarios ADD COLUMN nombre_usuario VARCHAR(100);
+                    END IF;
+                END IF;
+
                 -- Columnas para Perfil, Branding e Identidad de Agencia (Ciclo 1)
                 IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'nucleo' AND table_name = 'agencias') THEN
                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'redes_sociales') THEN

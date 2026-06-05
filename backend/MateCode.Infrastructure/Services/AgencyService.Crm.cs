@@ -74,7 +74,11 @@ namespace MateCode.Infrastructure.Services
             lead.OrigenContacto = origen;
             lead.MotivoContacto = motivo;
             lead.Descripcion = descripcion;
-            lead.Notas = notas;
+            
+            if (notas.ValueKind != JsonValueKind.Undefined)
+            {
+                lead.Notas = notas;
+            }
 
             if (category.Equals("Aceptado", StringComparison.OrdinalIgnoreCase))
             {

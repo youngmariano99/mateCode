@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Copy, Calendar, Grid, Play, Video, Share2, ChevronLeft, ChevronRight, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Copy, Calendar, Grid, ChevronLeft, ChevronRight, Edit2 } from 'lucide-react';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import type { Member } from '../../store/useAgencyStore';
 import { motion } from 'framer-motion';
@@ -423,10 +423,11 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
                 <select required value={form.miembroId} onChange={e => setForm({ ...form, miembroId: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white outline-none">
                   <option value="">Selecciona miembro...</option>
                   {agencyMembers.map(m => {
-                    const userId = m.usuario_id || m.usuarioId || m.usuario?.id;
-                    const userName = m.usuario?.nombre_completo || m.usuario?.nombreCompleto || m.usuario?.nombre || 'Miembro';
+                    const userId = m.usuario_id;
+                    const userName = m.usuario?.nombre_completo || m.usuario?.email || 'Miembro';
+                    const userHandle = m.usuario?.nombre_usuario ? ` (@${m.usuario.nombre_usuario})` : '';
                     return (
-                      <option key={userId} value={userId}>{userName}</option>
+                      <option key={userId} value={userId}>{userName}{userHandle}</option>
                     );
                   })}
                 </select>

@@ -8,6 +8,7 @@ namespace MateCode.Core.Entities
         public Guid Id { get; set; }
         public string Email { get; set; } = string.Empty;
         public string NombreCompleto { get; set; } = string.Empty;
+        public string? NombreUsuario { get; set; } = string.Empty;
         public DateTime FechaCreacion { get; set; }
     }
 

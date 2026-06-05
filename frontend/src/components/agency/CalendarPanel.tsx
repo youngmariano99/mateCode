@@ -186,7 +186,7 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({ agencyMembers }) =
             <option value="">Todos los Responsables</option>
             {agencyMembers.map(m => (
               <option key={m.usuario_id} value={m.usuario_id}>
-                {m.usuario?.nombre_completo || m.usuario?.email}
+                {m.usuario?.nombre_completo || m.usuario?.email} {m.usuario?.nombre_usuario ? `(@${m.usuario.nombre_usuario})` : ''}
               </option>
             ))}
           </select>

@@ -5,10 +5,10 @@ import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
 
 interface FinancePanelProps {
-  agencyWorkspaces: any[];
+  workspacesWithProjects: any[];
 }
 
-export const FinancePanel: React.FC<FinancePanelProps> = ({ agencyWorkspaces }) => {
+export const FinancePanel: React.FC<FinancePanelProps> = ({ workspacesWithProjects }) => {
   const { financeData, fetchFinanceDashboard, createTransaction, deleteTransaction } = useFinanceStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({
@@ -27,6 +27,13 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({ agencyWorkspaces }) 
   const uniqueConceptos = financeData?.transacciones
     ? Array.from(new Set(financeData.transacciones.map(tx => tx.concepto).filter(Boolean)))
     : [];
+
+  const allProjects = (workspacesWithProjects || []).flatMap(ws => 
+    (ws.projects || ws.proyectos || []).map((p: any) => ({
+      id: p.id,
+      nombre: `${ws.nombre} - ${p.nombre}`
+    }))
+  );
 
   useEffect(() => {
     fetchFinanceDashboard();
@@ -264,11 +271,11 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({ agencyWorkspaces }) 
                   <input required type="date" value={form.fecha} onChange={e => setForm({ ...form, fecha: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Vincular a Espacio</label>
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Vincular a Proyecto</label>
                   <select value={form.proyectoId} onChange={e => setForm({ ...form, proyectoId: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white">
                     <option value="">Ninguno...</option>
-                    {agencyWorkspaces.map(ws => (
-                      <option key={ws.id} value={ws.id}>{ws.nombre}</option>
+                    {allProjects.map(p => (
+                      <option key={p.id} value={p.id}>{p.nombre}</option>
                     ))}
                   </select>
                 </div>

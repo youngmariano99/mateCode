@@ -244,7 +244,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               <option value="">-- Sin asignar --</option>
               {agencyMembers.map((m) => (
                 <option key={m.usuario_id} value={m.usuario_id}>
-                  {m.usuario?.nombre_completo || m.usuario?.email} ({m.rol})
+                  {m.usuario?.nombre_completo || m.usuario?.email} {m.usuario?.nombre_usuario ? `(@${m.usuario.nombre_usuario})` : ''} ({m.rol})
                 </option>
               ))}
             </select>

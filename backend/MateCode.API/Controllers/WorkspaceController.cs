@@ -19,6 +19,34 @@ namespace MateCode.API.Controllers
             _workspaceService = workspaceService;
         }
 
+        private (string email, string name, string username) GetUserInfoFromToken()
+        {
+            var email = User.FindFirstValue("email") ?? User.FindFirstValue(ClaimTypes.Email) ?? "";
+            string name = "";
+            string username = "";
+
+            var userMetadataStr = User.FindFirstValue("user_metadata");
+            if (!string.IsNullOrEmpty(userMetadataStr))
+            {
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(userMetadataStr);
+                    if (doc.RootElement.TryGetProperty("full_name", out var fnProp))
+                        name = fnProp.GetString() ?? "";
+                    if (doc.RootElement.TryGetProperty("username", out var unProp))
+                        username = unProp.GetString() ?? "";
+                }
+                catch {}
+            }
+
+            if (string.IsNullOrEmpty(name))
+            {
+                name = User.FindFirstValue("full_name") ?? User.Identity?.Name ?? email;
+            }
+
+            return (email, name, username);
+        }
+
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
@@ -27,28 +55,24 @@ namespace MateCode.API.Controllers
                 return Unauthorized("Usuario no identificado en el token.");
 
             var userId = Guid.Parse(userIdStr);
-            var email = User.FindFirstValue("email") ?? User.FindFirstValue(ClaimTypes.Email) ?? "";
-            var name = User.FindFirstValue("full_name") ?? User.Identity?.Name ?? email;
+            var (email, name, username) = GetUserInfoFromToken();
             
-            await _workspaceService.SyncUserAsync(userId, email, name);
+            await _workspaceService.SyncUserAsync(userId, email, name, username);
 
-            return Ok(new { id = userId, email, nombreCompleto = name });
+            return Ok(new { id = userId, email, nombreCompleto = name, nombreUsuario = username });
         }
 
         [HttpGet]
         public async Task<IActionResult> GetMyWorkspaces()
         {
-            // El ID del usuario viene en el token de Supabase (sub)
             var userIdStr = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userIdStr)) 
                 return Unauthorized("Usuario no identificado en el token.");
 
             var userId = Guid.Parse(userIdStr);
             
-            // Sincronizar usuario antes de listar (por si es la primera vez)
-            var email = User.FindFirstValue("email") ?? User.FindFirstValue(ClaimTypes.Email) ?? "";
-            var name = User.FindFirstValue("full_name") ?? User.Identity?.Name ?? email;
-            await _workspaceService.SyncUserAsync(userId, email, name);
+            var (email, name, username) = GetUserInfoFromToken();
+            await _workspaceService.SyncUserAsync(userId, email, name, username);
 
             var workspaces = await _workspaceService.GetWorkspacesByUserAsync(userId);
             return Ok(workspaces);
@@ -68,10 +92,8 @@ namespace MateCode.API.Controllers
 
             var userId = Guid.Parse(userIdStr);
             
-            // Asegurar que el usuario existe en DB local antes de crear el espacio (FK constraint)
-            var email = User.FindFirstValue("email") ?? User.FindFirstValue(ClaimTypes.Email) ?? "";
-            var name = User.FindFirstValue("full_name") ?? User.Identity?.Name ?? email;
-            await _workspaceService.SyncUserAsync(userId, email, name);
+            var (email, name, username) = GetUserInfoFromToken();
+            await _workspaceService.SyncUserAsync(userId, email, name, username);
 
             var workspace = await _workspaceService.CreateWorkspaceAsync(userId, req.Nombre);
             return Ok(workspace);

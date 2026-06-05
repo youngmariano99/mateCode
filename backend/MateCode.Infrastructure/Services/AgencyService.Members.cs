@@ -70,22 +70,49 @@ namespace MateCode.Infrastructure.Services
 
         public async Task<IEnumerable<object>> GetAgencyMembersAsync(Guid agencyId)
         {
-            return await (from member in _context.MiembrosAgencia
-                           join user in _context.Usuarios on member.UsuarioId equals user.Id
-                           where member.AgenciaId == agencyId
-                           select new
-                           {
-                               agencia_id = member.AgenciaId,
-                               usuario_id = member.UsuarioId,
-                               rol = member.Rol,
-                               estado_invitacion = member.EstadoInvitacion,
-                               permisos_json = member.PermisosJson,
-                               usuario = new {
-                                   id = user.Id,
-                                   email = user.Email,
-                                   nombre_completo = user.NombreCompleto
-                               }
-                           }).ToListAsync();
+            var agency = await _context.Agencias.FindAsync(agencyId);
+            var membersList = await (from member in _context.MiembrosAgencia
+                                     join user in _context.Usuarios on member.UsuarioId equals user.Id
+                                     where member.AgenciaId == agencyId
+                                     select new
+                                     {
+                                         agencia_id = member.AgenciaId,
+                                         usuario_id = member.UsuarioId,
+                                         rol = member.Rol,
+                                         estado_invitacion = member.EstadoInvitacion,
+                                         permisos_json = member.PermisosJson,
+                                         usuario = new {
+                                             id = user.Id,
+                                             email = user.Email,
+                                             nombre_completo = user.NombreCompleto,
+                                             nombre_usuario = user.NombreUsuario
+                                         }
+                                     }).ToListAsync();
+
+            if (agency != null)
+            {
+                var ownerUser = await _context.Usuarios.FindAsync(agency.PropietarioId);
+                if (ownerUser != null && !membersList.Any(m => m.usuario_id == ownerUser.Id))
+                {
+                    var emptyJson = JsonSerializer.Deserialize<JsonElement>("{}");
+                    membersList.Insert(0, new
+                    {
+                        agencia_id = agency.Id,
+                        usuario_id = ownerUser.Id,
+                        rol = "Propietario",
+                        estado_invitacion = "Aceptada",
+                        permisos_json = emptyJson,
+                        usuario = new {
+                            id = ownerUser.Id,
+                            email = ownerUser.Email,
+                            nombre_completo = ownerUser.NombreCompleto,
+                            nombre_usuario = ownerUser.NombreUsuario
+                        }
+                    });
+                }
+            }
+
+            return membersList;
         }
 
         private async Task SyncWorkspaceAndProjectMembersAsync(Guid agencyId, Guid userId, string invitationState, string role, JsonElement permissions)
@@ -259,12 +286,16 @@ namespace MateCode.Infrastructure.Services
         {
             return await (from member in _context.MiembrosAgencia
                            join agency in _context.Agencias on member.AgenciaId equals agency.Id
+                           join owner in _context.Usuarios on agency.PropietarioId equals owner.Id into ownerJoin
+                           from owner in ownerJoin.DefaultIfEmpty()
                            where member.UsuarioId == userId && member.EstadoInvitacion == "Pendiente"
                            select new
                            {
                                AgencyId = agency.Id,
                                AgencyNombre = agency.Nombre,
-                               RolInvitado = member.Rol
+                               RolInvitado = member.Rol,
+                               InvitadoPor = owner != null ? owner.NombreCompleto : "Propietario",
+                               InvitadoPorEmail = owner != null ? owner.Email : ""
                            }).ToListAsync();
         }
 

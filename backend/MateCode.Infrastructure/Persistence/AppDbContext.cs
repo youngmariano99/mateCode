@@ -71,6 +71,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(u => u.Id).HasColumnName("id");
                 e.Property(u => u.Email).HasColumnName("email");
                 e.Property(u => u.NombreCompleto).HasColumnName("nombre_completo");
+                e.Property(u => u.NombreUsuario).HasColumnName("nombre_usuario").IsRequired(false);
                 e.Property(u => u.FechaCreacion).HasColumnName("fecha_creacion");
             });
 
@@ -649,6 +650,44 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(a => a.RegistroId).HasColumnName("registro_id");
                 e.Property(a => a.Detalles).HasColumnName("detalles").HasColumnType("jsonb");
                 e.Property(a => a.Fecha).HasColumnName("fecha");
+            });
+
+            modelBuilder.Entity<FormularioPlantilla>(e => {
+                e.ToTable("formularios_plantilla", "crm");
+                e.Property(f => f.Id).HasColumnName("id");
+                e.Property(f => f.AgenciaId).HasColumnName("agencia_id");
+                e.Property(f => f.TenantId).HasColumnName("tenant_id");
+                e.Property(f => f.Nombre).HasColumnName("nombre");
+                e.Property(f => f.Tipo).HasColumnName("tipo");
+                e.Property(f => f.ConfiguracionJson).HasColumnName("configuracion_json").HasColumnType("jsonb");
+                e.Property(f => f.CreadorId).HasColumnName("creador_id");
+                e.Property(f => f.FechaCreacion).HasColumnName("fecha_creacion");
+            });
+
+            modelBuilder.Entity<ContratoAgencia>(e => {
+                e.ToTable("contratos_agencia", "crm");
+                e.Property(c => c.Id).HasColumnName("id");
+                e.Property(c => c.AgenciaId).HasColumnName("agencia_id");
+                e.Property(c => c.ClienteId).HasColumnName("cliente_id").IsRequired(false);
+                e.Property(c => c.Titulo).HasColumnName("titulo");
+                e.Property(c => c.Contenido).HasColumnName("contenido");
+                e.Property(c => c.Estado).HasColumnName("estado");
+                e.Property(c => c.FechaCreacion).HasColumnName("fecha_creacion");
+                e.Property(c => c.FechaFirma).HasColumnName("fecha_firma");
+                e.Property(c => c.HuellaCriptografica).HasColumnName("huella_criptografica");
+                e.Property(c => c.TipoContrato).HasColumnName("tipo_contrato");
+                e.Property(c => c.MiembrosIds).HasColumnName("miembros_ids").HasColumnType("jsonb");
+            });
+
+            modelBuilder.Entity<ContratoHistorial>(e => {
+                e.ToTable("contratos_historial", "crm");
+                e.Property(ch => ch.Id).HasColumnName("id");
+                e.Property(ch => ch.ContratoId).HasColumnName("contrato_id");
+                e.Property(ch => ch.UsuarioId).HasColumnName("usuario_id");
+                e.Property(ch => ch.NombreUsuario).HasColumnName("nombre_usuario");
+                e.Property(ch => ch.ContenidoAnterior).HasColumnName("contenido_anterior");
+                e.Property(ch => ch.ContenidoNuevo).HasColumnName("contenido_nuevo");
+                e.Property(ch => ch.FechaCambio).HasColumnName("fecha_cambio");
             });
         }
     }

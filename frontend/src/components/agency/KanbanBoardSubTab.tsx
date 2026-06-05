@@ -293,7 +293,11 @@ export const KanbanBoardSubTab: React.FC<KanbanBoardSubTabProps> = ({ agencyMemb
                       {assignedUser && (
                         <div className="flex items-center gap-1 bg-zinc-900 px-1.5 py-0.5 rounded-md border border-zinc-850">
                           <User size={8} />
-                          <span className="font-bold">{assignedUser.usuario?.nombre_completo.split(' ')[0]}</span>
+                          <span className="font-bold">
+                            {assignedUser.usuario?.nombre_usuario 
+                              ? `@${assignedUser.usuario.nombre_usuario}` 
+                              : assignedUser.usuario?.nombre_completo.split(' ')[0]}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -348,7 +352,9 @@ export const KanbanBoardSubTab: React.FC<KanbanBoardSubTabProps> = ({ agencyMemb
                 <select value={form.usuario_asignado_id} onChange={e => setForm({ ...form, usuario_asignado_id: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800/80 p-2.5 rounded-xl text-xs text-white">
                   <option value="">Sin asignar...</option>
                   {agencyMembers.map(m => (
-                    <option key={m.usuario_id} value={m.usuario_id}>{m.usuario?.nombre_completo}</option>
+                    <option key={m.usuario_id} value={m.usuario_id}>
+                      {m.usuario?.nombre_completo} {m.usuario?.nombre_usuario ? `(@${m.usuario.nombre_usuario})` : ''}
+                    </option>
                   ))}
                 </select>
               </div>

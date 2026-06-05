@@ -81,7 +81,7 @@ export const AgencyDashboard: React.FC = () => {
       case 'content':
         return <ContentPanel agencyMembers={agencyMembers} />;
       case 'finance':
-        return <FinancePanel agencyWorkspaces={agencyWorkspaces} />;
+        return <FinancePanel workspacesWithProjects={workspacesWithProjects} />;
       case 'audit':
         return <AuditPanel />;
       case 'calendar':
