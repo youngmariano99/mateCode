@@ -73,6 +73,9 @@ namespace MateCode.API.Controllers
 
             [JsonPropertyName("favorito")]
             public bool Favorito { get; set; } = false;
+
+            [JsonPropertyName("cliente_id")]
+            public Guid? ClienteId { get; set; }
         }
 
         [HttpPost("resources")]
@@ -82,7 +85,7 @@ namespace MateCode.API.Controllers
                 var agencyId = GetAgencyId();
                 var userId = GetUserId();
                 var resource = await _agencyService.CreateResourceAsync(
-                    agencyId, userId, req.Titulo, req.Contenido, req.Tipo, req.Etiquetas, req.RolesPermitidos, req.Categoria);
+                    agencyId, userId, req.Titulo, req.Contenido, req.Tipo, req.Etiquetas, req.RolesPermitidos, req.Categoria, req.ClienteId);
                 return Ok(resource);
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
@@ -95,7 +98,7 @@ namespace MateCode.API.Controllers
         {
             try {
                 var success = await _agencyService.UpdateResourceAsync(
-                    id, req.Titulo, req.Contenido, req.Tipo, req.Etiquetas, req.RolesPermitidos, req.Categoria, req.Favorito);
+                    id, req.Titulo, req.Contenido, req.Tipo, req.Etiquetas, req.RolesPermitidos, req.Categoria, req.Favorito, req.ClienteId);
                 return success ? Ok() : NotFound("Recurso no encontrado.");
             }
             catch (Exception ex) { return StatusCode(500, ex.Message); }

@@ -98,10 +98,20 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (connection.state === signalR.HubConnectionState.Connected) {
             connectedWsIdRef.current = currentWsId;
             await connection.invoke("JoinProjectGroup", currentWsId);
+            
+            let avatarUrl = undefined;
+            try {
+              const prof = await api.get('/Workspace/profile') as any;
+              avatarUrl = prof.fotoPerfilUrl || undefined;
+            } catch (e) {
+              console.warn("Could not load user profile for initial presence", e);
+            }
+
             const initialPresence = {
                 userId: currentUser.id,
                 nombre: currentUser.email?.split('@')[0] || 'Arquitecto',
-                zonaActual: activeRoom
+                zonaActual: activeRoom,
+                avatarUrl
             };
             await connection.invoke("UpdatePresence", currentWsId, initialPresence);
         }
@@ -114,7 +124,8 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const normalizedPresence: UserPresence = {
         userId: presence.userId || presence.UserId,
         nombre: presence.nombre || presence.Nombre,
-        zonaActual: presence.zonaActual || presence.ZonaActual || 'idle'
+        zonaActual: presence.zonaActual || presence.ZonaActual || 'idle',
+        avatarUrl: presence.avatarUrl || presence.AvatarUrl || undefined
       };
       if (normalizedPresence.userId) {
           setPresences(prev => ({ ...prev, [normalizedPresence.userId]: normalizedPresence }));
@@ -169,10 +180,17 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     connection.on("UserJoined", async (connId: string) => {
         if (connection.state === signalR.HubConnectionState.Connected) {
+            let avatarUrl = undefined;
+            try {
+              const prof = await api.get('/Workspace/profile') as any;
+              avatarUrl = prof.fotoPerfilUrl || undefined;
+            } catch (e) {}
+
             await connection.invoke("UpdatePresence", currentWsId, {
                 userId: currentUser.id,
                 nombre: currentUser.email?.split('@')[0] || 'Arquitecto',
-                zonaActual: activeRoom
+                zonaActual: activeRoom,
+                avatarUrl
             });
         }
     });
@@ -192,21 +210,32 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     if (workspaceId && currentUser && workspaceId !== 'undefined') {
-      const updatedPresence = {
-        userId: currentUser.id,
-        nombre: currentUser.email?.split('@')[0] || 'Arquitecto',
-        zonaActual: activeRoom
-      };
-      setPresences(prev => ({ ...prev, [currentUser.id]: updatedPresence }));
-      const conn = connectionRef.current;
-      if (conn && conn.state === signalR.HubConnectionState.Connected) {
-        conn.invoke("UpdatePresence", workspaceId, updatedPresence).catch(() => {});
-        // Log de movimiento si cambió de sala
-        if (prevRoomRef.current !== activeRoom) {
-            conn.invoke("LogMovement", workspaceId, currentUser.id, updatedPresence.nombre, prevRoomRef.current, activeRoom);
-            prevRoomRef.current = activeRoom;
+      const updatePresence = async () => {
+        let avatarUrl = undefined;
+        try {
+          const prof = await api.get('/Workspace/profile') as any;
+          avatarUrl = prof.fotoPerfilUrl || undefined;
+        } catch (e) {}
+
+        const updatedPresence = {
+          userId: currentUser.id,
+          nombre: currentUser.email?.split('@')[0] || 'Arquitecto',
+          zonaActual: activeRoom,
+          avatarUrl
+        };
+        setPresences(prev => ({ ...prev, [currentUser.id]: updatedPresence }));
+        const conn = connectionRef.current;
+        if (conn && conn.state === signalR.HubConnectionState.Connected) {
+          conn.invoke("UpdatePresence", workspaceId, updatedPresence).catch(() => {});
+          // Log de movimiento si cambió de sala
+          if (prevRoomRef.current !== activeRoom) {
+              conn.invoke("LogMovement", workspaceId, currentUser.id, updatedPresence.nombre, prevRoomRef.current, activeRoom);
+              prevRoomRef.current = activeRoom;
+          }
         }
-      }
+      };
+      
+      updatePresence();
     }
   }, [activeRoom, workspaceId, currentUser]);
 

@@ -16,6 +16,7 @@ import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { useWorkspaceStore } from "../../store/useWorkspaceStore";
+import { useAgencyStore } from "../../store/useAgencyStore";
 
 export interface AvatarProps {
   /** World position where the pin's tip lands on the floor. Drive from backend. */
@@ -24,16 +25,23 @@ export interface AvatarProps {
   name: string;
   /** Glow color for the crystal, beam, and label accent. */
   color?: string;
+  /** User profile image URL. */
+  avatarUrl?: string;
 }
 
 const PIN_HEIGHT = 2.4; // meters above floor where the crystal floats
 const LABEL_HEIGHT = 3.5; // above the 3m wall height so labels never get clipped
 
-export function Avatar({ position, name, color = "#3b82f6" }: AvatarProps) {
+export function Avatar({ position, name, color = "#3b82f6", avatarUrl }: AvatarProps) {
   const { activeRoom } = useWorkspaceStore();
+  const { activeAgency } = useAgencyStore();
   const crystalRef = useRef<THREE.Group>(null);
   const haloRef = useRef<THREE.Mesh>(null);
   const xrayRef = useRef<THREE.Mesh>(null);
+
+  // Fetch agency primary color for the profile picture border
+  const brand = activeAgency?.branding ? (typeof activeAgency.branding === 'string' ? JSON.parse(activeAgency.branding) : activeAgency.branding) : null;
+  const colorPrimario = brand?.colorPrimario || '#10b981';
 
   // Idle bob + crystal spin + halo pulse
   useFrame(({ clock }) => {
@@ -99,14 +107,29 @@ export function Avatar({ position, name, color = "#3b82f6" }: AvatarProps) {
       {activeRoom === 'idle' && (
         <Html position={[0, LABEL_HEIGHT, 0]} center distanceFactor={9} zIndexRange={[100, 0]} style={{ pointerEvents: "none" }}>
           <div style={{
-            display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 999,
-            background: "rgba(5, 7, 11, 0.82)", border: `1px solid ${color}`, color: "#fff",
+            display: "flex", alignItems: "center", gap: 8, padding: "5px 12px 5px 8px", borderRadius: 999,
+            background: "rgba(5, 7, 11, 0.82)", border: `1.5px solid ${color}`, color: "#fff",
             font: "600 11px/1 -apple-system, system-ui, sans-serif", letterSpacing: 0.3,
             whiteSpace: "nowrap", boxShadow: `0 0 14px ${color}66`, backdropFilter: "blur(6px)",
             textShadow: `0 0 6px ${color}88`
           }}>
-            <span style={{ width: 6, height: 6, borderRadius: 999, background: color, boxShadow: `0 0 8px ${color}` }} />
-            {name}
+            {avatarUrl ? (
+              <img 
+                src={avatarUrl} 
+                alt={name} 
+                style={{ 
+                  width: 20, 
+                  height: 20, 
+                  borderRadius: "50%", 
+                  border: `2px solid ${colorPrimario}`, 
+                  objectFit: "cover",
+                  display: "block"
+                }} 
+              />
+            ) : (
+              <span style={{ width: 6, height: 6, borderRadius: 999, background: color, boxShadow: `0 0 8px ${color}` }} />
+            )}
+            <span>{name}</span>
           </div>
         </Html>
       )}

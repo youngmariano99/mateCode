@@ -59,13 +59,22 @@ namespace MateCode.API.Controllers
             
             await _workspaceService.SyncUserAsync(userId, email, name, username);
 
-            return Ok(new { id = userId, email, nombreCompleto = name, nombreUsuario = username });
+            var dbUser = await _workspaceService.GetUserProfileAsync(userId);
+
+            return Ok(new { 
+                id = userId, 
+                email = dbUser?.Email ?? email, 
+                nombreCompleto = dbUser?.NombreCompleto ?? name, 
+                nombreUsuario = dbUser?.NombreUsuario ?? username,
+                fotoPerfilUrl = dbUser?.FotoPerfilUrl
+            });
         }
 
         public class UpdateProfileRequest
         {
             public string NombreCompleto { get; set; } = string.Empty;
             public string NombreUsuario { get; set; } = string.Empty;
+            public string? FotoPerfilUrl { get; set; }
         }
 
         [HttpPut("profile")]
@@ -83,9 +92,15 @@ namespace MateCode.API.Controllers
                 return BadRequest("El nombre de usuario no puede estar vacío.");
             }
 
-            await _workspaceService.SyncUserAsync(userId, email, req.NombreCompleto, req.NombreUsuario);
+            await _workspaceService.SyncUserAsync(userId, email, req.NombreCompleto, req.NombreUsuario, req.FotoPerfilUrl);
 
-            return Ok(new { id = userId, email, nombreCompleto = req.NombreCompleto, nombreUsuario = req.NombreUsuario });
+            return Ok(new { 
+                id = userId, 
+                email, 
+                nombreCompleto = req.NombreCompleto, 
+                nombreUsuario = req.NombreUsuario,
+                fotoPerfilUrl = req.FotoPerfilUrl
+            });
         }
 
         [HttpGet]

@@ -93,11 +93,13 @@ namespace MateCode.Core.Entities
         public Guid? CreadorId { get; set; }
         public bool Favorito { get; set; } = false;
         public string Categoria { get; set; } = "General";
+        public Guid? ClienteId { get; set; }
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
         // Relaciones
         public Agencia? Agencia { get; set; }
         public Usuario? Creador { get; set; }
+        public Cliente? Cliente { get; set; }
     }
 
     public class TareaOperativa

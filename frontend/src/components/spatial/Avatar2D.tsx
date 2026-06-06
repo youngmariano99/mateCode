@@ -11,6 +11,7 @@ export interface Avatar2DProps {
   y: number;
   name: string;
   color: string;
+  avatarUrl?: string;
   radius?: number;
   live?: boolean;
   activity?: string;
@@ -29,6 +30,7 @@ export const Avatar2D: React.FC<Avatar2DProps> = ({
   y,
   name,
   color,
+  avatarUrl,
   radius = 14,
   live = true,
   activity = "Online",
@@ -37,6 +39,9 @@ export const Avatar2D: React.FC<Avatar2DProps> = ({
   const TT_W = 180;
   const TT_H = 54;
   const TT_GAP = 10;
+  
+  // Clean string identifier for SVG clipPath to prevent spaces causing issues
+  const safeId = name.replace(/[^a-zA-Z0-9]/g, "-");
 
   return (
     <g className="avatar2d group" style={{ pointerEvents: "auto", cursor: "pointer" }}>
@@ -55,19 +60,44 @@ export const Avatar2D: React.FC<Avatar2DProps> = ({
 
       <circle cx={x} cy={y} r={radius + 1.5} fill={color} opacity={0.18} />
 
-      <circle
-        cx={x} cy={y} r={radius} fill="hsl(222 25% 12%)" stroke={color} strokeWidth={1.75}
-        className="transition-all duration-300 ease-in-out group-hover:[r:16]"
-      />
+      {avatarUrl ? (
+        <g>
+          <defs>
+            <clipPath id={`avatar-clip-${safeId}`}>
+              <circle cx={x} cy={y} r={radius} />
+            </clipPath>
+          </defs>
+          <image
+            href={avatarUrl}
+            x={x - radius}
+            y={y - radius}
+            width={radius * 2}
+            height={radius * 2}
+            clipPath={`url(#avatar-clip-${safeId})`}
+            preserveAspectRatio="xMidYMid slice"
+          />
+          <circle
+            cx={x} cy={y} r={radius} fill="none" stroke={color} strokeWidth={1.75}
+            className="transition-all duration-300 ease-in-out group-hover:[r:16]"
+          />
+        </g>
+      ) : (
+        <>
+          <circle
+            cx={x} cy={y} r={radius} fill="hsl(222 25% 12%)" stroke={color} strokeWidth={1.75}
+            className="transition-all duration-300 ease-in-out group-hover:[r:16]"
+          />
 
-      <text
-        x={x} y={y + 0.5} textAnchor="middle" dominantBaseline="central"
-        fontFamily="ui-sans-serif, system-ui, sans-serif"
-        fontSize={radius * 0.78} fontWeight={600} fill={color}
-        style={{ pointerEvents: "none" }}
-      >
-        {initials}
-      </text>
+          <text
+            x={x} y={y + 0.5} textAnchor="middle" dominantBaseline="central"
+            fontFamily="ui-sans-serif, system-ui, sans-serif"
+            fontSize={radius * 0.78} fontWeight={600} fill={color}
+            style={{ pointerEvents: "none" }}
+          >
+            {initials}
+          </text>
+        </>
+      )}
 
       <text
         x={x} y={y + radius + 11} textAnchor="middle"

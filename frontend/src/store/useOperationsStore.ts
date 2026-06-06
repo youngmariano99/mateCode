@@ -13,6 +13,8 @@ export interface Resource {
   fecha_creacion: string;
   categoria?: string;
   favorito?: boolean;
+  cliente_id?: string;
+  cliente?: { id: string; nombre: string; email?: string };
 }
 
 export interface TaskOperative {
@@ -89,8 +91,8 @@ interface OperationsState {
 
   // Resources
   fetchResources: () => Promise<void>;
-  createResource: (res: { titulo: string; contenido: string; tipo: string; etiquetas: string[]; roles_permitidos: string[]; categoria?: string; favorito?: boolean }) => Promise<void>;
-  updateResource: (id: string, res: { titulo: string; contenido: string; tipo: string; etiquetas: string[]; roles_permitidos: string[]; categoria?: string; favorito?: boolean }) => Promise<void>;
+  createResource: (res: { titulo: string; contenido: string; tipo: string; etiquetas: string[]; roles_permitidos: string[]; categoria?: string; favorito?: boolean; cliente_id?: string }) => Promise<void>;
+  updateResource: (id: string, res: { titulo: string; contenido: string; tipo: string; etiquetas: string[]; roles_permitidos: string[]; categoria?: string; favorito?: boolean; cliente_id?: string }) => Promise<void>;
   toggleResourceFavorite: (id: string, favorito: boolean) => Promise<void>;
   deleteResource: (id: string) => Promise<void>;
 
@@ -143,8 +145,9 @@ export const useOperationsStore = create<OperationsState>((set) => ({
   },
   createResource: async (res) => {
     try {
-      const data = await api.post('/AgencyOperations/resources', res);
-      set(state => ({ resources: [...state.resources, data] }));
+      await api.post('/AgencyOperations/resources', res);
+      const data = await api.get('/AgencyOperations/resources');
+      set({ resources: data });
     } catch (err) {
       console.error(err);
       throw err;
@@ -153,9 +156,8 @@ export const useOperationsStore = create<OperationsState>((set) => ({
   updateResource: async (id, res) => {
     try {
       await api.put(`/AgencyOperations/resources/${id}`, res);
-      set(state => ({
-        resources: state.resources.map(r => r.id === id ? { ...r, ...res } : r)
-      }));
+      const data = await api.get('/AgencyOperations/resources');
+      set({ resources: data });
     } catch (err) {
       console.error(err);
       throw err;

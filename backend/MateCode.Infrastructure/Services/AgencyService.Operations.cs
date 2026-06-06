@@ -55,12 +55,13 @@ namespace MateCode.Infrastructure.Services
         public async Task<IEnumerable<Recurso>> GetResourcesAsync(Guid agencyId)
         {
             return await _context.Recursos
+                .Include(r => r.Cliente)
                 .Where(r => r.AgenciaId == agencyId)
                 .OrderByDescending(r => r.FechaCreacion)
                 .ToListAsync();
         }
 
-        public async Task<Recurso> CreateResourceAsync(Guid agencyId, Guid creatorId, string titulo, string contenido, string tipo, JsonElement etiquetas, JsonElement rolesPermitidos, string categoria = "General")
+        public async Task<Recurso> CreateResourceAsync(Guid agencyId, Guid creatorId, string titulo, string contenido, string tipo, JsonElement etiquetas, JsonElement rolesPermitidos, string categoria = "General", Guid? clienteId = null)
         {
             var resource = new Recurso
             {
@@ -73,6 +74,7 @@ namespace MateCode.Infrastructure.Services
                 Etiquetas = etiquetas,
                 RolesPermitidos = rolesPermitidos,
                 Categoria = categoria,
+                ClienteId = clienteId,
                 Favorito = false,
                 FechaCreacion = DateTime.UtcNow
             };
@@ -82,7 +84,7 @@ namespace MateCode.Infrastructure.Services
             return resource;
         }
 
-        public async Task<bool> UpdateResourceAsync(Guid resourceId, string titulo, string contenido, string tipo, JsonElement etiquetas, JsonElement rolesPermitidos, string categoria = "General", bool favorito = false)
+        public async Task<bool> UpdateResourceAsync(Guid resourceId, string titulo, string contenido, string tipo, JsonElement etiquetas, JsonElement rolesPermitidos, string categoria = "General", bool favorito = false, Guid? clienteId = null)
         {
             var resource = await _context.Recursos.FindAsync(resourceId);
             if (resource == null) return false;
@@ -94,6 +96,7 @@ namespace MateCode.Infrastructure.Services
             resource.RolesPermitidos = rolesPermitidos;
             resource.Categoria = categoria;
             resource.Favorito = favorito;
+            resource.ClienteId = clienteId;
 
             return await _context.SaveChangesAsync() > 0;
         }

@@ -72,6 +72,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(u => u.Email).HasColumnName("email");
                 e.Property(u => u.NombreCompleto).HasColumnName("nombre_completo");
                 e.Property(u => u.NombreUsuario).HasColumnName("nombre_usuario").IsRequired(false);
+                e.Property(u => u.FotoPerfilUrl).HasColumnName("foto_perfil_url").IsRequired(false);
                 e.Property(u => u.FechaCreacion).HasColumnName("fecha_creacion");
             });
 
@@ -531,7 +532,9 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(r => r.CreadorId).HasColumnName("creador_id");
                 e.Property(r => r.Favorito).HasColumnName("favorito");
                 e.Property(r => r.Categoria).HasColumnName("categoria");
+                e.Property(r => r.ClienteId).HasColumnName("cliente_id").IsRequired(false);
                 e.Property(r => r.FechaCreacion).HasColumnName("fecha_creacion");
+                e.HasOne(r => r.Cliente).WithMany().HasForeignKey(r => r.ClienteId).OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<TareaOperativa>(e => {

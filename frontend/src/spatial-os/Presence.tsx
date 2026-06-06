@@ -23,11 +23,13 @@ const ZONE_MAPPING: Record<string, string> = {
 function LerpedAvatar({ 
   position, 
   name, 
-  color 
+  color,
+  avatarUrl
 }: { 
   position: [number, number, number], 
   name: string, 
-  color: string 
+  color: string,
+  avatarUrl?: string
 }) {
   // Local state for the smooth animated position
   const [lerpedPos, setLerpedPos] = useState<[number, number, number]>(position);
@@ -45,6 +47,7 @@ function LerpedAvatar({
       position={lerpedPos}
       name={name}
       color={color}
+      avatarUrl={avatarUrl}
     />
   );
 }
@@ -69,7 +72,8 @@ export function Presence() {
         id: user.userId,
         name: user.nombre,
         position: [room.position[0] + offsetX, 0, room.position[2] + offsetZ] as [number, number, number],
-        color: room.accent
+        color: room.accent,
+        avatarUrl: user.avatarUrl
       };
     }).filter(Boolean);
   }, [presences]);
@@ -82,6 +86,7 @@ export function Presence() {
           position={u.position}
           name={u.name}
           color={u.color}
+          avatarUrl={u.avatarUrl}
         />
       ))}
     </group>

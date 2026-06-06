@@ -67,7 +67,7 @@ namespace MateCode.Infrastructure.Services
             return workspace;
         }
  
-        public async Task SyncUserAsync(Guid userId, string email, string nombreCompleto, string nombreUsuario)
+        public async Task SyncUserAsync(Guid userId, string email, string nombreCompleto, string nombreUsuario, string? fotoPerfilUrl = null)
         {
             var user = await _context.Usuarios.FindAsync(userId);
             if (user == null)
@@ -78,6 +78,7 @@ namespace MateCode.Infrastructure.Services
                     Email = email,
                     NombreCompleto = nombreCompleto,
                     NombreUsuario = nombreUsuario,
+                    FotoPerfilUrl = fotoPerfilUrl,
                     FechaCreacion = DateTime.UtcNow
                 };
                 await _context.Usuarios.AddAsync(user);
@@ -90,9 +91,18 @@ namespace MateCode.Infrastructure.Services
                 {
                     user.NombreUsuario = nombreUsuario;
                 }
+                if (fotoPerfilUrl != null)
+                {
+                    user.FotoPerfilUrl = fotoPerfilUrl;
+                }
             }
  
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<Usuario?> GetUserProfileAsync(Guid userId)
+        {
+            return await _context.Usuarios.FindAsync(userId);
         }
 
         public async Task<IEnumerable<object>> GetPendingInvitationsAsync(Guid userId)

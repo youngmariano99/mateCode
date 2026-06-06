@@ -240,6 +240,24 @@ using (var scope = app.Services.CreateScope())
                     END IF;
                 END IF;
 
+                -- Columna foto_perfil_url en nucleo.usuarios (Soporte para Avatares)
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'nucleo' AND table_name = 'usuarios') THEN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'usuarios' AND column_name = 'foto_perfil_url') THEN
+                        ALTER TABLE nucleo.usuarios ADD COLUMN foto_perfil_url TEXT;
+                    END IF;
+                END IF;
+
+                -- Columna cliente_id en organizacion.recursos (Asociación a Clientes del CRM)
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'organizacion' AND table_name = 'recursos') THEN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'recursos' AND column_name = 'cliente_id') THEN
+                        ALTER TABLE organizacion.recursos ADD COLUMN cliente_id UUID;
+                        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'crm' AND table_name = 'clientes') THEN
+                            ALTER TABLE organizacion.recursos ADD CONSTRAINT fk_recursos_cliente FOREIGN KEY (cliente_id) REFERENCES crm.clientes(id) ON DELETE SET NULL;
+                        END IF;
+                    END IF;
+                END IF;
+
+
                 -- Columnas para Perfil, Branding e Identidad de Agencia (Ciclo 1)
                 IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'nucleo' AND table_name = 'agencias') THEN
                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'redes_sociales') THEN

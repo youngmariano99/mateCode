@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Star, Trash2, Copy, Check, BookOpen, SlidersHorizontal } from 'lucide-react';
+import { Star, Trash2, Copy, Check, BookOpen, SlidersHorizontal, Download, ExternalLink, FileText } from 'lucide-react';
 import { type Resource } from '../../store/useOperationsStore';
+import { useAgencyStore } from '../../store/useAgencyStore';
 import Swal from 'sweetalert2';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -84,6 +85,7 @@ export function BibliotecaTab({ resources, onDelete, onToggleFavorite, onEdit }:
           <option value="herramienta">Herramienta</option>
           <option value="documento">Documento</option>
           <option value="template">Plantilla</option>
+          <option value="archivo">Archivo / Foto Cliente</option>
           <option value="otro">Otro</option>
         </select>
         <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)}
@@ -127,6 +129,9 @@ interface PropsTarjeta {
 
 function TarjetaRecurso({ resource: res, copiadoId, onCopiar, onDelete, onToggleFavorite, onEdit }: PropsTarjeta) {
   const esCopiado = copiadoId === res.id;
+  const { activeAgency } = useAgencyStore();
+  const brand = activeAgency?.branding ? (typeof activeAgency.branding === 'string' ? JSON.parse(activeAgency.branding) : activeAgency.branding) : null;
+  const colorPrimario = brand?.colorPrimario || '#10b981';
 
   return (
     <div className="group relative flex flex-col rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-5 transition-all hover:border-zinc-700/60">
@@ -134,7 +139,7 @@ function TarjetaRecurso({ resource: res, copiadoId, onCopiar, onDelete, onToggle
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="rounded-full border border-zinc-700/60 bg-zinc-800/60 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-zinc-400">
-            {res.tipo}
+            {res.tipo === 'archivo' ? 'Archivo' : res.tipo}
           </span>
           {res.categoria && res.categoria !== 'General' && (
             <span className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-indigo-400">
@@ -165,11 +170,82 @@ function TarjetaRecurso({ resource: res, copiadoId, onCopiar, onDelete, onToggle
       {/* Título */}
       <h4 className="mb-2 text-sm font-bold text-white leading-tight">{res.titulo}</h4>
 
+      {/* Client CRM Tag */}
+      {res.cliente && (
+        <div className="mb-3 flex items-center gap-1.5 text-[10px]">
+          <span className="text-zinc-500 font-bold uppercase tracking-wider">Cliente CRM:</span>
+          <span className="font-bold text-indigo-400 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-md">
+            {res.cliente.nombre}
+          </span>
+        </div>
+      )}
+
       {/* Contenido */}
-      {res.contenido && (
-        <pre className="mb-3 flex-1 max-h-[120px] overflow-y-auto rounded-xl border border-zinc-800/60 bg-zinc-950/40 p-3 font-mono text-[11px] leading-relaxed text-zinc-400 whitespace-pre-wrap">
-          {res.contenido}
-        </pre>
+      {res.tipo === 'archivo' ? (
+        <div className="mb-4 flex-1 rounded-xl border border-zinc-800/60 bg-zinc-950/40 p-3 flex flex-col items-center justify-center min-h-[120px]">
+          {res.contenido?.match(/\.(jpeg|jpg|gif|png|webp)/i) ? (
+            <div className="relative group/preview w-full h-24 rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900 flex items-center justify-center">
+              <img src={res.contenido} alt={res.titulo} className="w-full h-full object-cover transition-transform group-hover/preview:scale-105" />
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/preview:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                <a 
+                  href={res.contenido} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="p-1.5 rounded-lg bg-zinc-850 hover:bg-zinc-800 border border-zinc-700 text-white transition-all"
+                  title="Abrir en pestaña nueva"
+                >
+                  <ExternalLink size={14} />
+                </a>
+                <a 
+                  href={res.contenido} 
+                  download 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="p-1.5 rounded-lg text-black transition-all"
+                  style={{ backgroundColor: colorPrimario }}
+                  title="Descargar"
+                >
+                  <Download size={14} />
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center space-y-2">
+              <FileText size={28} className="mx-auto" style={{ color: colorPrimario }} />
+              <div className="text-[10px] font-mono text-zinc-500 truncate max-w-[180px]" title={res.contenido}>
+                {res.contenido?.split('/').pop() || 'Archivo adjunto'}
+              </div>
+              <div className="flex justify-center gap-2">
+                <a 
+                  href={res.contenido} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] bg-zinc-850 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold rounded-lg transition-all"
+                >
+                  <ExternalLink size={10} />
+                  <span>Ver</span>
+                </a>
+                <a 
+                  href={res.contenido} 
+                  download 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] text-black font-bold rounded-lg transition-all"
+                  style={{ backgroundColor: colorPrimario }}
+                >
+                  <Download size={10} />
+                  <span>Descargar</span>
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        res.contenido && (
+          <pre className="mb-3 flex-1 max-h-[120px] overflow-y-auto rounded-xl border border-zinc-800/60 bg-zinc-950/40 p-3 font-mono text-[11px] leading-relaxed text-zinc-400 whitespace-pre-wrap">
+            {res.contenido}
+          </pre>
+        )
       )}
 
       {/* Etiquetas */}

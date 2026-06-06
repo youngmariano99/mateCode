@@ -36,8 +36,8 @@ namespace MateCode.Application.Services
 
         // --- RECURSOS ---
         Task<IEnumerable<Recurso>> GetResourcesAsync(Guid agencyId);
-        Task<Recurso> CreateResourceAsync(Guid agencyId, Guid creatorId, string titulo, string contenido, string tipo, JsonElement etiquetas, JsonElement rolesPermitidos, string categoria = "General");
-        Task<bool> UpdateResourceAsync(Guid resourceId, string titulo, string contenido, string tipo, JsonElement etiquetas, JsonElement rolesPermitidos, string categoria = "General", bool favorito = false);
+        Task<Recurso> CreateResourceAsync(Guid agencyId, Guid creatorId, string titulo, string contenido, string tipo, JsonElement etiquetas, JsonElement rolesPermitidos, string categoria = "General", Guid? clienteId = null);
+        Task<bool> UpdateResourceAsync(Guid resourceId, string titulo, string contenido, string tipo, JsonElement etiquetas, JsonElement rolesPermitidos, string categoria = "General", bool favorito = false, Guid? clienteId = null);
         Task<bool> ToggleResourceFavoriteAsync(Guid resourceId, bool favorito);
         Task<bool> DeleteResourceAsync(Guid resourceId);
 

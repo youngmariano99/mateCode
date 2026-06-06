@@ -91,6 +91,7 @@ export const WorkspaceMap: React.FC = () => {
       x: room ? room.x + room.width / 2 + offsetX : 800,
       y: room ? room.y + room.height / 2 + offsetY : 500,
       color: room ? room.accent : '#10B981',
+      avatarUrl: user.avatarUrl,
       live: true,
       activity: user.zonaActual === 'idle' ? 'En el pasillo' : `Trabajando en ${room?.name || user.zonaActual}`
     };

@@ -9,6 +9,7 @@ namespace MateCode.Core.Entities
         public string Email { get; set; } = string.Empty;
         public string NombreCompleto { get; set; } = string.Empty;
         public string? NombreUsuario { get; set; } = string.Empty;
+        public string? FotoPerfilUrl { get; set; }
         public DateTime FechaCreacion { get; set; }
     }
 

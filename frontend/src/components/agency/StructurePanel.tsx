@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, Users, Plus, Shield, ExternalLink, Building, Globe, Palette, Megaphone, Save } from 'lucide-react';
+import { Briefcase, Users, Plus, Shield, ExternalLink, Building, Globe, Palette, Megaphone, Save, UploadCloud, Image } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAgencyStore } from '../../store/useAgencyStore';
 import type { Member, Agency } from '../../store/useAgencyStore';
+import { ImageCropModal } from '../common/ImageCropModal';
+import { UploadAdapterFactory } from '../../services/UploadAdapters';
 
 interface StructurePanelProps {
   activeAgency: Agency | null;
@@ -40,6 +42,54 @@ export const StructurePanel: React.FC<StructurePanelProps> = ({
   const [colorPrimario, setColorPrimario] = useState('#10b981');
   const [colorSecundario, setColorSecundario] = useState('#6366f1');
   const [tipografia, setTipografia] = useState('Inter');
+
+  // Cropping States
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState('');
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedImageSrc(reader.result as string);
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleLogoCropConfirm = async (croppedBlob: Blob) => {
+    setCropModalOpen(false);
+    setIsUploadingLogo(true);
+    try {
+      const adapter = UploadAdapterFactory.getAdapter();
+      const url = await adapter.uploadImage(croppedBlob);
+      setLogoUrl(url);
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Logo subido correctamente',
+        showConfirmButton: false,
+        timer: 2000,
+        background: '#18181b',
+        color: '#fff'
+      });
+    } catch (err: any) {
+      Swal.fire({
+        title: 'Error al subir',
+        text: err.message || 'No se pudo subir la imagen.',
+        icon: 'error',
+        background: '#09090b',
+        color: '#f4f4f5'
+      });
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
 
   // Marketing
   const [publicoObjetivo, setPublicoObjetivo] = useState('');
@@ -321,14 +371,50 @@ export const StructurePanel: React.FC<StructurePanelProps> = ({
               </h3>
 
               <div>
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1.5">Enlace del Logotipo (URL)</label>
-                <input
-                  type="text"
-                  placeholder="https://ejemplo.com/mi-logo.png"
-                  value={logoUrl}
-                  onChange={e => setLogoUrl(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-850 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500/50"
-                />
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1.5">Logotipo de la Empresa</label>
+                
+                <div className="flex items-center gap-4">
+                  {/* Preview Container */}
+                  <div className="w-16 h-16 rounded-2xl bg-zinc-950 border border-zinc-850 overflow-hidden flex items-center justify-center relative group shrink-0">
+                    {logoUrl ? (
+                      <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                    ) : (
+                      <Image size={24} className="text-zinc-650" />
+                    )}
+                    {isUploadingLogo && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Upload Controls */}
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <label className="px-4 py-2 bg-zinc-850 hover:bg-zinc-800 border border-zinc-750 text-white text-[11px] font-bold rounded-xl cursor-pointer transition-colors flex items-center gap-1.5">
+                        <UploadCloud size={12} className="text-emerald-400" />
+                        <span>Subir Logo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoSelect}
+                          className="hidden"
+                          disabled={isUploadingLogo}
+                        />
+                      </label>
+                      {logoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setLogoUrl('')}
+                          className="px-3 py-2 bg-zinc-950/40 hover:bg-zinc-900/60 border border-zinc-850 text-red-400 hover:text-red-300 text-[11px] font-bold rounded-xl transition-colors"
+                        >
+                          Remover
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[9px] text-zinc-500">Soporta formatos PNG, JPG, WEBP. Límite máximo 20 MB.</p>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -496,6 +582,16 @@ export const StructurePanel: React.FC<StructurePanelProps> = ({
           </div>
         </form>
       )}
+
+      {/* Modal de recorte para el Logo */}
+      <ImageCropModal
+        isOpen={cropModalOpen}
+        imageSrc={selectedImageSrc}
+        aspectRatio={1}
+        circular={false}
+        onClose={() => setCropModalOpen(false)}
+        onConfirm={handleLogoCropConfirm}
+      />
     </div>
   );
 };

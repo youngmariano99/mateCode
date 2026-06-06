@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { 
   Zap, Link as LinkIcon, FileText, User, Copy, Plus, Trash2, 
-  X, ExternalLink, StickyNote, Wrench, ShieldAlert, Bug 
+  X, ExternalLink, StickyNote, Wrench, ShieldAlert, Bug, Camera 
 } from "lucide-react";
 import { api } from "../../lib/apiClient";
 import { useWorkspaceStore } from "../../store/useWorkspaceStore";
 import Swal from "sweetalert2";
+import { ImageCropModal } from "../common/ImageCropModal";
+import { UploadAdapterFactory } from "../../services/UploadAdapters";
 
 const SCRATCHPAD_KEY = "matecode_scratchpad_v1";
 const BUGS_KEY = "matecode_platform_bugs";
@@ -74,6 +76,67 @@ export const QuickAccessHud = () => {
 
   // Profile info
   const [profile, setProfile] = useState<any>(null);
+
+  // Avatar upload and cropping
+  const [avatarCropOpen, setAvatarCropOpen] = useState(false);
+  const [avatarImageSrc, setAvatarImageSrc] = useState("");
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAvatarImageSrc(reader.result as string);
+      setAvatarCropOpen(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleAvatarCropConfirm = async (croppedBlob: Blob) => {
+    setAvatarCropOpen(false);
+    setIsUploadingAvatar(true);
+    try {
+      const adapter = UploadAdapterFactory.getAdapter();
+      const url = await adapter.uploadImage(croppedBlob);
+      
+      const name = profile?.nombreCompleto || profile?.nombre_completo || "";
+      const username = profile?.nombreUsuario || profile?.nombre_usuario || "";
+      await api.put("/Workspace/profile", {
+        nombreCompleto: name,
+        nombreUsuario: username,
+        fotoPerfilUrl: url
+      });
+
+      setProfile((prev: any) => ({
+        ...prev,
+        fotoPerfilUrl: url
+      }));
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Foto de perfil actualizada',
+        showConfirmButton: false,
+        timer: 2000,
+        background: '#18181b',
+        color: '#fff'
+      });
+    } catch (err: any) {
+      Swal.fire({
+        title: 'Error al actualizar',
+        text: err.message || 'No se pudo subir la foto de perfil.',
+        icon: 'error',
+        background: '#09090b',
+        color: '#f4f4f5'
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   // Scratchpad logic
   const [noteText, setNoteText] = useState("");
@@ -494,17 +557,49 @@ Por favor, analiza este error y dime cómo solucionarlo.`;
                 {/* Username */}
                 <div className="space-y-1.5">
                   <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Usuario Activo</span>
-                  <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-xl text-[10px]">
-                    <div className="truncate">
-                      <p className="font-bold text-white leading-none truncate">{profile?.nombre_completo || "Cargando..."}</p>
-                      <p className="text-[8px] text-zinc-500 font-bold uppercase mt-1">
-                        {profile?.nombre_usuario ? `@${profile.nombre_usuario}` : profile?.email || "Sin email"}
+                  <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/5 rounded-xl text-[10px]">
+                    {/* Avatar Container with upload overlay */}
+                    <div className="relative group w-10 h-10 rounded-full bg-zinc-900 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+                      {(profile?.fotoPerfilUrl || profile?.foto_perfil_url) ? (
+                        <img 
+                          src={profile.fotoPerfilUrl || profile.foto_perfil_url} 
+                          alt="Avatar" 
+                          className="w-full h-full object-cover" 
+                        />
+                      ) : (
+                        <User size={18} className="text-zinc-500" />
+                      )}
+                      
+                      {isUploadingAvatar ? (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                          <div className="w-3.5 h-3.5 border border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      ) : (
+                        <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
+                          <Camera size={12} className="text-white" />
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={handleAvatarSelect} 
+                            className="hidden" 
+                          />
+                        </label>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-white leading-none truncate">
+                        {profile?.nombreCompleto || profile?.nombre_completo || "Cargando..."}
+                      </p>
+                      <p className="text-[8px] text-zinc-500 font-bold uppercase mt-1 truncate">
+                        {profile?.nombreUsuario ? `@${profile.nombreUsuario}` : (profile?.nombre_usuario ? `@${profile.nombre_usuario}` : (profile?.email || "Sin email"))}
                       </p>
                     </div>
+
                     {profile && (
                       <button 
-                        onClick={() => copyToClipboard(profile.nombre_usuario ? `@${profile.nombre_usuario}` : profile.email, "Usuario")}
-                        className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-lg transition-all"
+                        onClick={() => copyToClipboard(profile.nombreUsuario || profile.nombre_usuario || profile.email, "Usuario")}
+                        className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-lg transition-all shrink-0"
                       >
                         <Copy size={12} />
                       </button>
@@ -662,6 +757,16 @@ Por favor, analiza este error y dime cómo solucionarlo.`;
         <Zap size={22} className={isOpen ? "fill-current shrink-0 animate-in spin-in-90 duration-500" : "shrink-0"} />
       </button>
     </div>
+
+      {/* Image Crop Modal for User Avatar */}
+      <ImageCropModal
+        isOpen={avatarCropOpen}
+        imageSrc={avatarImageSrc}
+        aspectRatio={1}
+        circular={true}
+        onClose={() => setAvatarCropOpen(false)}
+        onConfirm={handleAvatarCropConfirm}
+      />
   );
 };
 
