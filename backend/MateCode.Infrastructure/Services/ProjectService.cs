@@ -218,14 +218,18 @@ namespace MateCode.Infrastructure.Services
         private string GetDefaultContextJson(string name, string? plantillaWeb)
         {
             string pagesJson = "";
+            string tipoProyecto = "sistema";
+
             if (plantillaWeb?.ToLower() == "landing")
             {
+                tipoProyecto = "web";
                 pagesJson = @"[
                     { ""id"": ""p1"", ""name"": ""Inicio / Landing"", ""route"": ""/"", ""sections"": [{ ""id"": ""s1"", ""title"": ""Hero Section"", ""description"": ""Presentación de propuesta de valor y CTA principal"" }, { ""id"": ""s2"", ""title"": ""Beneficios"", ""description"": ""Detalle de ventajas del producto"" }, { ""id"": ""s3"", ""title"": ""Contacto"", ""description"": ""Captura de leads"" }] }
                 ]";
             }
             else if (plantillaWeb?.ToLower() == "institucional")
             {
+                tipoProyecto = "web";
                 pagesJson = @"[
                     { ""id"": ""p1"", ""name"": ""Inicio"", ""route"": ""/"", ""sections"": [{ ""id"": ""s1"", ""title"": ""Hero Slider"", ""description"": ""Sliders principales e introducción"" }] },
                     { ""id"": ""p2"", ""name"": ""Nosotros"", ""route"": ""/nosotros"", ""sections"": [{ ""id"": ""s2"", ""title"": ""Misión & Visión"", ""description"": ""Misión, visión y valores de la empresa"" }] },
@@ -235,6 +239,7 @@ namespace MateCode.Infrastructure.Services
             }
             else if (plantillaWeb?.ToLower() == "tienda")
             {
+                tipoProyecto = "web";
                 pagesJson = @"[
                     { ""id"": ""p1"", ""name"": ""Inicio / Tienda"", ""route"": ""/"", ""sections"": [{ ""id"": ""s1"", ""title"": ""Banner Principal"", ""description"": ""Destacados y promociones"" }] },
                     { ""id"": ""p2"", ""name"": ""Catálogo"", ""route"": ""/productos"", ""sections"": [{ ""id"": ""s2"", ""title"": ""Grilla de Productos"", ""description"": ""Filtros y paginación de catálogo"" }] },
@@ -252,6 +257,8 @@ namespace MateCode.Infrastructure.Services
 
             return $$"""
             {
+                "tipo_proyecto": "{{tipoProyecto}}",
+                "plantillaWeb": "{{plantillaWeb ?? ""}}",
                 "sitemap": {
                     "project_name": "{{name}}",
                     "pages": {{pagesJson}}

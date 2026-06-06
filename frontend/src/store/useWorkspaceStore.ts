@@ -8,6 +8,7 @@ export interface Project {
   externalSyncUrl?: string;
   externalSyncKey?: string;
   externalSyncType?: string;
+  contextoJson?: any;
 }
 
 interface WorkspaceState {

@@ -8,7 +8,6 @@ import { TemplatePickerModal } from '../shared/TemplatePickerModal';
 import { ProjectStandardsAside } from './ProjectStandardsAside';
 import { StackBuilder } from './StackBuilder';
 import ArchitectureBlueprint from './ArchitectureBlueprint';
-import { BriefingPanel } from './BriefingPanel';
 import { BudgetPanel } from './BudgetPanel';
 import { CollaboratorsList } from './CollaboratorsList';
 
@@ -34,7 +33,7 @@ export const FeasibilityForm = () => {
     const [adnData, setAdnData] = useState<any>(null);
     const [showAdnSelector, setShowAdnSelector] = useState(false);
     const [showContextBuilder, setShowContextBuilder] = useState(false);
-    const [activeTab, setActiveTab] = useState<'engineering' | 'stack' | 'blueprint' | 'briefing' | 'budget' | 'collaborators'>('engineering');
+    const [activeTab, setActiveTab] = useState<'engineering' | 'stack' | 'blueprint' | 'budget' | 'collaborators'>('engineering');
     const [stackCount, setStackCount] = useState(0);
     const [standardsCount, setStandardsCount] = useState(0);
     const [projectStandards, setProjectStandards] = useState<any[]>([]);
@@ -337,42 +336,36 @@ Analizar el contexto del proyecto y su stack técnico, y definir exactamente 10 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 <div className="lg:col-span-2 space-y-8">
                     {/* TABS DE NAVEGACIÓN DE ADN */}
-                    <div className="flex overflow-x-auto md:flex-wrap bg-zinc-900/50 p-1.5 rounded-[2rem] border border-zinc-800 backdrop-blur-md sticky top-4 z-40 shadow-2xl no-scrollbar">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2 w-full p-2 bg-zinc-900/50 rounded-[2rem] border border-zinc-800 backdrop-blur-md sticky top-4 z-40 shadow-2xl">
                         <button
                             onClick={() => setActiveTab('engineering')}
-                            className={`flex-1 min-w-[130px] flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'engineering' ? 'bg-zinc-800 text-emerald-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            className={`w-full flex items-center justify-center gap-2 py-4 px-3 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest whitespace-nowrap ${activeTab === 'engineering' ? 'bg-zinc-800 text-emerald-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
                         >
                             <Cpu size={16} /> 1. ADN/Viabilidad
                         </button>
                         <button
                             onClick={() => setActiveTab('stack')}
-                            className={`flex-1 min-w-[130px] flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'stack' ? 'bg-zinc-800 text-blue-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            className={`w-full flex items-center justify-center gap-2 py-4 px-3 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest whitespace-nowrap ${activeTab === 'stack' ? 'bg-zinc-800 text-blue-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
                         >
                             <Layers size={16} /> 2. Stack Técnico
                         </button>
                         <button
                             onClick={() => setActiveTab('blueprint')}
-                            className={`flex-1 min-w-[130px] flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'blueprint' ? 'bg-zinc-800 text-purple-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            className={`w-full flex items-center justify-center gap-2 py-4 px-3 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest whitespace-nowrap ${activeTab === 'blueprint' ? 'bg-zinc-800 text-purple-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
                         >
                             <Zap size={16} /> 3. Estándares
                         </button>
                         <button
-                            onClick={() => setActiveTab('briefing')}
-                            className={`flex-1 min-w-[130px] flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'briefing' ? 'bg-zinc-800 text-emerald-400 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
-                        >
-                            <Palette size={16} /> 4. Relevamiento
-                        </button>
-                        <button
                             onClick={() => setActiveTab('budget')}
-                            className={`flex-1 min-w-[130px] flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'budget' ? 'bg-zinc-800 text-amber-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            className={`w-full flex items-center justify-center gap-2 py-4 px-3 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest whitespace-nowrap ${activeTab === 'budget' ? 'bg-zinc-800 text-amber-500 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
                         >
-                            <Calculator size={16} /> 5. Cotizaciones
+                            <Calculator size={16} /> 4. Cotizaciones
                         </button>
                         <button
                             onClick={() => setActiveTab('collaborators')}
-                            className={`flex-1 min-w-[130px] flex items-center justify-center gap-3 py-5 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest ${activeTab === 'collaborators' ? 'bg-zinc-800 text-blue-400 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            className={`w-full flex items-center justify-center gap-2 py-4 px-3 rounded-[1.5rem] text-[10px] font-black uppercase transition-all tracking-widest whitespace-nowrap ${activeTab === 'collaborators' ? 'bg-zinc-800 text-blue-400 shadow-xl' : 'text-zinc-500 hover:text-zinc-300'}`}
                         >
-                            <Users size={16} /> 6. Equipo
+                            <Users size={16} /> 5. Equipo
                         </button>
                     </div>
 
@@ -444,12 +437,6 @@ Analizar el contexto del proyecto y su stack técnico, y definir exactamente 10 
                         {activeTab === 'blueprint' && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <ArchitectureBlueprint projectId={projectId!} />
-                            </div>
-                        )}
-
-                        {activeTab === 'briefing' && projectId && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <BriefingPanel projectId={projectId} />
                             </div>
                         )}
 

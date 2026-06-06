@@ -14,6 +14,7 @@ import {
 import { CreateBugModal } from '../components/devhub/CreateBugModal';
 import { CreateDecisionModal } from '../components/devhub/CreateDecisionModal';
 import { usePresence } from '../context/PresenceContext';
+import { QuickAccessHud } from '../components/spatial/QuickAccessHud';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWorkspaceStore } from '../store/useWorkspaceStore';
 import { api } from '../lib/apiClient';
@@ -342,6 +343,7 @@ export const SpatialLayout: React.FC = () => {
 
       {isBugModalOpen && <CreateBugModal projectId={workspaceId || tenantId!} onClose={() => setIsBugModalOpen(false)} onSuccess={() => setIsBugModalOpen(false)} />}
       {isDecisionModalOpen && <CreateDecisionModal projectId={workspaceId || tenantId!} onClose={() => setIsDecisionModalOpen(false)} onSuccess={() => setIsDecisionModalOpen(false)} />}
+      <QuickAccessHud />
 
       <AnimatePresence>
         {showOverlay && emergencyMeeting && (

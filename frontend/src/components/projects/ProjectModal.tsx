@@ -24,6 +24,9 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
   const [loading, setLoading] = useState(false);
   const { leads, fetchLeads } = useCrmStore();
 
+  const [tipoProyecto, setTipoProyecto] = useState<'sistema' | 'web'>('sistema');
+  const [plantillaWeb, setPlantillaWeb] = useState('landing');
+
   useEffect(() => {
     if (isOpen) {
       fetchLeads();
@@ -39,6 +42,8 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
       setNombre('');
       setDescripcion('');
       setClienteId('');
+      setTipoProyecto('sistema');
+      setPlantillaWeb('landing');
     }
   }, [projectToEdit, isOpen]);
 
@@ -68,7 +73,8 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
         await api.post('/Project', { 
           Nombre: nombre, 
           Descripcion: descripcion,
-          ClienteId: clienteId || null
+          ClienteId: clienteId || null,
+          PlantillaWeb: tipoProyecto === 'web' ? plantillaWeb : null
         });
         Swal.fire({
           toast: true,
@@ -174,6 +180,51 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {!projectToEdit && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] ml-2">Tipo de Proyecto</label>
+                      <div className="relative">
+                        <select
+                          value={tipoProyecto}
+                          onChange={(e) => setTipoProyecto(e.target.value as 'sistema' | 'web')}
+                          className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:border-emerald-500/50 transition-all cursor-pointer appearance-none bg-zinc-950"
+                        >
+                          <option value="sistema" className="bg-zinc-950 text-white">Sistema Completo (Backend, Frontend, DB, etc.)</option>
+                          <option value="web" className="bg-zinc-950 text-white">Página Web / Landing / Institucional</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none text-zinc-500">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+
+                    {tipoProyecto === 'web' && (
+                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <label className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] ml-2">Plantilla Web</label>
+                        <div className="relative">
+                          <select
+                            value={plantillaWeb}
+                            onChange={(e) => setPlantillaWeb(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:border-emerald-500/50 transition-all cursor-pointer appearance-none bg-zinc-950"
+                          >
+                            <option value="landing" className="bg-zinc-950 text-white">Landing Page (Conversión y Leads)</option>
+                            <option value="institucional" className="bg-zinc-950 text-white">Página Institucional (Empresas y Servicios)</option>
+                            <option value="tienda" className="bg-zinc-950 text-white">Tienda Online / E-commerce (Productos y Carrito)</option>
+                          </select>
+                          <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none text-zinc-500">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] ml-2">Descripción / Contexto</label>

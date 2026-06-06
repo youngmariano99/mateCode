@@ -5,7 +5,7 @@ import { api } from '../lib/apiClient';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Briefcase, Plus, Layout, Zap, Globe, Shield, ArrowLeft, Building, ChevronRight, LogOut, Copy, Check, Bell
+  Briefcase, Plus, Layout, Zap, Globe, Shield, ArrowLeft, Building, ChevronRight, LogOut, Copy, Check, Bell, Edit2
 } from 'lucide-react';
 import { MateLoadingScreen } from '../components/layout/MateLoadingScreen';
 import Swal from 'sweetalert2';
@@ -46,6 +46,69 @@ export const WorkspaceSelectorPage = () => {
   const [selectedWsId, setSelectedWsId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [copiedEmail, setCopiedEmail] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editUsername, setEditUsername] = useState('');
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+
+  const handleOpenEditProfile = () => {
+    setEditName(currentUser?.user_metadata?.nombre_completo || currentUser?.user_metadata?.full_name || '');
+    setEditUsername(currentUser?.user_metadata?.username || '');
+    setIsProfileModalOpen(true);
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editUsername.trim()) {
+      Swal.fire({ title: 'Error', text: 'El nombre de usuario no puede estar vacío.', icon: 'error', background: '#09090b', color: '#f4f4f5' });
+      return;
+    }
+    const cleanUsername = editUsername.trim().toLowerCase().replace(/[^a-zA-Z0-9_.-]/g, '');
+    if (!cleanUsername) {
+      Swal.fire({ title: 'Error', text: 'Nombre de usuario inválido.', icon: 'error', background: '#09090b', color: '#f4f4f5' });
+      return;
+    }
+
+    setIsUpdatingProfile(true);
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          full_name: editName,
+          username: cleanUsername
+        }
+      });
+
+      if (error) throw error;
+
+      await api.put('/Workspace/profile', {
+        nombreCompleto: editName,
+        nombreUsuario: cleanUsername
+      });
+
+      setCurrentUser(data.user);
+
+      Swal.fire({
+        title: '¡Perfil Actualizado!',
+        text: 'Tu nombre y nombre de usuario se han guardado correctamente.',
+        icon: 'success',
+        background: '#09090b',
+        color: '#f4f4f5',
+        confirmButtonColor: '#10b981'
+      });
+      setIsProfileModalOpen(false);
+      await fetchAgencies();
+    } catch (err: any) {
+      Swal.fire({
+        title: 'Error al actualizar',
+        text: err.message || 'No se pudo guardar la información.',
+        icon: 'error',
+        background: '#09090b',
+        color: '#f4f4f5'
+      });
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
 
   // Carga inicial
   useEffect(() => {
@@ -243,10 +306,16 @@ export const WorkspaceSelectorPage = () => {
   // Filtrado clasificado de organizaciones
   const personalAgencies = agencies.filter(a => a.tipo === 'personal');
   const ownedAgencies = isUserLoaded 
-    ? agencies.filter(a => a.tipo !== 'personal' && a.propietario_id?.toLowerCase() === currentUser.id?.toLowerCase())
+    ? agencies.filter(a => {
+        const ownerId = a.propietario_id || a.propietarioId;
+        return a.tipo !== 'personal' && ownerId?.toLowerCase() === currentUser.id?.toLowerCase();
+      })
     : [];
   const invitedAgencies = isUserLoaded
-    ? agencies.filter(a => a.tipo !== 'personal' && a.propietario_id?.toLowerCase() !== currentUser.id?.toLowerCase())
+    ? agencies.filter(a => {
+        const ownerId = a.propietario_id || a.propietarioId;
+        return a.tipo !== 'personal' && ownerId?.toLowerCase() !== currentUser.id?.toLowerCase();
+      })
     : [];
 
   const userName = currentUser?.user_metadata?.nombre_completo || currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || 'Desarrollador';
@@ -281,17 +350,26 @@ export const WorkspaceSelectorPage = () => {
           <div className="bg-zinc-900/40 border border-zinc-800/80 p-6 rounded-[2rem] flex flex-col justify-between w-full lg:w-80 shrink-0 backdrop-blur-xl shadow-xl min-h-[480px]">
             <div className="space-y-6">
               {/* Perfil del Usuario */}
-              <div className="flex items-center gap-3.5 pb-4 border-b border-zinc-800/65">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-black text-base flex items-center justify-center shadow-inner">
-                  {userName.substring(0, 2).toUpperCase()}
+              <div className="flex items-center justify-between pb-4 border-b border-zinc-800/65 gap-2">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-black text-base flex items-center justify-center shadow-inner shrink-0">
+                    {userName.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold text-sm text-white truncate">{userName}</h3>
+                    {currentUser?.user_metadata?.username && (
+                      <span className="text-[11px] text-emerald-400 font-mono block truncate">@{currentUser.user_metadata.username}</span>
+                    )}
+                    <span className="text-[9px] text-zinc-500 uppercase tracking-widest font-black block mt-0.5">Control Personal</span>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-bold text-sm text-white truncate">{userName}</h3>
-                  {currentUser?.user_metadata?.username && (
-                    <span className="text-[11px] text-emerald-400 font-mono block">@{currentUser.user_metadata.username}</span>
-                  )}
-                  <span className="text-[9px] text-zinc-500 uppercase tracking-widest font-black block mt-0.5">Control Personal</span>
-                </div>
+                <button
+                  onClick={handleOpenEditProfile}
+                  className="p-1.5 bg-zinc-950/40 border border-zinc-800 hover:bg-zinc-800 hover:text-white text-zinc-400 rounded-xl transition-colors shrink-0"
+                  title="Editar Perfil"
+                >
+                  <Edit2 size={13} />
+                </button>
               </div>
 
               {/* Identidad copiable para recibir invitaciones */}
@@ -651,6 +729,85 @@ export const WorkspaceSelectorPage = () => {
            <p className="text-[10px] font-bold text-zinc-800 uppercase tracking-[0.4em]">MateCode Architecture</p>
         </div>
       </motion.div>
+
+      {/* Modal de Editar Perfil */}
+      <AnimatePresence>
+        {isProfileModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsProfileModalOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Box */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="relative bg-zinc-900 border border-zinc-800 rounded-3xl p-6 w-full max-w-md space-y-4 shadow-2xl z-10"
+            >
+              <div>
+                <h3 className="text-lg font-bold text-white">Editar Perfil</h3>
+                <p className="text-zinc-550 text-[10px] uppercase tracking-wider">Actualiza tu información personal</p>
+              </div>
+
+              <form onSubmit={handleSaveProfile} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-550 uppercase tracking-widest mb-1.5">
+                    Nombre Completo
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-zinc-950/65 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-650 focus:outline-none focus:border-zinc-700 transition-colors"
+                    placeholder="Ej: Mariano Young"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-550 uppercase tracking-widest mb-1.5">
+                    Nombre de Usuario (@username)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editUsername}
+                    onChange={(e) => setEditUsername(e.target.value.replace(/[^a-zA-Z0-9_.-]/g, ''))}
+                    className="w-full px-3.5 py-2.5 bg-zinc-950/65 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-650 focus:outline-none focus:border-zinc-700 transition-colors font-mono"
+                    placeholder="Ej: marianodev"
+                  />
+                  <span className="text-[9px] text-zinc-650 mt-1 block">
+                    Solo letras, números, puntos, guiones y barras bajas.
+                  </span>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900/60">
+                  <button
+                    type="button"
+                    onClick={() => setIsProfileModalOpen(false)}
+                    className="px-4 py-2 bg-zinc-850 hover:bg-zinc-800 text-zinc-300 rounded-xl text-xs font-bold transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUpdatingProfile}
+                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-black rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-500/10"
+                  >
+                    {isUpdatingProfile ? 'Guardando...' : 'Guardar Cambios'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

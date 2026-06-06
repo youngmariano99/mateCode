@@ -27,7 +27,30 @@ const DEFAULT_CODES: Record<DiagramType, string> = {
         relationships: []
     }, null, 2),
     UML: `@startuml\nactor "Usuario" as U\nusecase "Login" as UC1\nU --> UC1\n@enduml`,
-    SITEMAP: `{\n  "sitemap": {\n    "home": {\n      "sections": [\n        { "name": "Dashboard" }\n      ]\n    }\n  }\n}`,
+    SITEMAP: JSON.stringify({
+        sitemap: {
+            project_name: 'Proyecto MateCode',
+            pages: [
+                { id: 'p1', name: 'Inicio', route: '/', sections: [{ id: 's1', title: 'Hero', description: 'Presentación del producto' }] }
+            ]
+        },
+        branding: {
+            identity: { name: '', purpose: '', slogan: '', personality: '' },
+            visuals: { 
+                primaryHex: '#10b981', 
+                secondaryHex: '#3b82f6', 
+                accentHex: '#f59e0b', 
+                backgroundHex: '#09090b',
+                headingFont: 'Outfit',
+                bodyFont: 'Inter',
+                numberFont: 'JetBrains Mono',
+                imageStyle: 'Minimalist'
+            },
+            layout_rules: { navbar_style: 'sticky', footer_style: 'standard' },
+            voice: { tone: 'Professional', prohibited_words: [], slang_allowed: false },
+            restrictions: { no_go_list: [] }
+        }
+    }, null, 2),
     ROLES: JSON.stringify({
         roles: [
             { name: "Administrador", description: "Acceso total al sistema y configuraciones globales.", permissions: ["*"] },
@@ -50,6 +73,7 @@ export const DiagramWorkspace = () => {
     const projectId = activeProjectId || paramProjectId;
     
     const [activeTab, setActiveTab] = useState<DiagramType>('ERD');
+    const [project, setProject] = useState<any>(null);
     const [codes, setCodes] = useState<Record<DiagramType, string>>(DEFAULT_CODES);
     const [elements, setElements] = useState<{ nodes: DiagramNode[], edges: DiagramEdge[] }>({ nodes: [], edges: [] });
     const [isSaving, setIsSaving] = useState(false);
@@ -59,6 +83,11 @@ export const DiagramWorkspace = () => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+
+    const isWebProject = project?.contextoJson?.tipo_proyecto === 'web' || 
+        ['landing', 'institucional', 'tienda'].includes(project?.contextoJson?.plantillaWeb);
+
+    const visibleTabs: DiagramType[] = isWebProject ? ['SITEMAP'] : ['ERD', 'UML', 'SITEMAP', 'ROLES'];
 
     const handleExternalSync = (syncedTables: any[]) => {
         // Mapeador: de ErdTable[] a nuestro Formato de Diagrama Visual
@@ -127,6 +156,15 @@ export const DiagramWorkspace = () => {
             if (!projectId) return;
             try {
                 setLoading(true);
+                const proj = await api.get(`/Project/${projectId}`);
+                setProject(proj);
+
+                const isWeb = proj.contextoJson?.tipo_proyecto === 'web' || 
+                    ['landing', 'institucional', 'tienda'].includes(proj.contextoJson?.plantillaWeb);
+                if (isWeb) {
+                    setActiveTab('SITEMAP');
+                }
+
                 const data: any[] = await api.get(`/Diagram/project/${projectId}`);
                 const newCodes = { ...DEFAULT_CODES };
                 data.forEach(d => {
@@ -135,6 +173,38 @@ export const DiagramWorkspace = () => {
                         newCodes[type] = d.contenidoCodigo;
                     }
                 });
+
+                if (proj.contextoJson?.sitemap || proj.contextoJson?.branding) {
+                    const defaultSitemap = {
+                        project_name: proj.nombre || 'Proyecto MateCode',
+                        pages: [
+                            { id: 'p1', name: 'Inicio', route: '/', sections: [{ id: 's1', title: 'Hero', description: 'Presentación del producto' }] }
+                        ]
+                    };
+                    const defaultBranding = {
+                        identity: { name: proj.nombre || '', purpose: '', slogan: '', personality: '' },
+                        visuals: { 
+                            primaryHex: '#10b981', 
+                            secondaryHex: '#3b82f6', 
+                            accentHex: '#f59e0b', 
+                            backgroundHex: '#09090b',
+                            headingFont: 'Outfit',
+                            bodyFont: 'Inter',
+                            numberFont: 'JetBrains Mono',
+                            imageStyle: 'Minimalist'
+                        },
+                        layout_rules: { navbar_style: 'sticky', footer_style: 'standard' },
+                        voice: { tone: 'Professional', prohibited_words: [], slang_allowed: false },
+                        restrictions: { no_go_list: [] }
+                    };
+
+                    const unifiedSitemapCode = {
+                        sitemap: proj.contextoJson.sitemap || defaultSitemap,
+                        branding: proj.contextoJson.branding || defaultBranding
+                    };
+                    newCodes.SITEMAP = JSON.stringify(unifiedSitemapCode, null, 2);
+                }
+
                 setCodes(newCodes);
                 setDataLoaded(true);
             } catch (err) {
@@ -164,7 +234,26 @@ export const DiagramWorkspace = () => {
         if (!projectId) return;
         setIsSaving(true);
         try {
-            await api.put(`/Diagram/project/${projectId}/${activeTab}`, { codigo: codes[activeTab] });
+            if (activeTab === 'SITEMAP') {
+                let parsedCode: any = {};
+                try {
+                    parsedCode = JSON.parse(codes.SITEMAP);
+                } catch (e) {
+                    throw new Error("El código del Sitemap no es un JSON válido.");
+                }
+
+                const updatedContext = {
+                    ...(project?.contextoJson || {}),
+                    sitemap: parsedCode.sitemap,
+                    branding: parsedCode.branding
+                };
+
+                await api.put(`/Project/${projectId}/feasibility`, updatedContext);
+                setProject((prev: any) => prev ? { ...prev, contextoJson: updatedContext } : prev);
+            } else {
+                await api.put(`/Diagram/project/${projectId}/${activeTab}`, { codigo: codes[activeTab] });
+            }
+
             Swal.fire({
                 icon: 'success',
                 title: 'Diseño Guardado',
@@ -176,8 +265,8 @@ export const DiagramWorkspace = () => {
                 background: '#18181b',
                 color: '#fff'
             });
-        } catch (error) {
-            Swal.fire('Error', 'No se pudo guardar el diseño', 'error');
+        } catch (error: any) {
+            Swal.fire('Error', error.message || 'No se pudo guardar el diseño', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -247,7 +336,7 @@ export const DiagramWorkspace = () => {
 
             {/* Selector de Tablero */}
             <div className="flex p-1 bg-zinc-900 border border-zinc-800 rounded-2xl w-fit">
-                {['ERD', 'UML', 'SITEMAP', 'ROLES'].map((tab) => (
+                {visibleTabs.map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab as any)}

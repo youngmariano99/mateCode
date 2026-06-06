@@ -11,7 +11,6 @@ import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { Map2D, type MapUser } from '../spatial/Map2D';
 import { ROOMS as BLUEPRINT_ROOMS } from '../spatial/rooms';
 import { DynamicWorkspace, type WorkspaceViewMode } from '../spatial/DynamicWorkspace';
-import { FloatingScratchpad } from '../spatial/FloatingScratchpad';
 import { ProjectModal } from '../projects/ProjectModal';
 
 // Existing Logic Imports
@@ -56,6 +55,17 @@ const QUICK_SWITCH_ITEMS = [
 
 export const WorkspaceMap: React.FC = () => {
   const { activeRoom, setActiveRoom, activeProjectId, projects } = useWorkspaceStore();
+  
+  const activeProject = projects.find(p => p.id === activeProjectId);
+  const isWebProject = activeProject?.contextoJson?.tipo_proyecto === 'web' ||
+      ['landing', 'institucional', 'tienda'].includes(activeProject?.contextoJson?.plantillaWeb);
+
+  const filteredQuickSwitch = QUICK_SWITCH_ITEMS.filter(item => {
+    if (isWebProject && (item.id === 'phase01' || item.id === 'phase04')) {
+      return false;
+    }
+    return true;
+  });
   const { presences, emergencyMeeting, callEmergencyMeeting } = usePresence();
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceViewMode>("windowed");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -187,7 +197,23 @@ export const WorkspaceMap: React.FC = () => {
               {({ zoomIn, zoomOut, resetTransform }) => (
                 <>
                   <TransformComponent wrapperClass="!w-full !h-full" contentClass="w-full h-full">
-                    <Map2D users={mapUsers} onRoomClick={(room) => setActiveRoom((REVERSE_ROOM_ID_MAP[room.id] || room.id) as any)} />
+                    <Map2D 
+                      users={mapUsers} 
+                      onRoomClick={(room) => {
+                        const roomKey = REVERSE_ROOM_ID_MAP[room.id] || room.id;
+                        if (isWebProject && (roomKey === 'phase01' || roomKey === 'phase04')) {
+                          Swal.fire({
+                            title: 'Sala no requerida',
+                            text: 'Esta fase (Estrategia / Testing) no es necesaria para proyectos Web.',
+                            icon: 'info',
+                            background: '#18181b',
+                            color: '#fff'
+                          });
+                          return;
+                        }
+                        setActiveRoom(roomKey as any);
+                      }} 
+                    />
                   </TransformComponent>
                   <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
                     <button onClick={() => zoomIn()} className="w-9 h-9 grid place-items-center rounded-md border border-slate-700/80 bg-slate-950/85 text-slate-300 hover:text-white transition-all"><Plus size={18} /></button>
@@ -218,13 +244,23 @@ export const WorkspaceMap: React.FC = () => {
         subtitle={activeRoomMeta?.subtitle}
         activeRoom={activeRoomMeta ? { id: activeRoomMeta.id, name: activeRoomMeta.name, accent: activeRoomMeta.accent } : null}
         onViewModeChange={setWorkspaceMode}
-        quickSwitch={QUICK_SWITCH_ITEMS}
-        onQuickSwitch={(id) => setActiveRoom(id as any)}
+        quickSwitch={filteredQuickSwitch}
+        onQuickSwitch={(id) => {
+          if (isWebProject && (id === 'phase01' || id === 'phase04')) {
+            Swal.fire({
+              title: 'Sala no requerida',
+              text: 'Esta fase no es necesaria para proyectos Web.',
+              icon: 'info',
+              background: '#18181b',
+              color: '#fff'
+            });
+            return;
+          }
+          setActiveRoom(id as any);
+        }}
       >
         {renderModule()}
       </DynamicWorkspace>
-
-      <FloatingScratchpad />
 
       {/* Project Modal for Creating Projects */}
       <ProjectModal 

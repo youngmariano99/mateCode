@@ -62,6 +62,32 @@ namespace MateCode.API.Controllers
             return Ok(new { id = userId, email, nombreCompleto = name, nombreUsuario = username });
         }
 
+        public class UpdateProfileRequest
+        {
+            public string NombreCompleto { get; set; } = string.Empty;
+            public string NombreUsuario { get; set; } = string.Empty;
+        }
+
+        [HttpPut("profile")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest req)
+        {
+            var userIdStr = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr)) 
+                return Unauthorized("Usuario no identificado en el token.");
+
+            var userId = Guid.Parse(userIdStr);
+            var email = User.FindFirstValue("email") ?? User.FindFirstValue(ClaimTypes.Email) ?? "";
+
+            if (string.IsNullOrEmpty(req.NombreUsuario))
+            {
+                return BadRequest("El nombre de usuario no puede estar vacío.");
+            }
+
+            await _workspaceService.SyncUserAsync(userId, email, req.NombreCompleto, req.NombreUsuario);
+
+            return Ok(new { id = userId, email, nombreCompleto = req.NombreCompleto, nombreUsuario = req.NombreUsuario });
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetMyWorkspaces()
         {

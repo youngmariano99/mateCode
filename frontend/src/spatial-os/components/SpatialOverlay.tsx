@@ -2,6 +2,7 @@ import React from 'react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { DynamicWorkspace, type WorkspaceViewMode } from '../../components/spatial/DynamicWorkspace';
 import { ROOMS } from '../manifest';
+import Swal from 'sweetalert2';
 
 // Workspace Imports
 import { DiagramWorkspace } from '../../components/design/DiagramWorkspace';
@@ -37,8 +38,19 @@ export const SpatialOverlay: React.FC<SpatialOverlayProps> = ({
   emergencyMeeting,
   onViewModeChange 
 }) => {
-  const { activeRoom, setActiveRoom, activeProjectId } = useWorkspaceStore();
+  const { activeRoom, setActiveRoom, activeProjectId, projects } = useWorkspaceStore();
   const roomMeta = ROOMS.find(r => r.id === activeRoom);
+
+  const activeProject = projects.find(p => p.id === activeProjectId);
+  const isWebProject = activeProject?.contextoJson?.tipo_proyecto === 'web' ||
+      ['landing', 'institucional', 'tienda'].includes(activeProject?.contextoJson?.plantillaWeb);
+
+  const filteredQuickSwitch = QUICK_SWITCH_ITEMS.filter(item => {
+    if (isWebProject && (item.id === 'phase01' || item.id === 'phase04')) {
+      return false;
+    }
+    return true;
+  });
 
   const renderModule = () => {
     if (activeRoom === 'reception') return <CrmWorkspace />;
@@ -80,8 +92,20 @@ export const SpatialOverlay: React.FC<SpatialOverlayProps> = ({
           accent: roomMeta.accent
         } : null}
         onViewModeChange={onViewModeChange}
-        quickSwitch={QUICK_SWITCH_ITEMS}
-        onQuickSwitch={(id) => setActiveRoom(id as any)}
+        quickSwitch={filteredQuickSwitch}
+        onQuickSwitch={(id) => {
+          if (isWebProject && (id === 'phase01' || id === 'phase04')) {
+            Swal.fire({
+              title: 'Sala no requerida',
+              text: 'Esta fase no es necesaria para proyectos Web.',
+              icon: 'info',
+              background: '#18181b',
+              color: '#fff'
+            });
+            return;
+          }
+          setActiveRoom(id as any);
+        }}
       >
         {renderModule()}
       </DynamicWorkspace>

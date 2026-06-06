@@ -4,7 +4,8 @@ import { api } from '../lib/apiClient';
 export interface Agency {
   id: string;
   nombre: string;
-  propietario_id: string;
+  propietario_id?: string;
+  propietarioId?: string;
   tipo: 'personal' | 'agencia';
   fecha_creacion: string;
   redes_sociales?: any;

@@ -121,6 +121,36 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
     }
   };
 
+  const handleDrop = async (e: React.DragEvent, dateString: string) => {
+    e.preventDefault();
+    const contentId = e.dataTransfer.getData('text/plain');
+    if (!contentId) return;
+    const item = contents.find(c => c.id === contentId);
+    if (!item) return;
+
+    try {
+      const payload = {
+        miembroId: item.miembro_id || (item as any).miembroId,
+        titulo: item.titulo,
+        plataformas: item.plataformas,
+        guionPlantilla: item.guion_plantilla || (item as any).guionPlantilla,
+        dialogo: item.dialogo,
+        procedimientoEstandar: item.procedimiento_estandar || (item as any).procedimientoEstandar,
+        estado: item.estado,
+        notasMejora: item.notas_mejora || (item as any).notasMejora,
+        fechaPublicacion: new Date(dateString).toISOString()
+      };
+
+      await updateContent(item.id, {
+        ...payload,
+        resumenAnalitico: item.resumen_analitico || (item as any).resumenAnalitico
+      });
+      fetchContents();
+    } catch (err: any) {
+      console.error("Error updating date on drop:", err);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     const { isConfirmed } = await Swal.fire({
       title: '¿Eliminar planificación?',
@@ -277,12 +307,17 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
 
             <div className="grid grid-cols-7 flex-1">
               {allCells.map((cell, idx) => {
-                const dayContents = contents.filter(c => c.fecha_publicacion && c.fecha_publicacion.split('T')[0] === cell.dateString);
+                const dayContents = contents.filter(c => {
+                  const publishDate = c.fecha_publicacion || (c as any).fechaPublicacion;
+                  return publishDate && publishDate.split('T')[0] === cell.dateString;
+                });
                 const isToday = cell.dateString === new Date().toISOString().split('T')[0];
 
                 return (
                   <div
                     key={idx}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => handleDrop(e, cell.dateString)}
                     className={`min-h-[75px] border-b border-r border-zinc-850/60 p-2 flex flex-col gap-1 transition-all ${
                       cell.isCurrentMonth ? 'bg-transparent' : 'bg-zinc-900/10 opacity-30'
                     } hover:bg-zinc-900/20`}
@@ -311,7 +346,9 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
                         <button
                           key={c.id}
                           onClick={() => handleEditClick(c)}
-                          className="w-full text-left px-1.5 py-0.5 rounded text-[8px] font-bold truncate bg-emerald-500/10 border-l-2 border-emerald-500 text-emerald-450 hover:brightness-125 transition-all"
+                          draggable
+                          onDragStart={(e) => e.dataTransfer.setData('text/plain', c.id)}
+                          className="w-full text-left px-1.5 py-0.5 rounded text-[8px] font-bold truncate bg-emerald-500/10 border-l-2 border-emerald-500 text-emerald-450 hover:brightness-125 transition-all cursor-grab active:cursor-grabbing"
                         >
                           {c.titulo}
                         </button>

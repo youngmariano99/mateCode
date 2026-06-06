@@ -230,6 +230,16 @@ using (var scope = app.Services.CreateScope())
                     END IF;
                 END IF;
 
+                -- Columna reunion_id en colab.decisiones (Corrección de error de inserción de Decisiones/Ideas)
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'colab' AND table_name = 'decisiones') THEN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'colab' AND table_name = 'decisiones' AND column_name = 'reunion_id') THEN
+                        ALTER TABLE colab.decisiones ADD COLUMN reunion_id UUID;
+                        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'colab' AND table_name = 'reuniones') THEN
+                            ALTER TABLE colab.decisiones ADD CONSTRAINT fk_decisiones_reunion FOREIGN KEY (reunion_id) REFERENCES colab.reuniones(id) ON DELETE SET NULL;
+                        END IF;
+                    END IF;
+                END IF;
+
                 -- Columnas para Perfil, Branding e Identidad de Agencia (Ciclo 1)
                 IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'nucleo' AND table_name = 'agencias') THEN
                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'redes_sociales') THEN

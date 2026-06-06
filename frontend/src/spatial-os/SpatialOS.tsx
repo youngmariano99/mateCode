@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Lock, Unlock } from "lucide-react";
 import { ROOMS } from "./manifest";
+import Swal from "sweetalert2";
 import { Lighting } from "./Lighting";
 import { BuildingShell } from "./BuildingShell";
 import { CameraRig, type ViewMode } from "./CameraRig";
@@ -46,8 +47,12 @@ export function SpatialOS() {
   const [mode, setMode] = useState<ViewMode>("isometric");
   const [isLocked, setIsLocked] = useState(true);
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceViewMode>("windowed");
-  const { activeRoom, setActiveRoom } = useWorkspaceStore();
+  const { activeRoom, setActiveRoom, activeProjectId, projects } = useWorkspaceStore();
   const { emergencyMeeting } = usePresence();
+
+  const activeProject = projects.find(p => p.id === activeProjectId);
+  const isWebProject = activeProject?.contextoJson?.tipo_proyecto === 'web' ||
+      ['landing', 'institucional', 'tienda'].includes(activeProject?.contextoJson?.plantillaWeb);
 
   // SCENE HIDING: Ocultamos el mapa 3D solo cuando el workspace está MAXIMIZADO.
   // En 'windowed' o 'drawer', lo dejamos visible para el efecto de blur/vidrio.
@@ -76,6 +81,16 @@ export function SpatialOS() {
                 key={room.id} 
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (isWebProject && (room.id === 'phase01' || room.id === 'phase04')) {
+                    Swal.fire({
+                      title: 'Sala no requerida',
+                      text: 'Esta fase (Estrategia / Testing) no es necesaria para proyectos Web.',
+                      icon: 'info',
+                      background: '#18181b',
+                      color: '#fff'
+                    });
+                    return;
+                  }
                   setActiveRoom(room.id as any);
                 }}
                 onPointerOver={() => (document.body.style.cursor = "pointer")}
