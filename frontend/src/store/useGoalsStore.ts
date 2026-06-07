@@ -22,6 +22,8 @@ interface GoalsState {
   fetchGoals: (userId?: string) => Promise<void>;
   createGoal: (goal: { usuario_asignado_id: string; titulo: string; descripcion: string; tipo_periodo: string; fecha_limite?: string }) => Promise<void>;
   toggleGoal: (id: string, completado: boolean) => Promise<void>;
+  updateGoal: (id: string, goal: { usuario_asignado_id: string; titulo: string; descripcion: string; tipo_periodo: string; fecha_limite?: string }) => Promise<void>;
+  deleteGoal: (id: string) => Promise<void>;
 }
 
 export const useGoalsStore = create<GoalsState>((set) => ({
@@ -57,6 +59,34 @@ export const useGoalsStore = create<GoalsState>((set) => ({
       }));
     } catch (err) {
       console.error(err);
+    }
+  },
+  updateGoal: async (id, goal) => {
+    try {
+      const data = await api.put(`/Goals/${id}`, {
+        UsuarioAsignadoId: goal.usuario_asignado_id,
+        Titulo: goal.titulo,
+        Descripcion: goal.descripcion,
+        TipoPeriodo: goal.tipo_periodo,
+        FechaLimite: goal.fecha_limite
+      });
+      set(state => ({
+        goals: state.goals.map(g => g.id === id ? data : g)
+      }));
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  },
+  deleteGoal: async (id) => {
+    try {
+      await api.delete(`/Goals/${id}`);
+      set(state => ({
+        goals: state.goals.filter(g => g.id !== id)
+      }));
+    } catch (err) {
+      console.error(err);
+      throw err;
     }
   }
 }));

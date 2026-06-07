@@ -13,7 +13,9 @@ namespace MateCode.Infrastructure.Services
         // --- OBJETIVOS ---
         public async Task<IEnumerable<Objetivo>> GetGoalsAsync(Guid agencyId, Guid? userId = null)
         {
-            var query = _context.Objetivos.Where(o => o.AgenciaId == agencyId);
+            var query = _context.Objetivos
+                .Include(o => o.UsuarioAsignado)
+                .Where(o => o.AgenciaId == agencyId && o.Activo);
             if (userId.HasValue)
             {
                 query = query.Where(o => o.UsuarioAsignadoId == userId.Value);
@@ -34,20 +36,51 @@ namespace MateCode.Infrastructure.Services
                 TipoPeriodo = periodType,
                 FechaLimite = limitDate,
                 Completado = false,
+                Activo = true,
                 FechaCreacion = DateTime.UtcNow
             };
 
             await _context.Objetivos.AddAsync(goal);
             await _context.SaveChangesAsync();
+            
+            // Load assigned user reference
+            await _context.Entry(goal).Reference(g => g.UsuarioAsignado).LoadAsync();
+
             return goal;
         }
 
         public async Task<bool> ToggleGoalAsync(Guid goalId, bool completed)
         {
             var goal = await _context.Objetivos.FindAsync(goalId);
-            if (goal == null) return false;
+            if (goal == null || !goal.Activo) return false;
 
             goal.Completado = completed;
+            return await _context.SaveChangesAsync() > 0;
+        }
+
+        public async Task<Objetivo?> UpdateGoalAsync(Guid goalId, Guid assignedUserId, string titulo, string descripcion, string periodType, DateTime? limitDate)
+        {
+            var goal = await _context.Objetivos.FindAsync(goalId);
+            if (goal == null || !goal.Activo) return null;
+
+            goal.UsuarioAsignadoId = assignedUserId;
+            goal.Titulo = titulo;
+            goal.Descripcion = descripcion;
+            goal.TipoPeriodo = periodType;
+            goal.FechaLimite = limitDate;
+
+            await _context.SaveChangesAsync();
+            await _context.Entry(goal).Reference(g => g.UsuarioAsignado).LoadAsync();
+
+            return goal;
+        }
+
+        public async Task<bool> DeleteGoalAsync(Guid goalId)
+        {
+            var goal = await _context.Objetivos.FindAsync(goalId);
+            if (goal == null || !goal.Activo) return false;
+
+            goal.Activo = false; // Soft delete
             return await _context.SaveChangesAsync() > 0;
         }
 

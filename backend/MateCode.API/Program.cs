@@ -257,14 +257,21 @@ using (var scope = app.Services.CreateScope())
                     END IF;
                 END IF;
 
+                -- Columna activo en organizacion.objetivos (Soft Delete)
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'organizacion' AND table_name = 'objetivos') THEN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'organizacion' AND table_name = 'objetivos' AND column_name = 'activo') THEN
+                        ALTER TABLE organizacion.objetivos ADD COLUMN activo BOOLEAN DEFAULT TRUE;
+                    END IF;
+                END IF;
+
 
                 -- Columnas para Perfil, Branding e Identidad de Agencia (Ciclo 1)
                 IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'nucleo' AND table_name = 'agencias') THEN
                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'redes_sociales') THEN
-                        ALTER TABLE nucleo.agencias ADD COLUMN redes_sociales JSONB DEFAULT '{}';
+                        ALTER TABLE nucleo.agencias ADD COLUMN redes_sociales JSONB DEFAULT '{{}}';
                     END IF;
                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'branding') THEN
-                        ALTER TABLE nucleo.agencias ADD COLUMN branding JSONB DEFAULT '{}';
+                        ALTER TABLE nucleo.agencias ADD COLUMN branding JSONB DEFAULT '{{}}';
                     END IF;
                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'mision') THEN
                         ALTER TABLE nucleo.agencias ADD COLUMN mision TEXT DEFAULT '';
@@ -273,7 +280,7 @@ using (var scope = app.Services.CreateScope())
                         ALTER TABLE nucleo.agencias ADD COLUMN vision TEXT DEFAULT '';
                     END IF;
                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'datos_marketing') THEN
-                        ALTER TABLE nucleo.agencias ADD COLUMN datos_marketing JSONB DEFAULT '{}';
+                        ALTER TABLE nucleo.agencias ADD COLUMN datos_marketing JSONB DEFAULT '{{}}';
                     END IF;
                 END IF;
 
@@ -397,7 +404,7 @@ using (var scope = app.Services.CreateScope())
                     agencia_id UUID NOT NULL REFERENCES nucleo.agencias(id) ON DELETE CASCADE,
                     fecha_inicio TIMESTAMP WITHOUT TIME ZONE NOT NULL,
                     fecha_fin TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-                    metricas_json JSONB NOT NULL DEFAULT '{}',
+                    metricas_json JSONB NOT NULL DEFAULT '{{}}',
                     lecciones_aprendidas TEXT NOT NULL,
                     fecha_creacion TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
                 );

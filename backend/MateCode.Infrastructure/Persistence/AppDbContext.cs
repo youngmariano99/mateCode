@@ -517,6 +517,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(o => o.TipoPeriodo).HasColumnName("tipo_periodo");
                 e.Property(o => o.FechaLimite).HasColumnName("fecha_limite");
                 e.Property(o => o.Completado).HasColumnName("completado");
+                e.Property(o => o.Activo).HasColumnName("activo").HasDefaultValue(true);
                 e.Property(o => o.FechaCreacion).HasColumnName("fecha_creacion");
             });
 

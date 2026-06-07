@@ -73,6 +73,7 @@ namespace MateCode.Core.Entities
         public string TipoPeriodo { get; set; } = "Semanal"; // Diario, Semanal, Mensual, Trimestral, Anual
         public DateTime? FechaLimite { get; set; }
         public bool Completado { get; set; } = false;
+        public bool Activo { get; set; } = true;
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
         // Relaciones

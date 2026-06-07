@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Plus, Search, Globe, Lock, Share2, Tag, Calendar, 
-  Trash2, Edit, Check, AlertCircle, RefreshCw, Layers 
+  Trash2, Edit, Check, AlertCircle, RefreshCw, Layers, Brain
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';

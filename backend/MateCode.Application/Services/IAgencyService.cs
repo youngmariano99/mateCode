@@ -33,6 +33,8 @@ namespace MateCode.Application.Services
         Task<IEnumerable<Objetivo>> GetGoalsAsync(Guid agencyId, Guid? userId = null);
         Task<Objetivo> CreateGoalAsync(Guid agencyId, Guid assignedUserId, Guid creatorId, string titulo, string descripcion, string periodType, DateTime? limitDate);
         Task<bool> ToggleGoalAsync(Guid goalId, bool completed);
+        Task<Objetivo?> UpdateGoalAsync(Guid goalId, Guid assignedUserId, string titulo, string descripcion, string periodType, DateTime? limitDate);
+        Task<bool> DeleteGoalAsync(Guid goalId);
 
         // --- RECURSOS ---
         Task<IEnumerable<Recurso>> GetResourcesAsync(Guid agencyId);

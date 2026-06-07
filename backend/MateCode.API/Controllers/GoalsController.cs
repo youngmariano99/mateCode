@@ -84,5 +84,35 @@ namespace MateCode.API.Controllers
             }
             catch (Exception ex) { return StatusCode(500, ex.Message); }
         }
+
+        public class UpdateGoalRequest
+        {
+            public Guid UsuarioAsignadoId { get; set; }
+            public string Titulo { get; set; } = string.Empty;
+            public string Descripcion { get; set; } = string.Empty;
+            public string TipoPeriodo { get; set; } = "Semanal";
+            public DateTime? FechaLimite { get; set; }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateGoalRequest req)
+        {
+            try {
+                var updated = await _agencyService.UpdateGoalAsync(
+                    id, req.UsuarioAsignadoId, req.Titulo, req.Descripcion, req.TipoPeriodo, req.FechaLimite);
+                return updated != null ? Ok(updated) : NotFound("Objetivo no encontrado.");
+            }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            try {
+                var success = await _agencyService.DeleteGoalAsync(id);
+                return success ? Ok() : NotFound("Objetivo no encontrado o ya eliminado.");
+            }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
     }
 }

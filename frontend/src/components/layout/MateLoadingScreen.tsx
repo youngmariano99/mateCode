@@ -29,12 +29,23 @@ const MATE_LOGS = [
 export const MateLoadingScreen: React.FC<MateLoadingScreenProps> = ({ onFinished, isEmbedded, message }) => {
   const [progress, setProgress] = useState(0);
   const [currentLog, setCurrentLog] = useState(0);
+  const [videoStarted, setVideoStarted] = useState(false);
 
-  // Auto-progress simulation
+  // Fallback timer: start progress anyway after 1.5 seconds if video hasn't triggered play
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setVideoStarted(true);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Auto-progress simulation: adjusted to take exactly 10 seconds total (9 seconds progress + 1 second delay)
+  // 9000ms / 45ms = 200 steps. 100% / 200 = 0.5% per step.
+  useEffect(() => {
+    if (!videoStarted) return;
     const interval = setInterval(() => {
       setProgress(prev => {
-        const next = Math.min(prev + 0.6, 100);
+        const next = Math.min(prev + 0.5, 100);
         if (next >= 100) {
           clearInterval(interval);
           if (onFinished) setTimeout(() => onFinished(), 1000);
@@ -44,7 +55,7 @@ export const MateLoadingScreen: React.FC<MateLoadingScreenProps> = ({ onFinished
       });
     }, 45);
     return () => clearInterval(interval);
-  }, [onFinished]);
+  }, [videoStarted, onFinished]);
 
   // Log rotation
   useEffect(() => {
@@ -73,6 +84,7 @@ export const MateLoadingScreen: React.FC<MateLoadingScreenProps> = ({ onFinished
             loop
             muted
             playsInline
+            onPlay={() => setVideoStarted(true)}
             className="w-full h-full object-cover opacity-90 transition-opacity duration-700"
           />
           
