@@ -82,6 +82,13 @@ export const AgencyDashboard: React.FC = () => {
     return '';
   };
 
+  const { monday, sunday } = getWeekRange();
+  const weeklyTasks = tasks.filter(t => {
+    if (!t.fecha_planificada) return false;
+    const taskDateStr = t.fecha_planificada.split('T')[0];
+    return taskDateStr >= monday && taskDateStr <= sunday;
+  });
+
   const getStatusColor = (estado: string) => {
     const col = kanbanColumns.find(c => {
       const parsed = parseColumnName(c.nombre);
@@ -104,6 +111,7 @@ export const AgencyDashboard: React.FC = () => {
   const [agencyWorkspaces, setAgencyWorkspaces] = useState<any[]>([]);
   const [agencyMembers, setAgencyMembers] = useState<Member[]>([]);
   const [workspacesWithProjects, setWorkspacesWithProjects] = useState<any[]>([]);
+  const [showWeeklyTasksFloat, setShowWeeklyTasksFloat] = useState(false);
 
   const renderTabContent = (tabId: string) => {
     switch (tabId) {
@@ -448,96 +456,6 @@ export const AgencyDashboard: React.FC = () => {
                 {/* Hotspots */}
                 {AGENCY_TABS.filter(spot => !spot.hideImmersiveMap).map(spot => {
                   const Icon = spot.icon;
-                  if (spot.id === 'tasks') {
-                    const { monday, sunday } = getWeekRange();
-                    const weeklyTasks = tasks.filter(t => {
-                      if (!t.fecha_planificada) return false;
-                      const taskDateStr = t.fecha_planificada.split('T')[0];
-                      return taskDateStr >= monday && taskDateStr <= sunday;
-                    });
-                    
-                    return (
-                      <div
-                        key={spot.id}
-                        onClick={() => {
-                          setActiveTab(spot.id);
-                          setActiveModalTab(spot.id);
-                        }}
-                        style={{
-                          position: 'absolute',
-                          top: spot.top,
-                          left: spot.left,
-                          width: spot.w,
-                          height: spot.h
-                        }}
-                        className="group bg-zinc-950/85 hover:bg-zinc-950/95 border border-zinc-800/80 hover:border-emerald-500/30 rounded-[1.5rem] transition-all duration-300 flex flex-col p-3.5 text-left cursor-pointer hover:shadow-[0_0_30px_rgba(16,185,129,0.1)] backdrop-blur-md select-none overflow-hidden h-full z-10"
-                      >
-                        {/* Header */}
-                        <div className="flex items-center justify-between pb-1.5 border-b border-zinc-800/80 mb-2">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar size={13} className="text-emerald-400 group-hover:scale-110 transition-transform duration-300" />
-                            <span className="text-[10px] font-black text-white uppercase tracking-wider group-hover:text-emerald-400 transition-colors">
-                              {spot.desc}
-                            </span>
-                          </div>
-                          <span className="text-[8px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-full font-bold">
-                            {weeklyTasks.length} Activas
-                          </span>
-                        </div>
-
-                        {/* Task List */}
-                        <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 scrollbar-none">
-                          {weeklyTasks.length > 0 ? (
-                            weeklyTasks.slice(0, 5).map(task => {
-                              const taskColor = getStatusColor(task.estado);
-                              const dayLabel = getDayLabel(task.fecha_planificada);
-                              return (
-                                <div
-                                  key={task.id}
-                                  className="flex items-center justify-between gap-2 bg-zinc-900/40 hover:bg-zinc-900/70 border border-zinc-800/40 rounded-lg p-1.5 transition-colors"
-                                >
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <span
-                                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                                      style={{ backgroundColor: taskColor }}
-                                    />
-                                    <span className="text-[10px] text-zinc-355 font-medium truncate">
-                                      {task.titulo}
-                                    </span>
-                                  </div>
-                                  {dayLabel && (
-                                    <span className="text-[8px] text-zinc-500 font-bold uppercase shrink-0 bg-zinc-950 px-1 py-0.5 rounded border border-zinc-850">
-                                      {dayLabel}
-                                    </span>
-                                  )}
-                                </div>
-                              );
-                            })
-                          ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-center opacity-40 py-2">
-                              <span className="text-[9px] text-zinc-400 font-medium">Sin tareas esta semana</span>
-                            </div>
-                          )}
-                          {weeklyTasks.length > 5 && (
-                            <div className="text-center pt-0.5">
-                              <span className="text-[8px] text-zinc-500 font-black uppercase tracking-wider">
-                                + {weeklyTasks.length - 5} más...
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Footer / Hint */}
-                        <div className="pt-1.5 border-t border-zinc-800/40 mt-1 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <span className="text-[8px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                            <span>Abrir Tablero</span>
-                            <span className="text-[10px]">→</span>
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  }
-
                   return (
                     <button
                       key={spot.id}
@@ -662,6 +580,90 @@ export const AgencyDashboard: React.FC = () => {
         onSavePermissions={handleSavePermissions}
         onEditWorkspaceChange={handleEditWorkspaceChange}
       />
+
+      {/* Flotante de Tareas de la Semana (Modo Inmersivo únicamente) */}
+      {dashboardMode === 'immersive' && activeModalTab === null && (
+        <div className="fixed bottom-6 left-6 z-[340] font-sans flex flex-col items-start">
+          {/* Popover con las actividades */}
+          {showWeeklyTasksFloat && (
+            <div className="w-80 h-[360px] bg-zinc-950/90 border border-white/10 rounded-[2rem] shadow-2xl backdrop-blur-2xl overflow-hidden mb-4 flex flex-col animate-in fade-in slide-in-from-bottom-5 duration-300">
+              {/* Header */}
+              <header className="h-12 bg-zinc-900/50 border-b border-white/5 flex items-center justify-between px-5 w-full">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                    <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-white">
+                    Tareas de la Semana
+                  </span>
+                </div>
+                <span className="text-[8px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
+                  {weeklyTasks.length} Activas
+                </span>
+              </header>
+
+              {/* Lista de Actividades */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2 pr-1.5 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent w-full">
+                {weeklyTasks.length > 0 ? (
+                  weeklyTasks.map(task => {
+                    const taskColor = getStatusColor(task.estado);
+                    const dayLabel = getDayLabel(task.fecha_planificada);
+                    return (
+                      <div
+                        key={task.id}
+                        className="flex items-center justify-between gap-3 bg-zinc-900/40 hover:bg-zinc-900/70 border border-zinc-800/40 rounded-xl p-2.5 transition-all w-full"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: taskColor }}
+                          />
+                          <span className="text-xs text-zinc-200 font-medium truncate">
+                            {task.titulo}
+                          </span>
+                        </div>
+                        {dayLabel && (
+                          <span className="text-[8px] text-zinc-400 font-bold uppercase shrink-0 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">
+                            {dayLabel}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-50 py-10 w-full">
+                    <Calendar size={28} className="text-zinc-600 mb-2" />
+                    <span className="text-xs text-zinc-400 font-medium">Sin tareas esta semana</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Botón de acceso al tablero */}
+              <button
+                onClick={() => {
+                  setActiveTab('tasks');
+                  setActiveModalTab('tasks');
+                  setShowWeeklyTasksFloat(false);
+                }}
+                className="py-3 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-[10px] font-black uppercase tracking-wider text-center transition-all flex items-center justify-center gap-1.5 rounded-b-[2rem] w-full font-bold"
+              >
+                <span>Ver Tablero Completo</span>
+                <span>→</span>
+              </button>
+            </div>
+          )}
+
+          {/* Botón Flotante */}
+          <button
+            onClick={() => setShowWeeklyTasksFloat(!showWeeklyTasksFloat)}
+            className={`w-14 h-14 rounded-full border border-white/10 backdrop-blur-2xl flex items-center justify-center cursor-pointer transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.5)] ${showWeeklyTasksFloat ? "bg-emerald-500 text-zinc-950 scale-105 shadow-emerald-500/20 border-emerald-400/30" : "bg-[#0A0F1A]/80 hover:bg-[#141d33] text-emerald-400 hover:scale-105"}`}
+            title="Tareas de la Semana"
+          >
+            <Calendar size={22} className={showWeeklyTasksFloat ? "shrink-0 animate-in spin-in-90 duration-500" : "shrink-0"} />
+          </button>
+        </div>
+      )}
+
       <QuickAccessHud />
     </div>
   );
