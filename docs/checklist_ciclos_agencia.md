@@ -41,3 +41,19 @@ Este documento sirve para el seguimiento progresivo de la implementación de las
   - [x] Crear generador de Cotizaciones y Presupuestos exportables a PDF con logo corporativo.
   - [x] Desarrollar sitemap gráfico interactivo (Mapa de Estructura Web).
   - [x] Visualizar colaboradores específicos trabajando en el proyecto web.
+
+- [x] **Ciclo 7: Planificador de Contenidos y Kanban de Producción B2B**
+  - [x] Eliminar sub-pestaña obsoleta "Muro de Ideas" en espacio del miembro.
+  - [x] Integrar rango de fechas (lunes a domingo) predeterminado para el Plan Semanal.
+  - [x] Diseñar Calendario Semanal interactivo con grilla de 7 días.
+  - [x] Implementar barra lateral con posts sin programar y borradores históricos "No Publicados".
+  - [x] Desarrollar Drag-and-Drop completo en calendario (programar, reprogramar y desprogramar arrastrando a zona de descarte).
+  - [x] Crear Tablero Kanban de Producción de 6 columnas con cálculo dinámico de avance.
+  - [x] Crear modal premium de detalles (`PostDetailsModal`) con edición de metadatos y checklists interactivos de batching y SEO.
+
+- [x] **Ciclo 8: Integración PWA (Progressive Web App)**
+  - [x] Instalar y configurar `vite-plugin-pwa` en la compilación de Vite.
+  - [x] Diseñar e integrar logotipos MateCode PNG optimizados (`192x192px` y `512x512px`).
+  - [x] Configurar manifest en modo `standalone` para ejecución estilo app Notion.
+  - [x] Implementar el registro del Service Worker en `main.tsx` con soporte TS (`vite-env.d.ts`).
+

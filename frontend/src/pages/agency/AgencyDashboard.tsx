@@ -9,6 +9,8 @@ import Swal from 'sweetalert2';
 import { api } from '../../lib/apiClient';
 import { useAgencyStore } from '../../store/useAgencyStore';
 import type { Member } from '../../store/useAgencyStore';
+import { useOperationsStore, parseColumnName } from '../../store/useOperationsStore';
+import { QuickAccessHud } from '../../components/spatial/QuickAccessHud';
 
 // Modulos satélite
 import { StructurePanel } from '../../components/agency/StructurePanel';
@@ -47,8 +49,53 @@ export const AgencyDashboard: React.FC = () => {
     inviteMember,
     updateMemberPermissions,
     getAgencyWorkspaces,
-    getAgencyWorkspacesWithProjects
+    getAgencyWorkspacesWithProjects,
+    fetchAgencies
   } = useAgencyStore();
+
+  const { tasks, kanbanColumns, fetchTasks, fetchKanbanColumns } = useOperationsStore();
+
+  const getWeekRange = (date: Date = new Date()) => {
+    const currentDay = date.getDay(); // 0 is Sun, 1 is Mon, ..., 6 is Sat
+    const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+    
+    const monday = new Date(date);
+    monday.setDate(date.getDate() + distanceToMonday);
+    
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    
+    return {
+      monday: monday.toISOString().split('T')[0],
+      sunday: sunday.toISOString().split('T')[0]
+    };
+  };
+
+  const getDayLabel = (dateStr?: string) => {
+    if (!dateStr) return '';
+    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const parts = dateStr.split('T')[0].split('-');
+    if (parts.length === 3) {
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      return days[d.getDay()];
+    }
+    return '';
+  };
+
+  const getStatusColor = (estado: string) => {
+    const col = kanbanColumns.find(c => {
+      const parsed = parseColumnName(c.nombre);
+      return parsed.name.toLowerCase() === estado.toLowerCase();
+    });
+    if (col) {
+      return parseColumnName(col.nombre).color;
+    }
+    const col2 = kanbanColumns.find(c => c.nombre.toLowerCase() === estado.toLowerCase());
+    if (col2) {
+      return parseColumnName(col2.nombre).color;
+    }
+    return '#71717a'; // Default zinc-400
+  };
 
   const [activeTab, setActiveTab] = useState<string>('structure');
   const [dashboardMode, setDashboardMode] = useState<'standard' | 'immersive'>('immersive');
@@ -145,12 +192,17 @@ export const AgencyDashboard: React.FC = () => {
   const loadData = async () => {
     if (!currentAgencyId) return;
     try {
+      if (!activeAgency) {
+        await fetchAgencies();
+      }
       const wss = await getAgencyWorkspaces(currentAgencyId);
       setAgencyWorkspaces(wss);
       const mems = await fetchMembers(currentAgencyId);
       setAgencyMembers(mems);
       const wssWithProj = await getAgencyWorkspacesWithProjects(currentAgencyId);
       setWorkspacesWithProjects(wssWithProj);
+      await fetchTasks();
+      await fetchKanbanColumns();
     } catch (e) {
       console.error("Error al cargar la estructura del dashboard", e);
     }
@@ -396,6 +448,96 @@ export const AgencyDashboard: React.FC = () => {
                 {/* Hotspots */}
                 {AGENCY_TABS.filter(spot => !spot.hideImmersiveMap).map(spot => {
                   const Icon = spot.icon;
+                  if (spot.id === 'tasks') {
+                    const { monday, sunday } = getWeekRange();
+                    const weeklyTasks = tasks.filter(t => {
+                      if (!t.fecha_planificada) return false;
+                      const taskDateStr = t.fecha_planificada.split('T')[0];
+                      return taskDateStr >= monday && taskDateStr <= sunday;
+                    });
+                    
+                    return (
+                      <div
+                        key={spot.id}
+                        onClick={() => {
+                          setActiveTab(spot.id);
+                          setActiveModalTab(spot.id);
+                        }}
+                        style={{
+                          position: 'absolute',
+                          top: spot.top,
+                          left: spot.left,
+                          width: spot.w,
+                          height: spot.h
+                        }}
+                        className="group bg-zinc-950/85 hover:bg-zinc-950/95 border border-zinc-800/80 hover:border-emerald-500/30 rounded-[1.5rem] transition-all duration-300 flex flex-col p-3.5 text-left cursor-pointer hover:shadow-[0_0_30px_rgba(16,185,129,0.1)] backdrop-blur-md select-none overflow-hidden h-full z-10"
+                      >
+                        {/* Header */}
+                        <div className="flex items-center justify-between pb-1.5 border-b border-zinc-800/80 mb-2">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar size={13} className="text-emerald-400 group-hover:scale-110 transition-transform duration-300" />
+                            <span className="text-[10px] font-black text-white uppercase tracking-wider group-hover:text-emerald-400 transition-colors">
+                              {spot.desc}
+                            </span>
+                          </div>
+                          <span className="text-[8px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-full font-bold">
+                            {weeklyTasks.length} Activas
+                          </span>
+                        </div>
+
+                        {/* Task List */}
+                        <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 scrollbar-none">
+                          {weeklyTasks.length > 0 ? (
+                            weeklyTasks.slice(0, 5).map(task => {
+                              const taskColor = getStatusColor(task.estado);
+                              const dayLabel = getDayLabel(task.fecha_planificada);
+                              return (
+                                <div
+                                  key={task.id}
+                                  className="flex items-center justify-between gap-2 bg-zinc-900/40 hover:bg-zinc-900/70 border border-zinc-800/40 rounded-lg p-1.5 transition-colors"
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span
+                                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                                      style={{ backgroundColor: taskColor }}
+                                    />
+                                    <span className="text-[10px] text-zinc-355 font-medium truncate">
+                                      {task.titulo}
+                                    </span>
+                                  </div>
+                                  {dayLabel && (
+                                    <span className="text-[8px] text-zinc-500 font-bold uppercase shrink-0 bg-zinc-950 px-1 py-0.5 rounded border border-zinc-850">
+                                      {dayLabel}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-center opacity-40 py-2">
+                              <span className="text-[9px] text-zinc-400 font-medium">Sin tareas esta semana</span>
+                            </div>
+                          )}
+                          {weeklyTasks.length > 5 && (
+                            <div className="text-center pt-0.5">
+                              <span className="text-[8px] text-zinc-500 font-black uppercase tracking-wider">
+                                + {weeklyTasks.length - 5} más...
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Footer / Hint */}
+                        <div className="pt-1.5 border-t border-zinc-800/40 mt-1 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <span className="text-[8px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                            <span>Abrir Tablero</span>
+                            <span className="text-[10px]">→</span>
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <button
                       key={spot.id}
@@ -520,6 +662,7 @@ export const AgencyDashboard: React.FC = () => {
         onSavePermissions={handleSavePermissions}
         onEditWorkspaceChange={handleEditWorkspaceChange}
       />
+      <QuickAccessHud />
     </div>
   );
 };

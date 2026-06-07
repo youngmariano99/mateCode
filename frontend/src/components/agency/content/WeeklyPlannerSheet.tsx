@@ -6,6 +6,12 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 
+interface ChecklistItem {
+  id: string;
+  text: string;
+  checked: boolean;
+}
+
 interface PostItem {
   id: string;
   titulo: string;
@@ -15,6 +21,10 @@ interface PostItem {
   tipVisual: string;
   desarrollo: string;
   cta: string;
+  estado: string; // 'Idea' | 'Guionado' | 'Grabado' | 'Editado' | 'Programado' | 'No Publicado'
+  fechaPublicacion?: string; // YYYY-MM-DD
+  checklistBatching: ChecklistItem[];
+  checklistSeo: ChecklistItem[];
   progreso: {
     guionado: boolean;
     grabado: boolean;
@@ -31,6 +41,8 @@ interface CustomKpi {
 
 interface WeeklyPlanData {
   tituloSemana: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
   objetivoSemana: string;
   kpisSeleccionados: string[];
   customKpis: CustomKpi[];
@@ -47,6 +59,38 @@ interface WeeklyPlanData {
     decisionProximaSemana: string;
   };
 }
+
+const getWeekRange = (date: Date = new Date()) => {
+  const currentDay = date.getDay(); // 0 is Sun, 1 is Mon, ..., 6 is Sat
+  const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+  
+  const monday = new Date(date);
+  monday.setDate(date.getDate() + distanceToMonday);
+  
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  
+  return {
+    monday: monday.toISOString().split('T')[0],
+    sunday: sunday.toISOString().split('T')[0]
+  };
+};
+
+const DEFAULT_BATCHING_STEPS = [
+  { id: 'b1', text: '🎬 Set-up armado (trípode, luces, cámara limpia)', checked: false },
+  { id: 'b2', text: '📹 Grabé el Post', checked: false },
+  { id: 'b3', text: '👕 Cambié de remera o ángulo', checked: false },
+  { id: 'b4', text: '✍️ Subtítulos grandes en el centro', checked: false },
+  { id: 'b5', text: '✂️ Cortes rápidos cada 3-5 segundos', checked: false },
+  { id: 'b6', text: '💾 Archivos finales exportados', checked: false }
+];
+
+const DEFAULT_SEO_STEPS = [
+  { id: 's1', text: '📂 Nombre del archivo relevante (ej: video.mp4 ➡️ excel-tickets.mp4)', checked: false },
+  { id: 's2', text: '✍️ Palabras clave de forma natural en el texto', checked: false },
+  { id: 's3', text: '🏷️ 3 a 5 hashtags muy específicos (B2B)', checked: false },
+  { id: 's4', text: '🚫 Video limpio sin marcas de agua de otras redes', checked: false }
+];
 
 interface WeeklyPlannerSheetProps {
   initialTitle: string;
@@ -74,6 +118,9 @@ export const WeeklyPlannerSheet: React.FC<WeeklyPlannerSheetProps> = ({
   onSave
 }) => {
   const [title, setTitle] = useState(initialTitle || 'Semana del ... al ...');
+  const defaultRange = getWeekRange();
+  const [fechaDesde, setFechaDesde] = useState(initialData?.fechaDesde || defaultRange.monday);
+  const [fechaHasta, setFechaHasta] = useState(initialData?.fechaHasta || defaultRange.sunday);
   
   // Model States
   const [objetivo, setObjetivo] = useState('Atracción');
@@ -114,14 +161,24 @@ export const WeeklyPlannerSheet: React.FC<WeeklyPlannerSheetProps> = ({
 
   // Carga inicial
   useEffect(() => {
+    const defaultR = getWeekRange();
     if (initialData) {
       setObjetivo(initialData.objetivoSemana || 'Atracción');
       setKpisSeleccionados(initialData.kpisSeleccionados || []);
       setCustomKpis(initialData.customKpis || []);
       setMenuIdeas(initialData.menuIdeas || []);
-      setPosts(initialData.posts || []);
-      if (initialData.posts?.length > 0 && !expandedPostId) {
-        setExpandedPostId(initialData.posts[0].id);
+      setFechaDesde(initialData.fechaDesde || defaultR.monday);
+      setFechaHasta(initialData.fechaHasta || defaultR.sunday);
+      const loadedPosts = (initialData.posts || []).map((p: any) => ({
+        ...p,
+        estado: p.estado || 'Idea',
+        fechaPublicacion: p.fechaPublicacion || '',
+        checklistBatching: p.checklistBatching || DEFAULT_BATCHING_STEPS,
+        checklistSeo: p.checklistSeo || DEFAULT_SEO_STEPS
+      }));
+      setPosts(loadedPosts);
+      if (loadedPosts.length > 0 && !expandedPostId) {
+        setExpandedPostId(loadedPosts[0].id);
       }
       setChecklistBatching(initialData.checklistBatching || {
         setupGrabacion: false,
@@ -149,6 +206,8 @@ export const WeeklyPlannerSheet: React.FC<WeeklyPlannerSheetProps> = ({
       setObjetivo('Atracción');
       setKpisSeleccionados(['dms', 'guardados']);
       setMenuIdeas(['', '']);
+      setFechaDesde(defaultR.monday);
+      setFechaHasta(defaultR.sunday);
       setPosts([
         {
           id: `post_${Date.now()}_1`,
@@ -159,6 +218,10 @@ export const WeeklyPlannerSheet: React.FC<WeeklyPlannerSheetProps> = ({
           tipVisual: 'Yo agarrándome la cabeza frente a un Excel',
           desarrollo: '',
           cta: 'Comenta STOCK y te paso demo',
+          estado: 'Idea',
+          fechaPublicacion: '',
+          checklistBatching: DEFAULT_BATCHING_STEPS,
+          checklistSeo: DEFAULT_SEO_STEPS,
           progreso: { guionado: false, grabado: false, editado: false, programado: false }
         }
       ]);
@@ -208,6 +271,10 @@ export const WeeklyPlannerSheet: React.FC<WeeklyPlannerSheetProps> = ({
       tipVisual: '',
       desarrollo: '',
       cta: '',
+      estado: 'Idea',
+      fechaPublicacion: '',
+      checklistBatching: DEFAULT_BATCHING_STEPS,
+      checklistSeo: DEFAULT_SEO_STEPS,
       progreso: { guionado: false, grabado: false, editado: false, programado: false }
     };
     setPosts([...posts, newPost]);
@@ -259,6 +326,8 @@ export const WeeklyPlannerSheet: React.FC<WeeklyPlannerSheetProps> = ({
 
     const payload: WeeklyPlanData = {
       tituloSemana: title,
+      fechaDesde,
+      fechaHasta,
       objetivoSemana: objetivo,
       kpisSeleccionados,
       customKpis,
@@ -282,6 +351,8 @@ export const WeeklyPlannerSheet: React.FC<WeeklyPlannerSheetProps> = ({
   const handleExportJson = () => {
     const payload: WeeklyPlanData = {
       tituloSemana: title,
+      fechaDesde,
+      fechaHasta,
       objetivoSemana: objetivo,
       kpisSeleccionados,
       customKpis,
@@ -330,7 +401,24 @@ export const WeeklyPlannerSheet: React.FC<WeeklyPlannerSheetProps> = ({
               onChange={e => setTitle(e.target.value)}
               className="bg-transparent border-b border-transparent hover:border-zinc-700 focus:border-emerald-500 focus:outline-none text-xl font-bold text-white w-full max-w-[400px] transition-colors"
             />
-            <p className="text-zinc-550 text-[10px] uppercase tracking-wider">Planificación Dinámica de Contenido</p>
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="text-[9px] font-black uppercase text-zinc-500 tracking-wider">Período:</span>
+              <div className="flex items-center gap-1 bg-zinc-950/60 border border-zinc-850 px-2.5 py-1 rounded-xl">
+                <input
+                  type="date"
+                  value={fechaDesde}
+                  onChange={e => setFechaDesde(e.target.value)}
+                  className="bg-transparent border-none text-[10px] text-white outline-none focus:ring-0"
+                />
+                <span className="text-[10px] text-zinc-650 font-bold uppercase mx-1">al</span>
+                <input
+                  type="date"
+                  value={fechaHasta}
+                  onChange={e => setFechaHasta(e.target.value)}
+                  className="bg-transparent border-none text-[10px] text-white outline-none focus:ring-0"
+                />
+              </div>
+            </div>
           </div>
         </div>
         <div className="flex gap-2">

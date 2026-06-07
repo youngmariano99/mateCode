@@ -43,6 +43,32 @@ export interface KanbanColumnaOperativa {
   fecha_creacion: string;
 }
 
+export interface ParsedColumn {
+  name: string;
+  color: string;
+  isUncompleted: boolean;
+  isDone: boolean;
+}
+
+export function parseColumnName(rawName: string): ParsedColumn {
+  if (!rawName) return { name: '', color: '#71717a', isUncompleted: false, isDone: false };
+  if (rawName.includes('|')) {
+    const [name, color, flags] = rawName.split('|');
+    return {
+      name,
+      color: color || '#71717a',
+      isUncompleted: flags?.includes('uncompleted') || false,
+      isDone: flags?.includes('done') || false
+    };
+  }
+  return {
+    name: rawName,
+    color: '#71717a',
+    isUncompleted: rawName === 'No completado',
+    isDone: rawName === 'Done' || rawName === 'Hecho'
+  };
+}
+
 export interface WeeklyReport {
   id: string;
   agencia_id: string;
@@ -106,7 +132,7 @@ interface OperationsState {
   // Contents
   fetchContents: () => Promise<void>;
   createContent: (content: { miembroId: string; titulo: string; plataformas: string[]; guionPlantilla: string; dialogo: string; procedimientoEstandar: string; estado: string; notasMejora: string; fechaPublicacion?: string }) => Promise<void>;
-  updateContent: (id: string, content: { titulo: string; plataformas: string[]; guionPlantilla: string; dialogo: string; procedimientoEstandar: string; estado: string; notasMejora: string; resumenAnalitico?: any; fechaPublicacion?: string }) => Promise<void>;
+  updateContent: (id: string, content: { miembroId?: string; titulo: string; plataformas: string[]; guionPlantilla: string; dialogo: string; procedimientoEstandar: string; estado: string; notasMejora: string; resumenAnalitico?: any; fechaPublicacion?: string }) => Promise<void>;
   deleteContent: (id: string) => Promise<void>;
 
   // Audit Logs

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Plus, Trash2, Copy, Calendar, Grid, ChevronLeft, ChevronRight, 
-  Edit2, Users, Briefcase, BarChart3, Upload, CopyCheck, FileText, Globe, Brain 
+  Plus, Trash2, ChevronLeft, ChevronRight, 
+  Edit2, Users, Briefcase, Upload, FileText, Globe, Brain
 } from 'lucide-react';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useAgencyStore } from '../../store/useAgencyStore';
@@ -15,6 +15,24 @@ import { WeeklyPlannerSheet } from './content/WeeklyPlannerSheet';
 import { AgencyContentDashboard } from './content/AgencyContentDashboard';
 import { ImportPlanModal } from './content/ImportPlanModal';
 import { IdeasBank } from './content/IdeasBank';
+import { ContentKanbanSubTab, type PostItem } from './content/ContentKanbanSubTab';
+import { PostDetailsModal } from './content/PostDetailsModal';
+
+const DEFAULT_BATCHING_STEPS = [
+  { id: 'b1', text: '🎬 Set-up armado (trípode, luces, cámara limpia)', checked: false },
+  { id: 'b2', text: '📹 Grabé el Post', checked: false },
+  { id: 'b3', text: '👕 Cambié de remera o ángulo', checked: false },
+  { id: 'b4', text: '✍️ Subtítulos grandes en el centro', checked: false },
+  { id: 'b5', text: '✂️ Cortes rápidos cada 3-5 segundos', checked: false },
+  { id: 'b6', text: '💾 Archivos finales exportados', checked: false }
+];
+
+const DEFAULT_SEO_STEPS = [
+  { id: 's1', text: '📂 Nombre del archivo relevante (ej: video.mp4 ➡️ excel-tickets.mp4)', checked: false },
+  { id: 's2', text: '✍️ Palabras clave de forma natural en el texto', checked: false },
+  { id: 's3', text: '🏷️ 3 a 5 hashtags muy específicos (B2B)', checked: false },
+  { id: 's4', text: '🚫 Video limpio sin marcas de agua de otras redes', checked: false }
+];
 
 interface ContentPanelProps {
   agencyMembers: Member[];
@@ -27,7 +45,96 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
   // Tabs de navegación principal
   const [currentTab, setCurrentTab] = useState<'space' | 'ideas' | 'agency'>('space');
   // Subtabs de "Mi Espacio"
-  const [spaceSubTab, setSpaceSubTab] = useState<'weeks' | 'calendar' | 'grid'>('weeks');
+  const [spaceSubTab, setSpaceSubTab] = useState<'weeks' | 'calendar' | 'kanban'>('weeks');
+
+  const getWeekRange = (date: Date = new Date()) => {
+    const currentDay = date.getDay(); // 0 is Sun, 1 is Mon, ..., 6 is Sat
+    const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+    
+    const monday = new Date(date);
+    monday.setDate(date.getDate() + distanceToMonday);
+    
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    
+    return {
+      monday: monday.toISOString().split('T')[0],
+      sunday: sunday.toISOString().split('T')[0]
+    };
+  };
+
+  const defaultRange = getWeekRange();
+  const [startDate, setStartDate] = useState(defaultRange.monday);
+  const [endDate, setEndDate] = useState(defaultRange.sunday);
+
+  // States for Post Details Modal
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [detailPost, setDetailPost] = useState<PostItem | null>(null);
+  const [detailPlanId, setDetailPlanId] = useState<string>('');
+
+  const handlePrevWeek = () => {
+    const start = new Date(startDate);
+    start.setDate(start.getDate() - 7);
+    const end = new Date(endDate);
+    end.setDate(end.getDate() - 7);
+    setStartDate(start.toISOString().split('T')[0]);
+    setEndDate(end.toISOString().split('T')[0]);
+  };
+
+  const handleNextWeek = () => {
+    const start = new Date(startDate);
+    start.setDate(start.getDate() + 7);
+    const end = new Date(endDate);
+    end.setDate(end.getDate() + 7);
+    setStartDate(start.toISOString().split('T')[0]);
+    setEndDate(end.toISOString().split('T')[0]);
+  };
+
+  const handleDragStartPost = (e: React.DragEvent, postId: string, planId: string) => {
+    e.dataTransfer.setData('text/postId', postId);
+    e.dataTransfer.setData('text/planId', planId);
+  };
+
+  const getDaysOfActiveWeek = () => {
+    const days = [];
+    const baseDate = new Date(startDate + 'T00:00:00');
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(baseDate);
+      d.setDate(baseDate.getDate() + i);
+      const dayStr = d.toISOString().split('T')[0];
+      days.push({
+        dateString: dayStr,
+        dayName: d.toLocaleDateString('es-ES', { weekday: 'short' }),
+        dayNumber: d.getDate(),
+        monthName: d.toLocaleDateString('es-ES', { month: 'short' })
+      });
+    }
+    return days;
+  };
+
+  const handleDropOnCalendarDay = async (e: React.DragEvent, dateStr: string) => {
+    e.preventDefault();
+    const postId = e.dataTransfer.getData('text/postId');
+    const planId = e.dataTransfer.getData('text/planId');
+    if (postId && planId) {
+      await handleDropOnDay(postId, planId, dateStr);
+    }
+  };
+
+  const handleDropOnUnschedule = async (e: React.DragEvent) => {
+    e.preventDefault();
+    const postId = e.dataTransfer.getData('text/postId') || e.dataTransfer.getData('text/plain');
+    const planId = e.dataTransfer.getData('text/planId');
+    if (postId) {
+      let resolvedPlanId = planId;
+      if (!resolvedPlanId && activePlanForRange) {
+        resolvedPlanId = activePlanForRange.id;
+      }
+      if (resolvedPlanId) {
+        await handleUnschedulePost(postId, resolvedPlanId);
+      }
+    }
+  };
 
   // Estados de Filtros
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -56,8 +163,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
     fechaPublicacion: ''
   });
 
-  // Calendario
-  const [currentDate, setCurrentDate] = useState(new Date());
+
 
   useEffect(() => {
     fetchContents();
@@ -98,13 +204,126 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
     c.resumen_analitico?.esIdeaBanco !== true
   );
 
-  // Calcular métricas de plataformas del miembro seleccionado
-  const memberPlatformStats = individualPosts.reduce((acc, c) => {
-    c.plataformas?.forEach((p: string) => {
-      acc[p] = (acc[p] || 0) + 1;
+
+
+  const activePlanForRange = weeklyPlans.find(plan => {
+    let detail = plan.resumen_analitico;
+    if (typeof detail === 'string') {
+      try { detail = JSON.parse(detail); } catch { return false; }
+    }
+    if (!detail?.fechaDesde || !detail?.fechaHasta) return false;
+    return (detail.fechaDesde >= startDate && detail.fechaDesde <= endDate) || 
+           (detail.fechaHasta >= startDate && detail.fechaHasta <= endDate) ||
+           (detail.fechaDesde <= startDate && detail.fechaHasta >= endDate);
+  });
+
+  const getWeeklyPosts = () => {
+    const list: { planId: string; post: PostItem }[] = [];
+    
+    // 1. Get posts from activePlanForRange
+    if (activePlanForRange) {
+      let detail = activePlanForRange.resumen_analitico;
+      if (typeof detail === 'string') {
+        try { detail = JSON.parse(detail); } catch { detail = {}; }
+      }
+      if (detail?.posts) {
+        detail.posts.forEach((p: any) => {
+          list.push({ planId: activePlanForRange.id, post: p });
+        });
+      }
+    }
+    
+    // 2. Get posts from other plans that are scheduled in this week range
+    weeklyPlans.forEach(plan => {
+      if (plan.id === activePlanForRange?.id) return;
+      let detail = plan.resumen_analitico;
+      if (typeof detail === 'string') {
+        try { detail = JSON.parse(detail); } catch { detail = {}; }
+      }
+      if (detail?.posts) {
+        detail.posts.forEach((p: any) => {
+          if (p.fechaPublicacion && p.fechaPublicacion >= startDate && p.fechaPublicacion <= endDate) {
+            if (!list.some(item => item.post.id === p.id)) {
+              list.push({ planId: plan.id, post: p });
+            }
+          }
+        });
+      }
     });
-    return acc;
-  }, {} as Record<string, number>);
+    
+    return list;
+  };
+
+  const getUnscheduledPosts = () => {
+    if (!activePlanForRange) return [];
+    let detail = activePlanForRange.resumen_analitico;
+    if (typeof detail === 'string') {
+      try { detail = JSON.parse(detail); } catch { detail = {}; }
+    }
+    return (detail?.posts || []).filter((p: any) => !p.fechaPublicacion).map((p: any) => ({
+      planId: activePlanForRange.id,
+      post: p
+    }));
+  };
+
+  const getPastNoPublicados = () => {
+    const list: { planId: string; post: PostItem }[] = [];
+    weeklyPlans.forEach(plan => {
+      if (plan.id === activePlanForRange?.id) return;
+      let detail = plan.resumen_analitico;
+      if (typeof detail === 'string') {
+        try { detail = JSON.parse(detail); } catch { detail = {}; }
+      }
+      if (detail?.posts) {
+        detail.posts.forEach((p: any) => {
+          if (p.estado === 'No Publicado' && (!p.fechaPublicacion || p.fechaPublicacion < startDate)) {
+            list.push({ planId: plan.id, post: p });
+          }
+        });
+      }
+    });
+    return list;
+  };
+
+  const handleSavePostDetails = async (updatedPost: PostItem) => {
+    if (!detailPlanId) return;
+    const plan = contents.find(c => c.id === detailPlanId);
+    if (!plan) return;
+    let detail = plan.resumen_analitico;
+    if (typeof detail === 'string') {
+      try { detail = JSON.parse(detail); } catch { return; }
+    }
+    const updatedPosts = (detail.posts || []).map((p: any) => 
+      p.id === updatedPost.id ? updatedPost : p
+    );
+    
+    await updateContent(plan.id, {
+      miembroId: plan.miembro_id,
+      titulo: plan.titulo,
+      plataformas: plan.plataformas || [],
+      guionPlantilla: plan.guion_plantilla || '',
+      dialogo: plan.dialogo || '',
+      procedimientoEstandar: plan.procedimiento_estandar || '',
+      estado: 'Plan Semanal',
+      notasMejora: plan.notas_mejora || '',
+      resumenAnalitico: {
+        ...detail,
+        posts: updatedPosts
+      }
+    });
+    
+    setIsDetailModalOpen(false);
+    setDetailPost(null);
+    fetchContents();
+    Swal.fire({
+      title: 'Guardado',
+      text: 'Los cambios y checklist del post se guardaron correctamente.',
+      icon: 'success',
+      timer: 1500,
+      background: '#09090b',
+      color: '#fff'
+    });
+  };
 
   // ====================================================================================
   // ACCIONES PLAN SEMANAL
@@ -197,99 +416,108 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
     setIsPostModalOpen(true);
   };
 
-  const handleEditPostClick = (c: any) => {
-    setSelectedPost(c);
-    setSelectedPlatforms(c.plataformas || []);
-    setPostForm({
-      miembroId: c.miembro_id || '',
-      titulo: c.titulo || '',
-      guionPlantilla: c.guion_plantilla || '',
-      dialogo: c.dialogo || '',
-      procedimientoEstandar: c.procedimiento_estandar || '',
-      estado: c.estado || 'Idea',
-      notasMejora: c.notas_mejora || '',
-      fechaPublicacion: c.fecha_publicacion ? c.fecha_publicacion.split('T')[0] : ''
-    });
-    setOriginatingIdeaId(null);
-    setIsPostModalOpen(true);
-  };
 
-  const handleDuplicatePost = (c: any) => {
-    setSelectedPost(null);
-    setSelectedPlatforms(c.plataformas || []);
-    setPostForm({
-      miembroId: c.miembro_id || '',
-      titulo: `${c.titulo} (Duplicado)`,
-      guionPlantilla: c.guion_plantilla || '',
-      dialogo: c.dialogo || '',
-      procedimientoEstandar: c.procedimiento_estandar || '',
-      estado: 'Idea',
-      notasMejora: c.notas_mejora || '',
-      fechaPublicacion: c.fecha_publicacion ? c.fecha_publicacion.split('T')[0] : ''
-    });
-    setOriginatingIdeaId(null);
-    setIsPostModalOpen(true);
-  };
 
   const handlePostSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!activePlanForRange) {
+      Swal.fire({
+        title: 'Plan Semanal Requerido',
+        text: 'Por favor, crea primero un Plan Semanal en la pestaña "Planes Semanales" para poder programar contenidos.',
+        icon: 'warning',
+        background: '#09090b',
+        color: '#fff'
+      });
+      return;
+    }
+
     try {
-      const payload = {
-        miembroId: postForm.miembroId,
+      const newPost: PostItem = {
+        id: selectedPost ? selectedPost.id : `post_${Date.now()}`,
         titulo: postForm.titulo,
-        plataformas: selectedPlatforms,
-        guionPlantilla: postForm.guionPlantilla,
-        dialogo: postForm.dialogo,
-        procedimientoEstandar: postForm.procedimientoEstandar,
-        estado: postForm.estado,
-        notasMejora: postForm.notasMejora,
-        fechaPublicacion: postForm.fechaPublicacion ? new Date(postForm.fechaPublicacion).toISOString() : undefined
+        formato: selectedPost?.formato || 'Reel/TikTok',
+        plataforma: selectedPlatforms[0] || 'TikTok',
+        gancho: postForm.guionPlantilla || '',
+        tipVisual: selectedPost?.tipVisual || '',
+        desarrollo: postForm.dialogo || '',
+        cta: selectedPost?.cta || '',
+        estado: postForm.estado || 'Idea',
+        fechaPublicacion: postForm.fechaPublicacion ? postForm.fechaPublicacion.split('T')[0] : '',
+        checklistBatching: selectedPost?.checklistBatching || DEFAULT_BATCHING_STEPS,
+        checklistSeo: selectedPost?.checklistSeo || DEFAULT_SEO_STEPS,
+        progreso: selectedPost?.progreso || { guionado: false, grabado: false, editado: false, programado: false }
       };
 
+      let detail = activePlanForRange.resumen_analitico;
+      if (typeof detail === 'string') {
+        try { detail = JSON.parse(detail); } catch { detail = {}; }
+      }
+      
+      let updatedPosts;
       if (selectedPost) {
-        await updateContent(selectedPost.id, {
-          ...payload,
-          resumenAnalitico: selectedPost.resumen_analitico
-        });
-        Swal.fire({ title: 'Contenido Actualizado', icon: 'success', background: '#09090b', color: '#fff', timer: 1500 });
+        updatedPosts = (detail.posts || []).map((p: any) => p.id === selectedPost.id ? newPost : p);
       } else {
-        await createContent(payload);
-        
-        // Si este post proviene de planificar una idea del Banco de Ideas
-        if (originatingIdeaId) {
-          const originalIdea = contents.find(c => c.id === originatingIdeaId);
-          if (originalIdea) {
-            const ra = originalIdea.resumen_analitico || {};
-            const updatedRA = {
-              ...ra,
-              vecesUsada: (ra.vecesUsada || 0) + 1
-            };
+        updatedPosts = [...(detail.posts || []), newPost];
+      }
 
-            await updateContent(originalIdea.id, {
-              titulo: originalIdea.titulo,
-              plataformas: originalIdea.plataformas,
-              guionPlantilla: originalIdea.guion_plantilla || '',
-              dialogo: originalIdea.dialogo || '',
-              procedimientoEstandar: originalIdea.procedimiento_estandar || '',
-              estado: 'Idea',
-              notasMejora: originalIdea.notas_mejora || '',
-              resumenAnalitico: updatedRA
-            });
-          }
-          setOriginatingIdeaId(null);
+      await updateContent(activePlanForRange.id, {
+        miembroId: activePlanForRange.miembro_id,
+        titulo: activePlanForRange.titulo,
+        plataformas: activePlanForRange.plataformas || [],
+        guionPlantilla: activePlanForRange.guion_plantilla || '',
+        dialogo: activePlanForRange.dialogo || '',
+        procedimientoEstandar: activePlanForRange.procedimiento_estandar || '',
+        estado: 'Plan Semanal',
+        notasMejora: activePlanForRange.notas_mejora || '',
+        resumenAnalitico: {
+          ...detail,
+          posts: updatedPosts
         }
+      });
 
-        Swal.fire({ title: 'Contenido Planificado', icon: 'success', background: '#09090b', color: '#fff', timer: 1500 });
+      // Si este post proviene de planificar una idea del Banco de Ideas
+      if (originatingIdeaId) {
+        const originalIdea = contents.find(c => c.id === originatingIdeaId);
+        if (originalIdea) {
+          const ra = originalIdea.resumen_analitico || {};
+          const updatedRA = {
+            ...ra,
+            vecesUsada: (ra.vecesUsada || 0) + 1
+          };
+
+          await updateContent(originalIdea.id, {
+            titulo: originalIdea.titulo,
+            plataformas: originalIdea.plataformas,
+            guionPlantilla: originalIdea.guion_plantilla || '',
+            dialogo: originalIdea.dialogo || '',
+            procedimientoEstandar: originalIdea.procedimiento_estandar || '',
+            estado: 'Idea',
+            notasMejora: originalIdea.notas_mejora || '',
+            resumenAnalitico: updatedRA
+          });
+        }
+        setOriginatingIdeaId(null);
       }
 
       setIsPostModalOpen(false);
       fetchContents();
+      Swal.fire({ title: 'Contenido Guardado', icon: 'success', background: '#09090b', color: '#fff', timer: 1500 });
     } catch (err: any) {
       Swal.fire({ title: 'Error', text: err.message, icon: 'error' });
     }
   };
 
   const handlePlanifyIdea = (idea: any) => {
+    if (!activePlanForRange) {
+      Swal.fire({
+        title: 'Plan Semanal Requerido',
+        text: 'Crea primero un Plan Semanal en la pestaña "Planes Semanales" para poder planificar ideas.',
+        icon: 'warning',
+        background: '#09090b',
+        color: '#fff'
+      });
+      return;
+    }
     setOriginatingIdeaId(idea.id);
     setSelectedPost(null);
     setSelectedPlatforms(idea.plataformas || ['TikTok']);
@@ -325,79 +553,103 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
     }
   };
 
-  // Drag and Drop en Calendario
-  const handleDrop = async (e: React.DragEvent, dateString: string) => {
-    e.preventDefault();
-    const contentId = e.dataTransfer.getData('text/plain');
-    if (!contentId) return;
-    const item = contents.find(c => c.id === contentId);
-    if (!item) return;
-
-    try {
-      const payload = {
-        miembroId: item.miembro_id || (item as any).miembroId,
-        titulo: item.titulo,
-        plataformas: item.plataformas,
-        guionPlantilla: item.guion_plantilla || (item as any).guionPlantilla,
-        dialogo: item.dialogo,
-        procedimientoEstandar: item.procedimiento_estandar || (item as any).procedimientoEstandar,
-        estado: item.estado,
-        notasMejora: item.notas_mejora || (item as any).notasMejora,
-        fechaPublicacion: new Date(dateString).toISOString()
-      };
-
-      await updateContent(item.id, {
-        ...payload,
-        resumenAnalitico: item.resumen_analitico || (item as any).resumenAnalitico
-      });
-      fetchContents();
-    } catch (err: any) {
-      console.error("Error updating date on drop:", err);
+  const handleDropOnDay = async (postId: string, planId: string, dateStr: string) => {
+    const plan = contents.find(c => c.id === planId);
+    if (!plan) return;
+    let detail = plan.resumen_analitico;
+    if (typeof detail === 'string') {
+      try { detail = JSON.parse(detail); } catch { return; }
     }
+    const updatedPosts = (detail.posts || []).map((p: any) => {
+      if (p.id === postId) {
+        return { ...p, fechaPublicacion: dateStr };
+      }
+      return p;
+    });
+
+    await updateContent(plan.id, {
+      miembroId: plan.miembro_id,
+      titulo: plan.titulo,
+      plataformas: plan.plataformas || [],
+      guionPlantilla: plan.guion_plantilla || '',
+      dialogo: plan.dialogo || '',
+      procedimientoEstandar: plan.procedimiento_estandar || '',
+      estado: 'Plan Semanal',
+      notasMejora: plan.notas_mejora || '',
+      resumenAnalitico: {
+        ...detail,
+        posts: updatedPosts
+      }
+    });
+
+    fetchContents();
   };
 
-  // Calendario Math
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  const handleUnschedulePost = async (postId: string, planId: string) => {
+    const plan = contents.find(c => c.id === planId);
+    if (!plan) return;
+    let detail = plan.resumen_analitico;
+    if (typeof detail === 'string') {
+      try { detail = JSON.parse(detail); } catch { return; }
+    }
+    const updatedPosts = (detail.posts || []).map((p: any) => {
+      if (p.id === postId) {
+        return { ...p, fechaPublicacion: '' };
+      }
+      return p;
+    });
+
+    await updateContent(plan.id, {
+      miembroId: plan.miembro_id,
+      titulo: plan.titulo,
+      plataformas: plan.plataformas || [],
+      guionPlantilla: plan.guion_plantilla || '',
+      dialogo: plan.dialogo || '',
+      procedimientoEstandar: plan.procedimiento_estandar || '',
+      estado: 'Plan Semanal',
+      notasMejora: plan.notas_mejora || '',
+      resumenAnalitico: {
+        ...detail,
+        posts: updatedPosts
+      }
+    });
+
+    fetchContents();
   };
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+
+  const handleUpdatePostStatus = async (postId: string, planId: string, newStatus: string) => {
+    const plan = contents.find(c => c.id === planId);
+    if (!plan) return;
+    let detail = plan.resumen_analitico;
+    if (typeof detail === 'string') {
+      try { detail = JSON.parse(detail); } catch { return; }
+    }
+    const updatedPosts = (detail.posts || []).map((p: any) => {
+      if (p.id === postId) {
+        return { ...p, estado: newStatus };
+      }
+      return p;
+    });
+
+    await updateContent(plan.id, {
+      miembroId: plan.miembro_id,
+      titulo: plan.titulo,
+      plataformas: plan.plataformas || [],
+      guionPlantilla: plan.guion_plantilla || '',
+      dialogo: plan.dialogo || '',
+      procedimientoEstandar: plan.procedimiento_estandar || '',
+      estado: 'Plan Semanal',
+      notasMejora: plan.notas_mejora || '',
+      resumenAnalitico: {
+        ...detail,
+        posts: updatedPosts
+      }
+    });
+
+    fetchContents();
   };
 
-  const daysOfWeek = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-  const monthNames = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-  ];
 
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-
-  const firstDayOfMonth = new Date(year, month, 1);
-  const lastDayOfMonth = new Date(year, month + 1, 0);
-
-  let startOffset = firstDayOfMonth.getDay() - 1;
-  if (startOffset < 0) startOffset = 6;
-
-  const totalDays = lastDayOfMonth.getDate();
-  const prevMonthLastDay = new Date(year, month, 0).getDate();
-  const prevMonthDays = Array.from({ length: startOffset }, (_, i) => ({
-    day: prevMonthLastDay - startOffset + i + 1,
-    isCurrentMonth: false,
-    dateString: new Date(year, month - 1, prevMonthLastDay - startOffset + i + 1).toISOString().split('T')[0]
-  }));
-  const currentMonthDays = Array.from({ length: totalDays }, (_, i) => ({
-    day: i + 1,
-    isCurrentMonth: true,
-    dateString: `${year}-${String(month + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`
-  }));
-  const remainingCells = 42 - (prevMonthDays.length + currentMonthDays.length);
-  const nextMonthDays = Array.from({ length: remainingCells }, (_, i) => ({
-    day: i + 1,
-    isCurrentMonth: false,
-    dateString: new Date(year, month + 1, i + 1).toISOString().split('T')[0]
-  }));
-  const allCells = [...prevMonthDays, ...currentMonthDays, ...nextMonthDays];
 
   // Si estamos editando una planificación semanal en pantalla completa
   if (activeWeeklyPlan) {
@@ -528,12 +780,12 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
                   )}
                 </button>
                 <button
-                  onClick={() => setSpaceSubTab('grid')}
-                  className={`pb-1 px-3 text-xs font-bold transition-all relative ${spaceSubTab === 'grid' ? 'text-emerald-450 font-extrabold' : 'text-zinc-500 hover:text-zinc-300'
+                  onClick={() => setSpaceSubTab('kanban')}
+                  className={`pb-1 px-3 text-xs font-bold transition-all relative ${spaceSubTab === 'kanban' ? 'text-emerald-450 font-extrabold' : 'text-zinc-500 hover:text-zinc-300'
                     }`}
                 >
-                  <span>Muro de Ideas</span>
-                  {spaceSubTab === 'grid' && (
+                  <span>Tablero Kanban</span>
+                  {spaceSubTab === 'kanban' && (
                     <motion.div layoutId="subSpaceTabLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />
                   )}
                 </button>
@@ -640,80 +892,187 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
           )}
 
           {spaceSubTab === 'calendar' && (
-            /* CALENDARIO MENSUAL DE IDEAS */
-            <div className="space-y-4 flex-1 flex flex-col">
-              <div className="flex justify-between items-center bg-zinc-900/35 border border-zinc-850 p-3 rounded-2xl">
-                <div className="flex items-center gap-2">
-                  <button onClick={handlePrevMonth} className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors">
-                    <ChevronLeft size={16} />
-                  </button>
-                  <span className="text-xs font-extrabold text-white uppercase min-w-[120px] text-center">
-                    {monthNames[month]} {year}
-                  </span>
-                  <button onClick={handleNextMonth} className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors">
-                    <ChevronRight size={16} />
-                  </button>
+            <div className="flex flex-col lg:flex-row gap-6 flex-1 items-stretch">
+              {/* Sidebar Izquierda - Posts sin Programar & Históricos */}
+              <div className="lg:w-80 shrink-0 flex flex-col gap-4 bg-zinc-900/10 border border-zinc-850/60 p-4 rounded-3xl">
+                <div>
+                  <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">
+                    Posts de la Semana
+                  </h4>
+                  <p className="text-[10px] text-zinc-550">
+                    Arrastra al calendario para programar
+                  </p>
                 </div>
-                <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-[10px] font-bold transition-colors">
-                  Hoy
-                </button>
+
+                {/* Zona de desprogramación */}
+                <div
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleDropOnUnschedule}
+                  className="border-2 border-dashed border-zinc-800/80 hover:border-red-500/50 hover:bg-red-500/5 p-4 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all text-zinc-550 hover:text-red-400 group cursor-default"
+                >
+                  <Trash2 size={16} className="text-zinc-500 group-hover:text-red-400" />
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider">Desprogramar Post</span>
+                  <span className="text-[8px] text-zinc-650">Arrastra aquí para quitar la fecha</span>
+                </div>
+
+                {/* Posts sin fecha de la semana activa */}
+                <div className="flex-1 flex flex-col gap-3 min-h-[150px] overflow-y-auto custom-scrollbar">
+                  <span className="text-[9px] font-black uppercase text-zinc-500 tracking-wider">
+                    Sin Fecha ({getUnscheduledPosts().length})
+                  </span>
+                  <div className="flex flex-col gap-2">
+                    {getUnscheduledPosts().length === 0 ? (
+                      <p className="text-[10px] text-zinc-600 italic">No hay posts sin fecha en esta semana.</p>
+                    ) : (
+                      getUnscheduledPosts().map(p => (
+                        <div
+                          key={p.post.id}
+                          draggable
+                          onDragStart={(e) => handleDragStartPost(e, p.post.id, p.planId)}
+                          onClick={() => {
+                            setDetailPost(p.post);
+                            setDetailPlanId(p.planId);
+                            setIsDetailModalOpen(true);
+                          }}
+                          className="bg-zinc-900/60 border border-zinc-850 hover:border-zinc-700 p-3 rounded-2xl cursor-grab hover:bg-zinc-900 transition-all space-y-1.5 group"
+                        >
+                          <div className="flex justify-between items-center text-[8px] font-black uppercase text-zinc-555">
+                            <span>{p.post.plataforma}</span>
+                            <span className="px-1.5 py-0.5 rounded bg-zinc-950 text-zinc-400">
+                              {p.post.formato}
+                            </span>
+                          </div>
+                          <p className="text-xs font-bold text-white group-hover:text-emerald-450 transition-colors line-clamp-2 leading-snug">
+                            {p.post.titulo}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Borradores No Publicados (Histórico) */}
+                  <div className="border-t border-zinc-850/60 pt-3 flex flex-col gap-3">
+                    <span className="text-[9px] font-black uppercase text-red-400 tracking-wider flex items-center gap-1">
+                      <span>Borradores No Publicados ({getPastNoPublicados().length})</span>
+                    </span>
+                    <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                      {getPastNoPublicados().length === 0 ? (
+                        <p className="text-[10px] text-zinc-600 italic">Sin borradores no publicados de semanas anteriores.</p>
+                      ) : (
+                        getPastNoPublicados().map(p => (
+                          <div
+                            key={p.post.id}
+                            draggable
+                            onDragStart={(e) => handleDragStartPost(e, p.post.id, p.planId)}
+                            onClick={() => {
+                              setDetailPost(p.post);
+                              setDetailPlanId(p.planId);
+                              setIsDetailModalOpen(true);
+                            }}
+                            className="bg-zinc-900/30 border border-zinc-850 hover:border-zinc-800 p-2.5 rounded-xl cursor-grab hover:bg-zinc-900/50 transition-all space-y-1 group"
+                          >
+                            <div className="flex justify-between items-center text-[7px] font-black uppercase text-zinc-650">
+                              <span>{p.post.plataforma}</span>
+                              <span className="text-red-400">Borrador</span>
+                            </div>
+                            <p className="text-[11px] font-bold text-zinc-450 group-hover:text-zinc-250 line-clamp-1">
+                              {p.post.titulo}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex-1 flex flex-col bg-zinc-950/80 border border-zinc-850 rounded-2xl overflow-hidden min-h-[400px]">
-                <div className="grid grid-cols-7 border-b border-zinc-850 bg-zinc-900/30 text-center py-2">
-                  {daysOfWeek.map((day) => (
-                    <span key={day} className="text-[10px] font-black uppercase tracking-wider text-zinc-650">
-                      {day}
+              {/* Calendario Semanal */}
+              <div className="flex-1 flex flex-col gap-4">
+                <div className="flex justify-between items-center bg-zinc-900/35 border border-zinc-850 p-3 rounded-2xl">
+                  <div className="flex items-center gap-2">
+                    <button onClick={handlePrevWeek} className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors">
+                      <ChevronLeft size={16} />
+                    </button>
+                    <span className="text-xs font-extrabold text-white uppercase min-w-[200px] text-center">
+                      Semana: {startDate.split('-').reverse().slice(0, 2).reverse().join('/')} al {endDate.split('-').reverse().slice(0, 2).reverse().join('/')}
                     </span>
-                  ))}
+                    <button onClick={handleNextWeek} className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors">
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      const currentRange = getWeekRange();
+                      setStartDate(currentRange.monday);
+                      setEndDate(currentRange.sunday);
+                    }} 
+                    className="px-3 py-1 bg-zinc-850 hover:bg-zinc-800 text-zinc-300 rounded-lg text-[10px] font-bold transition-colors border border-zinc-750"
+                  >
+                    Esta Semana
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-7 flex-1">
-                  {allCells.map((cell, idx) => {
-                    const dayContents = individualPosts.filter(c => {
-                      const publishDate = c.fecha_publicacion || (c as any).fechaPublicacion;
-                      return publishDate && publishDate.split('T')[0] === cell.dateString;
-                    });
-                    const isToday = cell.dateString === new Date().toISOString().split('T')[0];
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-7 gap-3 bg-zinc-950/80 border border-zinc-850 p-4 rounded-3xl min-h-[450px]">
+                  {getDaysOfActiveWeek().map((day, idx) => {
+                    const dayPosts = getWeeklyPosts().filter(item => item.post.fechaPublicacion === day.dateString);
+                    const isToday = day.dateString === new Date().toISOString().split('T')[0];
 
                     return (
                       <div
                         key={idx}
                         onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => handleDrop(e, cell.dateString)}
-                        className={`min-h-[75px] border-b border-r border-zinc-850/60 p-2 flex flex-col gap-1 transition-all ${cell.isCurrentMonth ? 'bg-transparent' : 'bg-zinc-900/10 opacity-30'
-                          } hover:bg-zinc-900/20`}
+                        onDrop={(e) => handleDropOnCalendarDay(e, day.dateString)}
+                        className={`min-h-[150px] border p-3 rounded-2xl flex flex-col gap-2 transition-all ${
+                          isToday ? 'bg-emerald-500/5 border-emerald-500/30 font-extrabold' : 'bg-zinc-900/10 border-zinc-900/40 hover:border-zinc-800'
+                        } hover:bg-zinc-900/20`}
                       >
-                        <div className="flex justify-between items-center">
-                          <span
-                            className={`text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center ${isToday
-                                ? 'bg-emerald-500 text-black'
-                                : 'text-zinc-550'
-                              }`}
-                          >
-                            {cell.day}
-                          </span>
-
+                        <div className="flex justify-between items-center border-b border-zinc-900 pb-1.5">
+                          <div className="flex items-baseline gap-1">
+                            <span className={`text-[10px] font-black uppercase ${isToday ? 'text-emerald-450' : 'text-zinc-550'}`}>
+                              {day.dayName}
+                            </span>
+                            <span className={`text-[13px] font-extrabold ${isToday ? 'text-emerald-450' : 'text-white'}`}>
+                              {day.dayNumber}
+                            </span>
+                          </div>
                           <button
-                            onClick={() => handleCreateNewPost(cell.dateString)}
-                            className="opacity-0 hover:opacity-100 p-0.5 bg-zinc-900 rounded text-zinc-500 hover:text-white transition-opacity text-[8px] font-black"
+                            onClick={() => handleCreateNewPost(day.dateString)}
+                            className="p-1 hover:bg-zinc-800 rounded text-zinc-500 hover:text-white transition-all text-[10px] font-bold"
+                            title="Nueva idea para este día"
                           >
                             +
                           </button>
                         </div>
 
-                        <div className="flex-1 flex flex-col gap-1 overflow-y-auto custom-scrollbar pt-1">
-                          {dayContents.map((c) => (
-                            <button
-                              key={c.id}
-                              onClick={() => handleEditPostClick(c)}
+                        <div className="flex-1 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
+                          {dayPosts.map(({ planId, post }) => (
+                            <div
+                              key={post.id}
                               draggable
-                              onDragStart={(e) => e.dataTransfer.setData('text/plain', c.id)}
-                              className="w-full text-left px-1.5 py-0.5 rounded text-[8px] font-bold truncate bg-emerald-500/10 border-l-2 border-emerald-500 text-emerald-450 hover:brightness-125 transition-all cursor-grab active:cursor-grabbing"
+                              onDragStart={(e) => handleDragStartPost(e, post.id, planId)}
+                              onClick={() => {
+                                setDetailPost(post);
+                                setDetailPlanId(planId);
+                                setIsDetailModalOpen(true);
+                              }}
+                              className="w-full text-left px-2.5 py-2 rounded-xl text-[10px] font-bold truncate bg-emerald-500/10 border border-emerald-500/20 text-emerald-450 hover:brightness-125 transition-all cursor-grab active:cursor-grabbing space-y-1"
                             >
-                              {c.titulo}
-                            </button>
+                              <div className="flex justify-between items-center text-[7px] text-zinc-500 uppercase font-black">
+                                <span>{post.plataforma}</span>
+                                <span className={`px-1 rounded-full ${
+                                  post.estado === 'Programado' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-800 text-zinc-450'
+                                }`}>
+                                  {post.estado}
+                                </span>
+                              </div>
+                              <p className="truncate text-white">{post.titulo}</p>
+                            </div>
                           ))}
+                          {dayPosts.length === 0 && (
+                            <div className="flex-1 flex items-center justify-center opacity-10">
+                              <span className="text-[8px] uppercase tracking-wider font-bold text-zinc-500">Sin post</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -723,81 +1082,19 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
             </div>
           )}
 
-          {spaceSubTab === 'grid' && (
-            /* GRIDO DE IDEAS INDIVIDUALES */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {individualPosts.length === 0 ? (
-                <div className="col-span-full p-12 border border-dashed border-zinc-800 text-center rounded-3xl text-zinc-650 text-xs">
-                  No hay ideas de posts individuales cargadas para este miembro.
-                </div>
-              ) : (
-                individualPosts.map(c => (
-                  <div key={c.id} className="bg-zinc-900/40 border border-zinc-800/60 p-6 rounded-3xl flex flex-col justify-between group space-y-4">
-                    <div>
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex gap-1.5 flex-wrap">
-                          {c.plataformas?.map((p: string, idx: number) => (
-                            <span key={idx} className="px-2 py-0.5 bg-zinc-800/80 border border-zinc-700/60 rounded-md text-[9px] font-black uppercase text-zinc-400">
-                              {p}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => handleEditPostClick(c)}
-                            className="text-zinc-500 hover:text-white transition-colors"
-                            title="Editar"
-                          >
-                            <Edit2 size={12} />
-                          </button>
-                          <button 
-                            onClick={() => handleDuplicatePost(c)}
-                            className="text-zinc-500 hover:text-emerald-400 transition-colors"
-                            title="Duplicar"
-                          >
-                            <Copy size={12} />
-                          </button>
-                          <button 
-                            onClick={() => handleDelete(c.id)}
-                            className="text-zinc-550 hover:text-red-400 transition-colors"
-                            title="Eliminar"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <h4 className="font-bold text-sm text-white mb-2">{c.titulo}</h4>
-                      
-                      <div className="flex justify-between items-center mb-3">
-                        <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border inline-block ${c.estado === 'Publicado'
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                            : 'bg-zinc-850 text-zinc-450 border-zinc-750'
-                          }`}>
-                          {c.estado}
-                        </span>
-
-                        {c.fecha_publicacion && (
-                          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1">
-                            <Calendar size={10} />
-                            <span>{new Date(c.fecha_publicacion).toLocaleDateString()}</span>
-                          </span>
-                        )}
-                      </div>
-
-                      {c.guion_plantilla && (
-                        <div className="text-xs text-zinc-400 bg-zinc-950/40 p-3 rounded-xl border border-zinc-900/60 max-h-[80px] overflow-y-auto whitespace-pre-wrap font-mono">
-                          <p className="font-bold text-[8px] text-zinc-500 uppercase mb-0.5">Fórmula / Gancho:</p>
-                          {c.guion_plantilla}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+          {spaceSubTab === 'kanban' && (
+            <ContentKanbanSubTab
+              posts={getWeeklyPosts()}
+              onUpdatePostStatus={handleUpdatePostStatus}
+              onOpenPostDetails={(post, planId) => {
+                setDetailPost(post);
+                setDetailPlanId(planId);
+                setIsDetailModalOpen(true);
+              }}
+              startDate={startDate}
+              endDate={endDate}
+            />
           )}
-
         </div>
       )}
 
@@ -916,6 +1213,16 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
           </motion.div>
         </div>
       )}
+
+      <PostDetailsModal
+        isOpen={isDetailModalOpen}
+        post={detailPost}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setDetailPost(null);
+        }}
+        onSave={handleSavePostDetails}
+      />
     </div>
   );
 };

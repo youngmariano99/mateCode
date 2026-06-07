@@ -26,12 +26,34 @@ interface GoalsState {
   deleteGoal: (id: string) => Promise<void>;
 }
 
+const mapGoal = (g: any): Goal => {
+  if (!g) return g;
+  return {
+    id: g.id,
+    agencia_id: g.agenciaId || g.agencia_id,
+    usuario_asignado_id: g.usuarioAsignadoId || g.usuario_asignado_id,
+    creador_id: g.creadorId || g.creador_id,
+    titulo: g.titulo,
+    descripcion: g.descripcion,
+    tipo_periodo: g.tipoPeriodo || g.tipo_periodo,
+    fecha_limite: g.fechaLimite || g.fecha_limite,
+    completado: g.completado,
+    fecha_creacion: g.fechaCreacion || g.fecha_creacion,
+    usuario_asignado: g.usuarioAsignado 
+      ? { nombre_completo: g.usuarioAsignado.nombreCompleto || g.usuarioAsignado.nombre_completo }
+      : (g.usuario_asignado 
+          ? { nombre_completo: g.usuario_asignado.nombre_completo } 
+          : undefined)
+  };
+};
+
 export const useGoalsStore = create<GoalsState>((set) => ({
   goals: [],
   fetchGoals: async (userId) => {
     try {
       const data = await api.get('/Goals', { params: userId ? { userId } : undefined });
-      set({ goals: data });
+      const list = Array.isArray(data) ? data.map(mapGoal) : [];
+      set({ goals: list });
     } catch (err) {
       console.error(err);
     }
@@ -45,7 +67,7 @@ export const useGoalsStore = create<GoalsState>((set) => ({
         TipoPeriodo: goal.tipo_periodo,
         FechaLimite: goal.fecha_limite
       });
-      set(state => ({ goals: [...state.goals, data] }));
+      set(state => ({ goals: [...state.goals, mapGoal(data)] }));
     } catch (err) {
       console.error(err);
       throw err;
@@ -71,7 +93,7 @@ export const useGoalsStore = create<GoalsState>((set) => ({
         FechaLimite: goal.fecha_limite
       });
       set(state => ({
-        goals: state.goals.map(g => g.id === id ? data : g)
+        goals: state.goals.map(g => g.id === id ? mapGoal(data) : g)
       }));
     } catch (err) {
       console.error(err);

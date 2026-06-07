@@ -17,6 +17,7 @@ import { usePresence } from '../context/PresenceContext';
 import { QuickAccessHud } from '../components/spatial/QuickAccessHud';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWorkspaceStore } from '../store/useWorkspaceStore';
+import { useAgencyStore } from '../store/useAgencyStore';
 import { api } from '../lib/apiClient';
 import Swal from 'sweetalert2';
 
@@ -28,6 +29,14 @@ export const SpatialLayout: React.FC = () => {
   const { 
     emergencyMeeting, presences, globalChat, activityLogs, sendGlobalMessage 
   } = usePresence();
+  
+  const { activeAgency, fetchAgencies } = useAgencyStore();
+
+  useEffect(() => {
+    if (!activeAgency) {
+      fetchAgencies().catch(e => console.error("Error loading agencies inside SpatialLayout", e));
+    }
+  }, [activeAgency, fetchAgencies]);
   
   const [showOverlay, setShowOverlay] = useState(false);
   const [leftTab, setLeftTab] = useState<'chat' | 'context' | 'meetings'>('chat');
