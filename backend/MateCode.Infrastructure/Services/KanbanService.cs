@@ -142,6 +142,7 @@ namespace MateCode.Infrastructure.Services
             ticket.Estado = ticketUpdate.Estado;
             ticket.SprintId = ticketUpdate.SprintId;
             ticket.RangoLexicografico = ticketUpdate.RangoLexicografico;
+            ticket.ResponsableId = ticketUpdate.ResponsableId;
 
             await _context.SaveChangesAsync();
             return ticket;

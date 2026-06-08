@@ -15,6 +15,7 @@ import { CreateBugModal } from '../components/devhub/CreateBugModal';
 import { CreateDecisionModal } from '../components/devhub/CreateDecisionModal';
 import { usePresence } from '../context/PresenceContext';
 import { QuickAccessHud } from '../components/spatial/QuickAccessHud';
+import { WeeklyTasksFloat } from '../components/spatial/WeeklyTasksFloat';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWorkspaceStore } from '../store/useWorkspaceStore';
 import { useAgencyStore } from '../store/useAgencyStore';
@@ -352,6 +353,7 @@ export const SpatialLayout: React.FC = () => {
 
       {isBugModalOpen && <CreateBugModal projectId={workspaceId || tenantId!} onClose={() => setIsBugModalOpen(false)} onSuccess={() => setIsBugModalOpen(false)} />}
       {isDecisionModalOpen && <CreateDecisionModal projectId={workspaceId || tenantId!} onClose={() => setIsDecisionModalOpen(false)} onSuccess={() => setIsDecisionModalOpen(false)} />}
+      <WeeklyTasksFloat />
       <QuickAccessHud />
 
       <AnimatePresence>

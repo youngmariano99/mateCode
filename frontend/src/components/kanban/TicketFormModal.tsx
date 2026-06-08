@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, FileJson, List, Plus, Trash2, Sparkles, AlertCircle } from 'lucide-react';
 import { type Ticket } from '../agile/types';
 import Swal from 'sweetalert2';
+import { useAgencyStore } from '../../store/useAgencyStore';
+import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 
 interface TicketFormModalProps {
   isOpen: boolean;
@@ -18,6 +20,34 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
   ticket,
   proyectoId
 }) => {
+  const { currentAgencyId, fetchMembers } = useAgencyStore();
+  const workspaceId = useWorkspaceStore(state => state.workspaceId);
+  const [members, setMembers] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isOpen && currentAgencyId) {
+      fetchMembers(currentAgencyId).then(res => setMembers(res));
+    }
+  }, [currentAgencyId, isOpen]);
+
+  const filteredMembers = members.filter(m => {
+    if (m.rol === 'Propietario' || m.rol === 'Administrador') return true;
+
+    let perms = m.permisos_json;
+    if (typeof perms === 'string') {
+      try {
+        perms = JSON.parse(perms);
+      } catch {
+        perms = {};
+      }
+    }
+    
+    const hasWorkspaceAccess = perms?.workspaces?.[workspaceId || ''] === true;
+    const hasProjectAccess = perms?.projects?.[proyectoId] === true;
+
+    return hasWorkspaceAccess || hasProjectAccess;
+  });
+
   const [mode, setMode] = useState<'manual' | 'json'>('manual');
   const [formData, setFormData] = useState<Partial<Ticket>>({
     titulo: '',
@@ -196,6 +226,26 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
                     className="w-full bg-white/[0.03] border border-white/10 rounded-xl p-3 text-[11px] text-zinc-300 outline-none focus:border-emerald-500/50"
                     placeholder="Ej: Core / Auth"
                   />
+                </div>
+              </div>
+
+              {/* Responsable de la Tarea */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Responsable</label>
+                  <p className="text-[9px] text-zinc-600 mb-2 italic">Asigna la tarea a un colaborador con acceso a este proyecto.</p>
+                  <select 
+                    value={formData.responsableId || ''}
+                    onChange={e => setFormData(prev => ({...prev, responsableId: e.target.value || undefined}))}
+                    className="w-full bg-[#1A1C24] border border-white/10 rounded-xl p-3.5 text-xs text-zinc-200 outline-none focus:border-emerald-500/50"
+                  >
+                    <option value="" className="bg-[#1A1C24]">Sin asignar / Libre</option>
+                    {filteredMembers.map(member => (
+                      <option key={member.usuario_id} value={member.usuario_id} className="bg-[#1A1C24]">
+                        {member.usuario?.nombre_completo || member.usuario?.email} ({member.rol})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
