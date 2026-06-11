@@ -14,6 +14,22 @@ const PLATFORMS = ['TikTok', 'Instagram', 'LinkedIn', 'Facebook'];
 const FORMATS = ['Reel/TikTok', 'Carrusel', 'Historia', 'Post'];
 const STATUSES = ['Idea', 'Guionado', 'Grabado', 'Editado', 'Programado', 'No Publicado'];
 
+const DEFAULT_BATCHING_STEPS: ChecklistItem[] = [
+  { id: 'b1', text: '🎬 Set-up armado (trípode, luces, cámara limpia)', checked: false },
+  { id: 'b2', text: '📹 Grabé el Post', checked: false },
+  { id: 'b3', text: '👕 Cambié de remera o ángulo', checked: false },
+  { id: 'b4', text: '✍️ Subtítulos grandes en el centro', checked: false },
+  { id: 'b5', text: '✂️ Cortes rápidos cada 3-5 segundos', checked: false },
+  { id: 'b6', text: '💾 Archivos finales exportados', checked: false }
+];
+
+const DEFAULT_SEO_STEPS: ChecklistItem[] = [
+  { id: 's1', text: '📂 Nombre del archivo relevante (ej: video.mp4 ➡️ excel-tickets.mp4)', checked: false },
+  { id: 's2', text: '✍️ Palabras clave de forma natural en el texto', checked: false },
+  { id: 's3', text: '🏷️ 3 a 5 hashtags muy específicos (B2B)', checked: false },
+  { id: 's4', text: '🚫 Video limpio sin marcas de agua de otras redes', checked: false }
+];
+
 export const PostDetailsModal: React.FC<PostDetailsModalProps> = ({
   isOpen,
   post,
@@ -43,6 +59,21 @@ export const PostDetailsModal: React.FC<PostDetailsModalProps> = ({
         [field]: value
       };
     });
+  };
+
+  const handleLoadDefaults = (type: 'batching' | 'seo') => {
+    const key = type === 'batching' ? 'checklistBatching' : 'checklistSeo';
+    const defaults = type === 'batching' ? DEFAULT_BATCHING_STEPS : DEFAULT_SEO_STEPS;
+    const freshDefaults = defaults.map(d => ({
+      ...d,
+      id: `${d.id}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
+    }));
+    handleFieldChange(key, freshDefaults);
+  };
+
+  const handleClearAll = (type: 'batching' | 'seo') => {
+    const key = type === 'batching' ? 'checklistBatching' : 'checklistSeo';
+    handleFieldChange(key, []);
   };
 
   // Checklist Helpers
@@ -315,13 +346,30 @@ export const PostDetailsModal: React.FC<PostDetailsModalProps> = ({
                   <h4 className="text-xs font-black text-white uppercase tracking-wider">
                     Fase de Grabación (Batching Day)
                   </h4>
-                  <button
-                    onClick={() => addStep('batching')}
-                    className="text-[10px] font-bold text-emerald-450 hover:text-emerald-400 flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg transition-colors"
-                  >
-                    <Plus size={10} />
-                    <span>Añadir Paso</span>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleLoadDefaults('batching')}
+                      className="text-[10px] font-bold text-indigo-400 hover:text-indigo-350 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-lg transition-colors"
+                    >
+                      Cargar por Defecto
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleClearAll('batching')}
+                      className="text-[10px] font-bold text-red-405 hover:text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-lg transition-colors"
+                    >
+                      Limpiar Todo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => addStep('batching')}
+                      className="text-[10px] font-bold text-emerald-450 hover:text-emerald-400 flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg transition-colors"
+                    >
+                      <Plus size={10} />
+                      <span>Añadir Paso</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -396,13 +444,30 @@ export const PostDetailsModal: React.FC<PostDetailsModalProps> = ({
                   <h4 className="text-xs font-black text-white uppercase tracking-wider">
                     Fase de Subida & SEO
                   </h4>
-                  <button
-                    onClick={() => addStep('seo')}
-                    className="text-[10px] font-bold text-emerald-450 hover:text-emerald-400 flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg transition-colors"
-                  >
-                    <Plus size={10} />
-                    <span>Añadir Paso</span>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleLoadDefaults('seo')}
+                      className="text-[10px] font-bold text-indigo-400 hover:text-indigo-350 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-lg transition-colors"
+                    >
+                      Cargar por Defecto
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleClearAll('seo')}
+                      className="text-[10px] font-bold text-red-405 hover:text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-lg transition-colors"
+                    >
+                      Limpiar Todo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => addStep('seo')}
+                      className="text-[10px] font-bold text-emerald-450 hover:text-emerald-400 flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg transition-colors"
+                    >
+                      <Plus size={10} />
+                      <span>Añadir Paso</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">

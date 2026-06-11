@@ -231,6 +231,7 @@ namespace MateCode.API.Controllers
             public string ProcedimientoEstandar { get; set; } = string.Empty;
             public string Estado { get; set; } = "Idea";
             public string NotasMejora { get; set; } = string.Empty;
+            public JsonElement? ResumenAnalitico { get; set; }
             public DateTime? FechaPublicacion { get; set; }
         }
 
@@ -240,7 +241,7 @@ namespace MateCode.API.Controllers
             try {
                 var agencyId = GetAgencyId();
                 var content = await _agencyService.CreateContentAsync(
-                    agencyId, req.MiembroId, req.Titulo, req.Plataformas, req.GuionPlantilla, req.Dialogo, req.ProcedimientoEstandar, req.Estado, req.NotasMejora, req.FechaPublicacion);
+                    agencyId, req.MiembroId, req.Titulo, req.Plataformas, req.GuionPlantilla, req.Dialogo, req.ProcedimientoEstandar, req.Estado, req.NotasMejora, req.ResumenAnalitico, req.FechaPublicacion);
                 return Ok(content);
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }

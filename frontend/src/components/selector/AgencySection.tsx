@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Building, Layout, ChevronRight, Plus } from 'lucide-react';
-import type { Agency } from '../../store/useAgencyStore';
+import { Building, Layout, ChevronRight, Plus, Edit2, Trash2 } from 'lucide-react';
+import { useAgencyStore, type Agency } from '../../store/useAgencyStore';
+import Swal from 'sweetalert2';
 
 interface AgencySectionProps {
   personalAgencies: Agency[];
@@ -20,6 +21,75 @@ export const AgencySection: React.FC<AgencySectionProps> = ({
   onEnterDashboard,
   onCreateAgency,
 }) => {
+  const deleteAgency = useAgencyStore(state => state.deleteAgency);
+  const updateAgencyName = useAgencyStore(state => state.updateAgencyName);
+
+  const handleEditName = async (agency: Agency) => {
+    const { value: newName } = await Swal.fire({
+      title: 'Editar Nombre de la Organización',
+      input: 'text',
+      inputValue: agency.nombre,
+      showCancelButton: true,
+      background: '#09090b',
+      color: '#f4f4f5',
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#27272a',
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        popup: 'rounded-3xl border border-zinc-800 shadow-2xl',
+        input: 'bg-zinc-900 border-zinc-805 text-white rounded-xl'
+      }
+    });
+
+    if (newName && newName.trim() && newName !== agency.nombre) {
+      const ok = await updateAgencyName(agency.id, newName.trim());
+      if (ok) {
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Nombre actualizado con éxito',
+          showConfirmButton: false,
+          timer: 2000,
+          background: '#18181b',
+          color: '#fff'
+        });
+      }
+    }
+  };
+
+  const handleDeleteAgency = async (agency: Agency) => {
+    const { isConfirmed } = await Swal.fire({
+      title: '¿Eliminar Organización?',
+      text: `¿Estás seguro de que deseas eliminar "${agency.nombre}"? Esta acción se aplicará como soft delete y no borrará de forma permanente tus registros asociados.`,
+      icon: 'warning',
+      showCancelButton: true,
+      background: '#09090b',
+      color: '#f4f4f5',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#27272a',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        popup: 'rounded-3xl border border-zinc-800 shadow-2xl'
+      }
+    });
+
+    if (isConfirmed) {
+      const ok = await deleteAgency(agency.id);
+      if (ok) {
+        Swal.fire({
+          title: '¡Eliminado!',
+          text: 'La organización ha sido eliminada.',
+          icon: 'success',
+          background: '#09090b',
+          color: '#f4f4f5'
+        });
+      }
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Sección 1: Espacio Personal */}
@@ -91,9 +161,32 @@ export const AgencySection: React.FC<AgencySectionProps> = ({
                     <div className="w-10 h-10 rounded-xl bg-zinc-950 border border-zinc-850 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-black transition-colors">
                       <Building size={18} />
                     </div>
-                    <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                      Empresa
-                    </span>
+                    
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditName(agency);
+                        }}
+                        className="p-1.5 hover:bg-zinc-850 rounded-lg text-zinc-500 hover:text-zinc-200 transition-colors border border-zinc-850/60"
+                        title="Editar nombre"
+                      >
+                        <Edit2 size={11} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteAgency(agency);
+                        }}
+                        className="p-1.5 hover:bg-zinc-850 rounded-lg text-zinc-500 hover:text-red-400 transition-colors border border-zinc-850/60"
+                        title="Eliminar organización"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                      <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                        Empresa
+                      </span>
+                    </div>
                   </div>
                   <h3 className="text-base font-bold mb-1 group-hover:text-emerald-400 transition-colors">
                     {agency.nombre}

@@ -211,7 +211,7 @@ export function PizarraTab({ titulo: tituloInicial = '', onGuardar }: PropsPizar
       <section className="flex flex-col rounded-2xl border border-zinc-800/60 bg-zinc-900/40 overflow-hidden">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/60 px-5 py-3">
           <div>
-            <h2 className="text-sm font-bold text-white">Pizarra</h2>
+            <h2 className="text-sm font-bold text-white">Taller de promps</h2>
             <p className="text-[10px] text-zinc-500">Editor libre · persiste XML · compila al motor activo</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

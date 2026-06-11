@@ -51,6 +51,8 @@ interface AgencyState {
   getAgencyWorkspacesWithProjects: (id: string) => Promise<any[]>;
   createWorkspaceInAgency: (id: string, nombre: string) => Promise<any>;
   updateAgencyProfile: (id: string, nombre: string, redesSociales: any, branding: any, mision: string, vision: string, datosMarketing: any) => Promise<boolean>;
+  deleteAgency: (id: string) => Promise<boolean>;
+  updateAgencyName: (id: string, nombre: string) => Promise<boolean>;
 }
 
 export const useAgencyStore = create<AgencyState>((set, get) => ({
@@ -226,6 +228,28 @@ export const useAgencyStore = create<AgencyState>((set, get) => ({
     } catch (err) {
       console.error(err);
       throw err;
+    }
+  },
+
+  deleteAgency: async (id) => {
+    try {
+      await api.delete(`/Agency/${id}`);
+      await get().fetchAgencies();
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  },
+
+  updateAgencyName: async (id, nombre) => {
+    try {
+      await api.put(`/Agency/${id}/name`, { Nombre: nombre });
+      await get().fetchAgencies();
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
     }
   }
 }));

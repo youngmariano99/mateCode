@@ -12,6 +12,8 @@ namespace MateCode.Application.Services
         Task<IEnumerable<Agencia>> GetAgenciesByUserAsync(Guid userId);
         Task<Agencia> CreateAgencyAsync(string name, Guid ownerId);
         Task<bool> UpdateAgencyProfileAsync(Guid agencyId, string name, JsonElement redesSociales, JsonElement branding, string mision, string vision, JsonElement datosMarketing);
+        Task<bool> DeleteAgencyAsync(Guid agencyId);
+        Task<bool> UpdateAgencyNameAsync(Guid agencyId, string name);
         Task<IEnumerable<object>> GetAgencyMembersAsync(Guid agencyId);
         Task<bool> AddMemberToAgencyAsync(Guid agencyId, Guid userId, string role, JsonElement permissions);
         Task<bool> InviteMemberToAgencyAsync(Guid agencyId, string email, string role = "Colaborador", JsonElement? permissions = null);
@@ -58,7 +60,7 @@ namespace MateCode.Application.Services
 
         // --- PLANIFICADOR DE CONTENIDO ---
         Task<IEnumerable<PlanificadorContenido>> GetContentsAsync(Guid agencyId);
-        Task<PlanificadorContenido> CreateContentAsync(Guid agencyId, Guid memberId, string titulo, JsonElement plataformas, string guion, string dialogo, string procedimiento, string estado, string notasMejora, DateTime? fechaPublicacion = null);
+        Task<PlanificadorContenido> CreateContentAsync(Guid agencyId, Guid memberId, string titulo, JsonElement plataformas, string guion, string dialogo, string procedimiento, string estado, string notasMejora, JsonElement? resumenAnalitico = null, DateTime? fechaPublicacion = null);
         Task<bool> UpdateContentAsync(Guid contentId, string titulo, JsonElement plataformas, string guion, string dialogo, string procedimiento, string estado, string notasMejora, JsonElement resumenAnalitico, DateTime? publishDate);
         Task<bool> DeleteContentAsync(Guid contentId);
 

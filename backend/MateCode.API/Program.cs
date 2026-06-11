@@ -280,7 +280,10 @@ using (var scope = app.Services.CreateScope())
                         ALTER TABLE nucleo.agencias ADD COLUMN vision TEXT DEFAULT '';
                     END IF;
                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'datos_marketing') THEN
-                        ALTER TABLE nucleo.agencias ADD COLUMN datos_marketing JSONB DEFAULT '{{}}';
+                        ALTER TABLE nucleo.agencias ADD COLUMN datos_marketing JSONB DEFAULT '{}';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'nucleo' AND table_name = 'agencias' AND column_name = 'activo') THEN
+                        ALTER TABLE nucleo.agencias ADD COLUMN activo BOOLEAN DEFAULT TRUE;
                     END IF;
                 END IF;
 

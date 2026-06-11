@@ -13,7 +13,7 @@ namespace MateCode.Infrastructure.Services
         public async Task<IEnumerable<Agencia>> GetAgenciesByUserAsync(Guid userId)
         {
             var owned = await _context.Agencias
-                .Where(a => a.PropietarioId == userId)
+                .Where(a => a.PropietarioId == userId && a.Activo)
                 .ToListAsync();
 
             var memberOfIds = await _context.MiembrosAgencia
@@ -22,7 +22,7 @@ namespace MateCode.Infrastructure.Services
                 .ToListAsync();
 
             var memberOf = await _context.Agencias
-                .Where(a => memberOfIds.Contains(a.Id))
+                .Where(a => memberOfIds.Contains(a.Id) && a.Activo)
                 .ToListAsync();
 
             return owned.Concat(memberOf).DistinctBy(a => a.Id);
@@ -392,6 +392,24 @@ namespace MateCode.Infrastructure.Services
             agency.Vision = vision;
             agency.DatosMarketing = datosMarketing;
 
+            return await _context.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteAgencyAsync(Guid agencyId)
+        {
+            var agency = await _context.Agencias.FirstOrDefaultAsync(a => a.Id == agencyId);
+            if (agency == null) return false;
+
+            agency.Activo = false; // Soft delete
+            return await _context.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> UpdateAgencyNameAsync(Guid agencyId, string name)
+        {
+            var agency = await _context.Agencias.FirstOrDefaultAsync(a => a.Id == agencyId);
+            if (agency == null) return false;
+
+            agency.Nombre = name;
             return await _context.SaveChangesAsync() > 0;
         }
     }

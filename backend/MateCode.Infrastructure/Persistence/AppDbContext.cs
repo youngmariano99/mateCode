@@ -471,6 +471,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(a => a.Tipo).HasColumnName("tipo");
                 e.Property(a => a.LlaveCifrado).HasColumnName("llave_cifrado");
                 e.Property(a => a.FechaCreacion).HasColumnName("fecha_creacion");
+                e.Property(a => a.Activo).HasColumnName("activo").HasDefaultValue(true);
 
                 // Mapeos de perfil y branding (Ciclo 1)
                 e.Property(a => a.RedesSociales).HasColumnName("redes_sociales").HasColumnType("jsonb");

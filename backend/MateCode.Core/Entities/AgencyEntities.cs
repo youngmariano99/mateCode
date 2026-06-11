@@ -12,6 +12,7 @@ namespace MateCode.Core.Entities
         public string Tipo { get; set; } = "agencia"; // "personal" o "agencia"
         public string LlaveCifrado { get; set; } = string.Empty;
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+        public bool Activo { get; set; } = true;
 
         // Nuevos campos de Perfil y Branding (Ciclo 1)
         [JsonPropertyName("redes_sociales")]

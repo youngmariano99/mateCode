@@ -65,7 +65,7 @@ export function BibliotecaTab({ resources, onDelete, onToggleFavorite, onEdit }:
       <div className="flex flex-col items-center justify-center py-24 text-center text-zinc-500">
         <BookOpen size={40} className="mb-4 text-zinc-700" />
         <p className="text-sm font-bold text-zinc-400">Biblioteca vacía</p>
-        <p className="mt-1 text-xs">Creá tu primer prompt desde la Pizarra.</p>
+        <p className="mt-1 text-xs">Creá tu primer prompt desde el Taller de promps.</p>
       </div>
     );
   }

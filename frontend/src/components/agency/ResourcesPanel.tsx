@@ -34,6 +34,9 @@ export function ResourcesPanel() {
   const brand = activeAgency?.branding ? (typeof activeAgency.branding === 'string' ? JSON.parse(activeAgency.branding) : activeAgency.branding) : null;
   const colorPrimario = brand?.colorPrimario || '#10b981';
 
+  // Branding color fallback if black/dark
+  const resolvedColorPrimario = (!colorPrimario || colorPrimario === '#000000' || colorPrimario === '#000' || colorPrimario === '#09090b' || colorPrimario === '#18181b') ? '#10b981' : colorPrimario;
+
   useEffect(() => {
     fetchResources();
     fetchLeads();
@@ -162,14 +165,14 @@ export function ResourcesPanel() {
         <div>
           <h1 className="text-3xl font-black tracking-tight text-white">Biblioteca de Prompts & Herramientas</h1>
           <p className="mt-1 text-xs text-zinc-500">
-            Crea, edita y organiza tus prompts de IA y herramientas. Usá la Pizarra para ingeniería de prompts avanzada.
+            Crea, edita y organiza tus prompts de IA y herramientas. Usá el Taller de promps para ingeniería de prompts avanzada.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleNuevoRecurso}
-            className="flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 text-xs font-bold text-black hover:bg-emerald-400 transition-colors"
-            style={{ backgroundColor: colorPrimario }}
+            className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-black hover:brightness-110 transition-all border border-zinc-800/20 shadow-md"
+            style={{ backgroundColor: resolvedColorPrimario }}
           >
             <Plus size={14} />
             <span>Registrar Recurso</span>
@@ -186,7 +189,7 @@ export function ResourcesPanel() {
 
       {/* Tab switcher */}
       <div className="flex gap-1 rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-1 w-fit">
-        <TabBtn label="Pizarra" icon={<PenLine size={13} />} active={tab === 'pizarra'} onClick={() => setTab('pizarra')} />
+        <TabBtn label="Taller de promps" icon={<PenLine size={13} />} active={tab === 'pizarra'} onClick={() => setTab('pizarra')} />
         <TabBtn label="Biblioteca" icon={<BookOpen size={13} />} active={tab === 'biblioteca'} onClick={() => setTab('biblioteca')} />
       </div>
 

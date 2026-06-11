@@ -204,5 +204,30 @@ namespace MateCode.API.Controllers
             catch (UnauthorizedAccessException ex) { return Unauthorized(ex.Message); }
             catch (Exception ex) { return StatusCode(500, ex.Message); }
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteAgency(Guid id)
+        {
+            try {
+                var success = await _agencyService.DeleteAgencyAsync(id);
+                return success ? Ok(new { message = "Organización eliminada (soft delete) correctamente." }) : NotFound("Organización no encontrada.");
+            }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+
+        public class UpdateAgencyNameRequest
+        {
+            public string Nombre { get; set; } = string.Empty;
+        }
+
+        [HttpPut("{id}/name")]
+        public async Task<IActionResult> UpdateAgencyName(Guid id, [FromBody] UpdateAgencyNameRequest req)
+        {
+            try {
+                var success = await _agencyService.UpdateAgencyNameAsync(id, req.Nombre);
+                return success ? Ok(new { message = "Nombre de la organización actualizado." }) : NotFound("Organización no encontrada.");
+            }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
     }
 }
