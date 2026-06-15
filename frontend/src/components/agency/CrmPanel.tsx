@@ -47,6 +47,64 @@ export const CrmPanel: React.FC = () => {
     fetchRubros();
   }, []);
 
+  const [addrFields, setAddrFields] = useState({
+    calle: '',
+    altura: '',
+    ciudad: 'Coronel Pringles',
+    provincia: 'Buenos Aires',
+    pais: 'Argentina'
+  });
+  const [isSearchingGeocode, setIsSearchingGeocode] = useState(false);
+
+  const handleSearchAddress = async () => {
+    const { calle, altura, ciudad, provincia, pais } = addrFields;
+    if (!calle.trim()) {
+      Swal.fire({ title: 'Falta Calle', text: 'Ingresa al menos el nombre de la calle.', icon: 'info' });
+      return;
+    }
+    
+    setIsSearchingGeocode(true);
+    const query = `${calle} ${altura}, ${ciudad}, ${provincia}, ${pais}`;
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          const match = data[0];
+          setForm(f => ({
+            ...f,
+            direccionTexto: match.display_name || query,
+            latitud: parseFloat(match.lat),
+            longitud: parseFloat(match.lon)
+          }));
+          Swal.fire({
+            title: '¡Dirección Encontrada!',
+            text: `Se ubicó correctamente:\n${match.display_name}`,
+            icon: 'success',
+            background: '#09090b',
+            color: '#f4f4f5',
+            confirmButtonColor: '#10b981'
+          });
+        } else {
+          Swal.fire({
+            title: 'No encontrada',
+            text: 'No se encontraron coordenadas exactas. Se guardará como texto pero sin ubicación en el mapa.',
+            icon: 'warning',
+            background: '#09090b',
+            color: '#f4f4f5',
+            confirmButtonColor: '#ef4444'
+          });
+          setForm(f => ({ ...f, direccionTexto: query }));
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire({ title: 'Error', text: 'Ocurrió un error consultando el servidor cartográfico.', icon: 'error' });
+    } finally {
+      setIsSearchingGeocode(false);
+    }
+  };
+
   const isFormResponse = (lead: Lead) => {
     const ctx = lead.contextoJson || (lead as any).contexto_json;
     return ctx?.esRespuestaFormulario === true;
@@ -54,6 +112,38 @@ export const CrmPanel: React.FC = () => {
 
   const handleEditClick = (lead: Lead) => {
     setSelectedLead(lead);
+    
+    // Parse address fields
+    let calle = '';
+    let altura = '';
+    let ciudad = 'Coronel Pringles';
+    let provincia = 'Buenos Aires';
+    let pais = 'Argentina';
+    if (lead.direccionTexto) {
+      const parts = lead.direccionTexto.split(',').map(p => p.trim());
+      if (parts.length >= 1) {
+        if (!isNaN(Number(parts[0]))) {
+          altura = parts[0];
+          calle = parts[1] || '';
+          ciudad = parts[2] || 'Coronel Pringles';
+          provincia = parts[5] || 'Buenos Aires';
+          pais = parts[parts.length - 1] || 'Argentina';
+        } else {
+          const spaceIndex = parts[0].lastIndexOf(' ');
+          if (spaceIndex !== -1 && !isNaN(Number(parts[0].substring(spaceIndex + 1)))) {
+            calle = parts[0].substring(0, spaceIndex);
+            altura = parts[0].substring(spaceIndex + 1);
+          } else {
+            calle = parts[0];
+          }
+          ciudad = parts[1] || 'Coronel Pringles';
+          provincia = parts[2] || 'Buenos Aires';
+          pais = parts[parts.length - 1] || 'Argentina';
+        }
+      }
+    }
+    setAddrFields({ calle, altura, ciudad, provincia, pais });
+
     setForm({
       nombre: lead.nombre,
       email: lead.email || '',
@@ -79,6 +169,13 @@ export const CrmPanel: React.FC = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedLead(null);
+    setAddrFields({
+      calle: '',
+      altura: '',
+      ciudad: 'Coronel Pringles',
+      provincia: 'Buenos Aires',
+      pais: 'Argentina'
+    });
     setForm({
       nombre: '',
       email: '',
@@ -116,6 +213,37 @@ export const CrmPanel: React.FC = () => {
   };
 
   const handleMapClickCreate = (lat: number, lng: number, address: string) => {
+    // Parse address fields
+    let calle = '';
+    let altura = '';
+    let ciudad = 'Coronel Pringles';
+    let provincia = 'Buenos Aires';
+    let pais = 'Argentina';
+    if (address) {
+      const parts = address.split(',').map(p => p.trim());
+      if (parts.length >= 1) {
+        if (!isNaN(Number(parts[0]))) {
+          altura = parts[0];
+          calle = parts[1] || '';
+          ciudad = parts[2] || 'Coronel Pringles';
+          provincia = parts[5] || 'Buenos Aires';
+          pais = parts[parts.length - 1] || 'Argentina';
+        } else {
+          const spaceIndex = parts[0].lastIndexOf(' ');
+          if (spaceIndex !== -1 && !isNaN(Number(parts[0].substring(spaceIndex + 1)))) {
+            calle = parts[0].substring(0, spaceIndex);
+            altura = parts[0].substring(spaceIndex + 1);
+          } else {
+            calle = parts[0];
+          }
+          ciudad = parts[1] || 'Coronel Pringles';
+          provincia = parts[2] || 'Buenos Aires';
+          pais = parts[parts.length - 1] || 'Argentina';
+        }
+      }
+    }
+    setAddrFields({ calle, altura, ciudad, provincia, pais });
+
     setForm({
       nombre: '',
       email: '',
@@ -612,20 +740,59 @@ export const CrmPanel: React.FC = () => {
                 <div className="bg-zinc-950/20 border border-zinc-850 p-4 rounded-2xl space-y-3">
                   <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-900 pb-1.5 mb-2 flex items-center gap-1">
                     <MapPin size={10} className="text-red-400" />
-                    <span>Ubicación en Mapa (Fricción Cero)</span>
+                    <span>Ubicación en Mapa</span>
                   </h4>
-                  <div>
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Dirección Escrita</label>
-                    <input type="text" value={form.direccionTexto} onChange={e => setForm({ ...form, direccionTexto: e.target.value })} placeholder="Calle, Número, Localidad..." className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 text-[10px] text-zinc-400">
-                    <div>
-                      <span className="font-bold text-zinc-500 uppercase block mb-0.5">Latitud</span>
-                      <input type="number" step="any" value={form.latitud ?? ''} onChange={e => setForm({ ...form, latitud: e.target.value ? parseFloat(e.target.value) : null })} className="w-full bg-zinc-950 border border-zinc-850 p-2 rounded-xl text-xs text-white" />
+                  
+                  {/* Address segmented inputs */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2">
+                      <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-0.5">Calle</label>
+                      <input type="text" value={addrFields.calle} onChange={e => setAddrFields({ ...addrFields, calle: e.target.value })} placeholder="Ej: Rivadavia" className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded-lg text-xs text-white" />
                     </div>
                     <div>
-                      <span className="font-bold text-zinc-500 uppercase block mb-0.5">Longitud</span>
-                      <input type="number" step="any" value={form.longitud ?? ''} onChange={e => setForm({ ...form, longitud: e.target.value ? parseFloat(e.target.value) : null })} className="w-full bg-zinc-950 border border-zinc-850 p-2 rounded-xl text-xs text-white" />
+                      <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-0.5">Altura</label>
+                      <input type="text" value={addrFields.altura} onChange={e => setAddrFields({ ...addrFields, altura: e.target.value })} placeholder="Ej: 1063" className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded-lg text-xs text-white" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-0.5">Ciudad</label>
+                      <input type="text" value={addrFields.ciudad} onChange={e => setAddrFields({ ...addrFields, ciudad: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded-lg text-xs text-white" />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-0.5">Provincia</label>
+                      <input type="text" value={addrFields.provincia} onChange={e => setAddrFields({ ...addrFields, provincia: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded-lg text-xs text-white" />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-0.5">País</label>
+                      <input type="text" value={addrFields.pais} onChange={e => setAddrFields({ ...addrFields, pais: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded-lg text-xs text-white" />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSearchAddress}
+                    disabled={isSearchingGeocode}
+                    className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
+                  >
+                    <span>{isSearchingGeocode ? 'Buscando...' : '🔍 Buscar Dirección (Geolocalizar)'}</span>
+                  </button>
+
+                  <div className="pt-2 border-t border-zinc-900/60 space-y-2">
+                    <div>
+                      <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-0.5">Dirección Confirmada</label>
+                      <input type="text" readOnly value={form.direccionTexto} placeholder="Dirección geocodificada..." className="w-full bg-zinc-950/60 border border-zinc-900 p-2 rounded-lg text-[10px] text-zinc-400" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div>
+                        <span className="font-bold text-zinc-500 uppercase block mb-0.5">Latitud</span>
+                        <input type="number" step="any" value={form.latitud ?? ''} onChange={e => setForm({ ...form, latitud: e.target.value ? parseFloat(e.target.value) : null })} className="w-full bg-zinc-950 border border-zinc-850 p-2 rounded-lg text-xs text-white" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-zinc-500 uppercase block mb-0.5">Longitud</span>
+                        <input type="number" step="any" value={form.longitud ?? ''} onChange={e => setForm({ ...form, longitud: e.target.value ? parseFloat(e.target.value) : null })} className="w-full bg-zinc-950 border border-zinc-850 p-2 rounded-lg text-xs text-white" />
+                      </div>
                     </div>
                   </div>
                 </div>
