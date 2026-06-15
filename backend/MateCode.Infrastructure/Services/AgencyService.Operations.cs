@@ -173,7 +173,7 @@ namespace MateCode.Infrastructure.Services
                 Titulo = titulo,
                 Descripcion = descripcion,
                 Estado = estado,
-                FechaPlanificada = planificada,
+                FechaPlanificada = planificada.HasValue ? DateTime.SpecifyKind(planificada.Value, DateTimeKind.Utc) : null,
                 UsuarioAsignadoId = assignedUserId,
                 EspacioTrabajoId = espacioTrabajoId,
                 ProyectoId = proyectoId,
@@ -206,7 +206,7 @@ namespace MateCode.Infrastructure.Services
             task.Titulo = titulo;
             task.Descripcion = descripcion;
             task.Estado = estado;
-            task.FechaPlanificada = planificada;
+            task.FechaPlanificada = planificada.HasValue ? DateTime.SpecifyKind(planificada.Value, DateTimeKind.Utc) : null;
             task.UsuarioAsignadoId = assignedUserId;
             task.EspacioTrabajoId = espacioTrabajoId;
             task.ProyectoId = proyectoId;
@@ -248,7 +248,7 @@ namespace MateCode.Infrastructure.Services
                 Estado = estado,
                 NotasMejora = notasMejora,
                 ResumenAnalitico = resumenAnalitico ?? JsonSerializer.Deserialize<JsonElement>("{}"),
-                FechaPublicacion = fechaPublicacion,
+                FechaPublicacion = fechaPublicacion.HasValue ? DateTime.SpecifyKind(fechaPublicacion.Value, DateTimeKind.Utc) : null,
                 FechaCreacion = DateTime.UtcNow
             };
 
@@ -270,7 +270,7 @@ namespace MateCode.Infrastructure.Services
             content.Estado = estado;
             content.NotasMejora = notasMejora;
             content.ResumenAnalitico = resumenAnalitico;
-            content.FechaPublicacion = publishDate;
+            content.FechaPublicacion = publishDate.HasValue ? DateTime.SpecifyKind(publishDate.Value, DateTimeKind.Utc) : null;
 
             return await _context.SaveChangesAsync() > 0;
         }
