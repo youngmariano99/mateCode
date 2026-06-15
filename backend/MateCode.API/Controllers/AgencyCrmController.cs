@@ -39,6 +39,18 @@ namespace MateCode.API.Controllers
             catch (Exception ex) { return StatusCode(500, ex.Message); }
         }
 
+        [HttpGet("rubros")]
+        public async Task<IActionResult> GetUniqueRubros()
+        {
+            try {
+                var agencyId = GetAgencyId();
+                var rubros = await _agencyService.GetUniqueRubrosAsync(agencyId);
+                return Ok(rubros);
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+
         public class CreateLeadRequest
         {
             public string Nombre { get; set; } = string.Empty;
@@ -48,6 +60,18 @@ namespace MateCode.API.Controllers
             public string OrigenContacto { get; set; } = string.Empty;
             public string MotivoContacto { get; set; } = string.Empty;
             public string Descripcion { get; set; } = string.Empty;
+            
+            // geoClientes fields
+            public string? Rubro { get; set; }
+            public string? DireccionTexto { get; set; }
+            public double? Latitud { get; set; }
+            public double? Longitud { get; set; }
+            public string[]? EtiquetasRapidas { get; set; }
+            public string? TipoSoftwareTiene { get; set; }
+            public string? TipoSoftwareQuiere { get; set; }
+            public string? DoloresNotas { get; set; }
+            public JsonElement? BitacoraContactos { get; set; }
+            public JsonElement? LinksRecursos { get; set; }
         }
 
         [HttpPost]
@@ -56,7 +80,8 @@ namespace MateCode.API.Controllers
             try {
                 var agencyId = GetAgencyId();
                 var lead = await _agencyService.CreateLeadAsync(
-                    agencyId, req.Nombre, req.Email, req.Categoria, req.Calificacion, req.OrigenContacto, req.MotivoContacto, req.Descripcion);
+                    agencyId, req.Nombre, req.Email, req.Categoria, req.Calificacion, req.OrigenContacto, req.MotivoContacto, req.Descripcion,
+                    req.Rubro, req.DireccionTexto, req.Latitud, req.Longitud, req.EtiquetasRapidas, req.TipoSoftwareTiene, req.TipoSoftwareQuiere, req.DoloresNotas, req.BitacoraContactos, req.LinksRecursos);
                 return Ok(lead);
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
@@ -89,6 +114,18 @@ namespace MateCode.API.Controllers
             public string MotivoContacto { get; set; } = string.Empty;
             public string Descripcion { get; set; } = string.Empty;
             public JsonElement Notas { get; set; }
+
+            // geoClientes fields
+            public string? Rubro { get; set; }
+            public string? DireccionTexto { get; set; }
+            public double? Latitud { get; set; }
+            public double? Longitud { get; set; }
+            public string[]? EtiquetasRapidas { get; set; }
+            public string? TipoSoftwareTiene { get; set; }
+            public string? TipoSoftwareQuiere { get; set; }
+            public string? DoloresNotas { get; set; }
+            public JsonElement? BitacoraContactos { get; set; }
+            public JsonElement? LinksRecursos { get; set; }
         }
 
         [HttpPut("{id}")]
@@ -96,7 +133,8 @@ namespace MateCode.API.Controllers
         {
             try {
                 var success = await _agencyService.UpdateLeadAsync(
-                    id, req.Nombre, req.Email, req.Categoria, req.Calificacion, req.OrigenContacto, req.MotivoContacto, req.Descripcion, req.Notas);
+                    id, req.Nombre, req.Email, req.Categoria, req.Calificacion, req.OrigenContacto, req.MotivoContacto, req.Descripcion, req.Notas,
+                    req.Rubro, req.DireccionTexto, req.Latitud, req.Longitud, req.EtiquetasRapidas, req.TipoSoftwareTiene, req.TipoSoftwareQuiere, req.DoloresNotas, req.BitacoraContactos, req.LinksRecursos);
                 return success ? Ok() : NotFound("Lead no encontrado.");
             }
             catch (Exception ex) { return StatusCode(500, ex.Message); }

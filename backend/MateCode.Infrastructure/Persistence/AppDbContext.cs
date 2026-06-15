@@ -116,6 +116,18 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(c => c.RangoLexicografico).HasColumnName("rango_lexicografico");
                 e.Property(c => c.FechaCreacion).HasColumnName("fecha_creacion");
                 e.Property(c => c.Activo).HasColumnName("activo");
+
+                // Nuevos campos de geolocalización y perfilado
+                e.Property(c => c.Rubro).HasColumnName("rubro");
+                e.Property(c => c.DireccionTexto).HasColumnName("direccion_texto");
+                e.Property(c => c.Latitud).HasColumnName("latitud");
+                e.Property(c => c.Longitud).HasColumnName("longitud");
+                e.Property(c => c.EtiquetasRapidas).HasColumnName("etiquetas_rapidas").HasColumnType("text[]");
+                e.Property(c => c.TipoSoftwareTiene).HasColumnName("tipo_software_tiene");
+                e.Property(c => c.TipoSoftwareQuiere).HasColumnName("tipo_software_quiere");
+                e.Property(c => c.DoloresNotas).HasColumnName("dolores_notas");
+                e.Property(c => c.BitacoraContactos).HasColumnName("bitacora_contactos").HasColumnType("jsonb");
+                e.Property(c => c.LinksRecursos).HasColumnName("links_recursos").HasColumnType("jsonb");
             });
 
             modelBuilder.Entity<Proyecto>(e => {

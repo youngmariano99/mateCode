@@ -321,6 +321,38 @@ using (var scope = app.Services.CreateScope())
                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'activo') THEN
                         ALTER TABLE crm.clientes ADD COLUMN activo BOOLEAN DEFAULT TRUE;
                     END IF;
+                    
+                    -- geoClientes integrations
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'rubro') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN rubro TEXT;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'direccion_texto') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN direccion_texto TEXT;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'latitud') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN latitud NUMERIC(10,7);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'longitud') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN longitud NUMERIC(10,7);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'etiquetas_rapidas') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN etiquetas_rapidas TEXT[] DEFAULT '{}';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'tipo_software_tiene') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN tipo_software_tiene TEXT;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'tipo_software_quiere') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN tipo_software_quiere TEXT;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'dolores_notas') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN dolores_notas TEXT;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'bitacora_contactos') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN bitacora_contactos JSONB DEFAULT '[]';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'crm' AND table_name = 'clientes' AND column_name = 'links_recursos') THEN
+                        ALTER TABLE crm.clientes ADD COLUMN links_recursos JSONB DEFAULT '[]';
+                    END IF;
                 END IF;
 
                 -- Columnas y restricciones para Formularios centralizados (Ciclo 2)

@@ -1,18 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, CheckCircle2, UserPlus } from 'lucide-react';
+import { Plus, Trash2, Edit2, CheckCircle2, UserPlus, MapPin, ListFilter, ClipboardList, BookOpen, Link, Zap, Download } from 'lucide-react';
 import { useCrmStore, type Lead } from '../../store/useCrmStore';
 import { AgencyFormsPanel } from './AgencyFormsPanel';
 import { AgencyContractsSubPanel } from './AgencyContractsSubPanel';
+import { ClientesMapa } from './ClientesMapa';
 import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
 
+const ETIQUETAS_OPCIONES = [
+  "Anota en papel", "Local propio", "Local alquilado", "Desbordado de gente", 
+  "Local vacío", "Usa Posnet", "Sólo efectivo", "Familiar / Pyme", 
+  "Cadena / Franquicia", "Desconfiado de la tecnología", "Curioso / Abierto", 
+  "Joven / Digital", "Ya intentó digitalizarse", "Necesita urgente", "Volver más tarde"
+];
+
 export const CrmPanel: React.FC = () => {
-  const { leads, fetchLeads, createLead, updateLead, updateLeadStatus, deleteLead } = useCrmStore();
-  const [activeTab, setActiveTab] = useState<'kanban' | 'forms' | 'contracts' | 'responses'>('kanban');
+  const { leads, fetchLeads, createLead, updateLead, updateLeadStatus, deleteLead, rubros, fetchRubros } = useCrmStore();
+  const [activeTab, setActiveTab] = useState<'kanban' | 'map' | 'forms' | 'contracts' | 'responses'>('kanban');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [associatingLead, setAssociatingLead] = useState<Lead | null>(null);
   const [associationSearch, setAssociationSearch] = useState('');
+  
   const [form, setForm] = useState({
     nombre: '',
     email: '',
@@ -20,11 +29,22 @@ export const CrmPanel: React.FC = () => {
     calificacion: 'Calificado',
     origenContacto: '',
     motivoContacto: '',
-    descripcion: ''
+    descripcion: '',
+    rubro: '',
+    direccionTexto: '',
+    latitud: null as number | null,
+    longitud: null as number | null,
+    etiquetasRapidas: [] as string[],
+    tipoSoftwareTiene: '',
+    tipoSoftwareQuiere: '',
+    doloresNotas: '',
+    bitacoraContactos: [] as any[],
+    linksRecursos: [] as any[]
   });
 
   useEffect(() => {
     fetchLeads();
+    fetchRubros();
   }, []);
 
   const isFormResponse = (lead: Lead) => {
@@ -41,7 +61,17 @@ export const CrmPanel: React.FC = () => {
       calificacion: lead.calificacion,
       origenContacto: lead.origenContacto || '',
       motivoContacto: lead.motivoContacto || '',
-      descripcion: lead.descripcion || ''
+      descripcion: lead.descripcion || '',
+      rubro: lead.rubro || '',
+      direccionTexto: lead.direccionTexto || '',
+      latitud: lead.latitud ?? null,
+      longitud: lead.longitud ?? null,
+      etiquetasRapidas: lead.etiquetasRapidas || [],
+      tipoSoftwareTiene: lead.tipoSoftwareTiene || '',
+      tipoSoftwareQuiere: lead.tipoSoftwareQuiere || '',
+      doloresNotas: lead.doloresNotas || '',
+      bitacoraContactos: lead.bitacoraContactos || [],
+      linksRecursos: lead.linksRecursos || []
     });
     setIsModalOpen(true);
   };
@@ -56,7 +86,17 @@ export const CrmPanel: React.FC = () => {
       calificacion: 'Calificado',
       origenContacto: '',
       motivoContacto: '',
-      descripcion: ''
+      descripcion: '',
+      rubro: '',
+      direccionTexto: '',
+      latitud: null,
+      longitud: null,
+      etiquetasRapidas: [],
+      tipoSoftwareTiene: '',
+      tipoSoftwareQuiere: '',
+      doloresNotas: '',
+      bitacoraContactos: [],
+      linksRecursos: []
     });
   };
 
@@ -68,10 +108,34 @@ export const CrmPanel: React.FC = () => {
       } else {
         await createLead(form);
       }
+      fetchRubros(); // Refresh unique rubros list
       handleCloseModal();
     } catch (err: any) {
       Swal.fire({ title: 'Error', text: err.message, icon: 'error' });
     }
+  };
+
+  const handleMapClickCreate = (lat: number, lng: number, address: string) => {
+    setForm({
+      nombre: '',
+      email: '',
+      categoria: 'Lead',
+      calificacion: 'Calificado',
+      origenContacto: 'Mapa Geolocalización',
+      motivoContacto: '',
+      descripcion: '',
+      rubro: '',
+      direccionTexto: address,
+      latitud: lat,
+      longitud: lng,
+      etiquetasRapidas: [],
+      tipoSoftwareTiene: '',
+      tipoSoftwareQuiere: '',
+      doloresNotas: '',
+      bitacoraContactos: [],
+      linksRecursos: []
+    });
+    setIsModalOpen(true);
   };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -152,6 +216,59 @@ export const CrmPanel: React.FC = () => {
     }
   };
 
+  const handleExportToExcel = () => {
+    try {
+      // Build a CSV representation of leads
+      const headers = [
+        'Nombre/Comercio',
+        'Email',
+        'Categoria (CRM Status)',
+        'Calificacion',
+        'Rubro',
+        'Direccion',
+        'Latitud',
+        'Longitud',
+        'Etiquetas Rapidas',
+        'Software que Tiene',
+        'Software que Quiere',
+        'Dolores/Problemas',
+        'Origen de Contacto',
+        'Fecha Creacion'
+      ];
+
+      const rows = leads
+        .filter(l => !isFormResponse(l))
+        .map(l => [
+          `"${l.nombre.replace(/"/g, '""')}"`,
+          `"${(l.email || '').replace(/"/g, '""')}"`,
+          `"${l.categoria}"`,
+          `"${l.calificacion}"`,
+          `"${(l.rubro || '').replace(/"/g, '""')}"`,
+          `"${(l.direccionTexto || '').replace(/"/g, '""')}"`,
+          l.latitud ?? '',
+          l.longitud ?? '',
+          `"${(l.etiquetasRapidas || []).join(', ').replace(/"/g, '""')}"`,
+          `"${(l.tipoSoftwareTiene || '').replace(/"/g, '""')}"`,
+          `"${(l.tipoSoftwareQuiere || '').replace(/"/g, '""')}"`,
+          `"${(l.doloresNotas || '').replace(/"/g, '""')}"`,
+          `"${(l.origenContacto || '').replace(/"/g, '""')}"`,
+          new Date(l.fechaCreacion).toLocaleDateString()
+        ]);
+
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Clientes_CRM_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err: any) {
+      Swal.fire({ title: 'Error al exportar', text: err.message, icon: 'error' });
+    }
+  };
+
   return (
     <div className="space-y-6 flex-1 flex flex-col h-full">
       {/* Header and Sub-tabs */}
@@ -161,6 +278,8 @@ export const CrmPanel: React.FC = () => {
             <h1 className="text-3xl font-black text-white tracking-tight">
               {activeTab === 'kanban' 
                 ? 'Clientes & Leads (CRM)' 
+                : activeTab === 'map'
+                ? 'Mapa de Clientes'
                 : activeTab === 'forms' 
                 ? 'Formularios de Captación' 
                 : activeTab === 'contracts'
@@ -170,6 +289,8 @@ export const CrmPanel: React.FC = () => {
             <p className="text-zinc-500 text-xs mt-1">
               {activeTab === 'kanban'
                 ? 'Arrastra y suelta prospectos para calificar tus oportunidades de venta de software.'
+                : activeTab === 'map'
+                ? 'Toca cualquier punto en el mapa para registrar un comercio o negocio geolocalizado en vivo.'
                 : activeTab === 'forms'
                 ? 'Crea y administra los cuestionarios de relevamiento para captar clientes desde tu enlace mágico.'
                 : activeTab === 'contracts'
@@ -177,15 +298,27 @@ export const CrmPanel: React.FC = () => {
                 : 'Inbox de respuestas completadas por clientes potenciales a través del enlace mágico.'}
             </p>
           </div>
-          {activeTab === 'kanban' && (
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold rounded-xl flex items-center gap-2 transition-colors"
-            >
-              <Plus size={14} />
-              <span>Cargar Lead</span>
-            </button>
-          )}
+          <div className="flex gap-2">
+            {!isFormResponse(selectedLead || ({} as any)) && (
+              <button
+                onClick={handleExportToExcel}
+                className="px-4 py-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-xs font-bold rounded-xl flex items-center gap-2 transition-colors"
+                title="Exportar a CSV/Excel"
+              >
+                <Download size={14} />
+                <span>Exportar Excel</span>
+              </button>
+            )}
+            {activeTab === 'kanban' && (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold rounded-xl flex items-center gap-2 transition-colors"
+              >
+                <Plus size={14} />
+                <span>Cargar Lead</span>
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-2">
@@ -197,6 +330,17 @@ export const CrmPanel: React.FC = () => {
           >
             <span>Tablero Kanban</span>
             {activeTab === 'kanban' && (
+              <motion.div layoutId="crmSubTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('map')}
+            className={`pb-2 px-4 text-xs font-bold transition-all relative ${
+              activeTab === 'map' ? 'text-emerald-400 font-extrabold' : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <span>Mapa de Clientes</span>
+            {activeTab === 'map' && (
               <motion.div layoutId="crmSubTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />
             )}
           </button>
@@ -298,6 +442,11 @@ export const CrmPanel: React.FC = () => {
                         </div>
                       </div>
                       <h5 className="font-bold text-white text-xs">{lead.nombre}</h5>
+                      {lead.rubro && (
+                        <span className="text-[9px] bg-zinc-950/40 border border-zinc-850 px-2.5 py-0.5 rounded-md text-zinc-400 font-bold inline-block w-fit">
+                          🏷️ {lead.rubro}
+                        </span>
+                      )}
                       {lead.email && <p className="text-[10px] text-zinc-500">{lead.email}</p>}
                       {lead.descripcion && <p className="text-[10px] text-zinc-400 line-clamp-2 bg-zinc-950/20 p-2 rounded-lg">{lead.descripcion}</p>}
                     </div>
@@ -306,6 +455,13 @@ export const CrmPanel: React.FC = () => {
               </div>
             ))}
           </div>
+        ) : activeTab === 'map' ? (
+          <ClientesMapa
+            leads={leads}
+            onSelectLead={handleEditClick}
+            onMapClick={handleMapClickCreate}
+            selectedLead={selectedLead}
+          />
         ) : activeTab === 'responses' ? (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -384,55 +540,270 @@ export const CrmPanel: React.FC = () => {
 
       {/* Modal Carga/Edición */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <motion.div 
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 w-full max-w-lg space-y-4"
+            className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto space-y-4 neon-scrollbar"
           >
-            <h3 className="text-lg font-bold text-white">
-              {selectedLead ? 'Editar Prospecto / Lead' : 'Cargar Nuevo Prospecto / Lead'}
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <div>
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Nombre Completo</label>
-                <input required type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Email de Contacto</label>
-                <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Categoría</label>
-                  <select value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white">
-                    <option value="Lead">Lead</option>
-                    <option value="Llamada agendada">Llamada agendada</option>
-                    <option value="Propuesta enviada">Propuesta enviada</option>
-                    <option value="Aceptado">Ganado / Aceptado</option>
-                    <option value="Rechazado">Perdido / Rechazado</option>
-                  </select>
+            <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
+              <h3 className="text-lg font-black text-white flex items-center gap-2">
+                <ClipboardList className="text-emerald-400 size-5" />
+                <span>{selectedLead ? 'Ficha Comercial / Editar Lead' : 'Cargar Relevamiento Comercial'}</span>
+              </h3>
+              <button 
+                type="button" 
+                onClick={handleCloseModal} 
+                className="text-zinc-400 hover:text-white text-lg font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Columna Izquierda: Datos Básicos & Geolocalización */}
+              <div className="space-y-4">
+                <div className="bg-zinc-950/20 border border-zinc-850 p-4 rounded-2xl space-y-3">
+                  <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-900 pb-1.5 mb-2">Identificación General</h4>
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Nombre del Comercio/Negocio</label>
+                    <input required type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Rubro</label>
+                    <input 
+                      type="text" 
+                      list="rubros-sugeridos"
+                      value={form.rubro} 
+                      onChange={e => setForm({ ...form, rubro: e.target.value })} 
+                      placeholder="Gastronomía, Indumentaria, Estética..."
+                      className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" 
+                    />
+                    <datalist id="rubros-sugeridos">
+                      {rubros.map(r => <option key={r} value={r} />)}
+                    </datalist>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Email de Contacto</label>
+                    <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Estado de Lead</label>
+                      <select value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white">
+                        <option value="Lead">Lead / Potencial</option>
+                        <option value="Llamada agendada">Llamada agendada / Indeciso</option>
+                        <option value="Propuesta enviada">Propuesta enviada</option>
+                        <option value="Aceptado">Ganado / Aceptado</option>
+                        <option value="Rechazado">Perdido / Rechazado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Calificación</label>
+                      <select value={form.calificacion} onChange={e => setForm({ ...form, calificacion: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white">
+                        <option value="Calificado">Calificado</option>
+                        <option value="No calificado">No calificado</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Calificación</label>
-                  <select value={form.calificacion} onChange={e => setForm({ ...form, calificacion: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white">
-                    <option value="Calificado">Calificado</option>
-                    <option value="No calificado">No calificado</option>
-                  </select>
+
+                <div className="bg-zinc-950/20 border border-zinc-850 p-4 rounded-2xl space-y-3">
+                  <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-900 pb-1.5 mb-2 flex items-center gap-1">
+                    <MapPin size={10} className="text-red-400" />
+                    <span>Ubicación en Mapa (Fricción Cero)</span>
+                  </h4>
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Dirección Escrita</label>
+                    <input type="text" value={form.direccionTexto} onChange={e => setForm({ ...form, direccionTexto: e.target.value })} placeholder="Calle, Número, Localidad..." className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-[10px] text-zinc-400">
+                    <div>
+                      <span className="font-bold text-zinc-500 uppercase block mb-0.5">Latitud</span>
+                      <input type="number" step="any" value={form.latitud ?? ''} onChange={e => setForm({ ...form, latitud: e.target.value ? parseFloat(e.target.value) : null })} className="w-full bg-zinc-950 border border-zinc-850 p-2 rounded-xl text-xs text-white" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-zinc-500 uppercase block mb-0.5">Longitud</span>
+                      <input type="number" step="any" value={form.longitud ?? ''} onChange={e => setForm({ ...form, longitud: e.target.value ? parseFloat(e.target.value) : null })} className="w-full bg-zinc-950 border border-zinc-850 p-2 rounded-xl text-xs text-white" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-zinc-950/20 border border-zinc-850 p-4 rounded-2xl space-y-3">
+                  <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-900 pb-1.5 mb-2">Dolores & Notas</h4>
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Dolores, Necesidades y Problemáticas</label>
+                    <textarea rows={3} value={form.doloresNotas} onChange={e => setForm({ ...form, doloresNotas: e.target.value })} placeholder="¿Qué le duele al comercio hoy? (ej. anota en papel, pierde stock...)" className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white resize-none" />
+                  </div>
                 </div>
               </div>
-              <div>
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Origen (Ej: LinkedIn, Video, etc)</label>
-                <input type="text" value={form.origenContacto} onChange={e => setForm({ ...form, origenContacto: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" />
+
+              {/* Columna Derecha: Etiquetas Rápidas, Software, Bitácora & Enlaces */}
+              <div className="space-y-4">
+                <div className="bg-zinc-950/20 border border-zinc-850 p-4 rounded-2xl space-y-3">
+                  <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-900 pb-1.5 mb-2 flex items-center justify-between">
+                    <span>🏷️ Perfilado Sigiloso (Quick Tags)</span>
+                    <span className="text-[9px] text-zinc-500 font-bold">{form.etiquetasRapidas.length} seleccionadas</span>
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5 max-h-[110px] overflow-y-auto pr-1 neon-scrollbar">
+                    {ETIQUETAS_OPCIONES.map(tag => {
+                      const activa = form.etiquetasRapidas.includes(tag);
+                      return (
+                        <button
+                          type="button"
+                          key={tag}
+                          onClick={() => {
+                            const nuevas = activa 
+                              ? form.etiquetasRapidas.filter(t => t !== tag)
+                              : [...form.etiquetasRapidas, tag];
+                            setForm({ ...form, etiquetasRapidas: nuevas });
+                          }}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition ${
+                            activa 
+                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-sm' 
+                              : 'bg-zinc-950/40 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                          }`}
+                        >
+                          {activa ? '✓ ' : ''}{tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="bg-zinc-950/20 border border-zinc-850 p-4 rounded-2xl space-y-3">
+                  <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-900 pb-1.5 mb-2">Tecnología & Software</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Software que Tiene</label>
+                      <input type="text" value={form.tipoSoftwareTiene} onChange={e => setForm({ ...form, tipoSoftwareTiene: e.target.value })} placeholder="Ej: Excel, Posnet..." className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Software que Quiere</label>
+                      <select value={form.tipoSoftwareQuiere} onChange={e => setForm({ ...form, tipoSoftwareQuiere: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white">
+                        <option value="">Sin definir</option>
+                        <option value="Sistema de Gestión">Sistema de Gestión</option>
+                        <option value="E-commerce">E-commerce</option>
+                        <option value="Sistema de Inventario">Sistema de Inventario</option>
+                        <option value="Landing / Web Institucional">Landing / Web Institucional</option>
+                        <option value="App Mobile">App Mobile</option>
+                        <option value="Otro">Otro</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-zinc-950/20 border border-zinc-850 p-4 rounded-2xl space-y-3">
+                  <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-900 pb-1.5 mb-2 flex items-center gap-1">
+                    <ClipboardList size={10} className="text-yellow-400" />
+                    <span>Bitácora de Contactos / Interacciones</span>
+                  </h4>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      id="new-contact-log" 
+                      placeholder="Nueva interacción... (Presiona Enter)" 
+                      className="flex-1 bg-zinc-950 border border-zinc-800 p-2 rounded-xl text-xs text-white" 
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const val = e.currentTarget.value.trim();
+                          if (val) {
+                            const newLog = { fecha: new Date().toISOString(), resumen: val };
+                            setForm(f => ({ ...f, bitacoraContactos: [...f.bitacoraContactos, newLog] }));
+                            e.currentTarget.value = '';
+                          }
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById('new-contact-log') as HTMLInputElement;
+                        const val = el?.value.trim();
+                        if (val) {
+                          const newLog = { fecha: new Date().toISOString(), resumen: val };
+                          setForm(f => ({ ...f, bitacoraContactos: [...f.bitacoraContactos, newLog] }));
+                          el.value = '';
+                        }
+                      }}
+                      className="px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold rounded-xl"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <div className="space-y-1.5 max-h-[100px] overflow-y-auto pr-1 neon-scrollbar">
+                    {form.bitacoraContactos.map((log, idx) => (
+                      <div key={idx} className="bg-zinc-950/50 border border-zinc-850 p-2 rounded-xl text-[10px] text-zinc-300 flex justify-between items-start">
+                        <div>
+                          <span className="text-zinc-500 font-bold block">{new Date(log.fecha).toLocaleDateString()}</span>
+                          <span className="block mt-0.5">{log.resumen}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, bitacoraContactos: f.bitacoraContactos.filter((_, i) => i !== idx) }))}
+                          className="text-red-400 hover:text-red-300 font-black ml-2"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-zinc-950/20 border border-zinc-850 p-4 rounded-2xl space-y-3">
+                  <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-900 pb-1.5 mb-2 flex items-center gap-1">
+                    <Link size={10} className="text-indigo-400" />
+                    <span>Recursos & Enlaces Compartidos</span>
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" placeholder="Título" id="new-resource-title" className="bg-zinc-950 border border-zinc-800 p-2 rounded-xl text-xs text-white" />
+                    <input type="text" placeholder="URL" id="new-resource-url" className="bg-zinc-950 border border-zinc-800 p-2 rounded-xl text-xs text-white" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const tEl = document.getElementById('new-resource-title') as HTMLInputElement;
+                      const uEl = document.getElementById('new-resource-url') as HTMLInputElement;
+                      const title = tEl?.value.trim();
+                      const url = uEl?.value.trim();
+                      if (title && url) {
+                        const newLink = { titulo: title, url };
+                        setForm(f => ({ ...f, linksRecursos: [...f.linksRecursos, newLink] }));
+                        tEl.value = '';
+                        uEl.value = '';
+                      }
+                    }}
+                    className="w-full py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 text-xs font-bold rounded-xl"
+                  >
+                    + Vincular Recurso
+                  </button>
+                  <div className="space-y-1.5 max-h-[100px] overflow-y-auto pr-1 neon-scrollbar">
+                    {form.linksRecursos.map((link, idx) => (
+                      <div key={idx} className="bg-zinc-950/50 border border-zinc-850 p-2 rounded-xl text-[10px] text-zinc-300 flex justify-between items-center">
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline truncate max-w-[200px]">
+                          {link.titulo}
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, linksRecursos: f.linksRecursos.filter((_, i) => i !== idx) }))}
+                          className="text-red-400 hover:text-red-300 font-black ml-2"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </div>
-              <div>
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Breve Descripción / Requerimientos</label>
-                <textarea rows={3} value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" />
-              </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-zinc-850">
-                <button type="button" onClick={handleCloseModal} className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-xl text-xs font-bold">Cancelar</button>
-                <button type="submit" className="px-4 py-2 bg-emerald-500 text-black rounded-xl text-xs font-bold">
-                  {selectedLead ? 'Guardar Cambios' : 'Crear Lead'}
+
+              {/* Pie de modal */}
+              <div className="col-span-full flex justify-end gap-3 pt-4 border-t border-zinc-800 mt-2">
+                <button type="button" onClick={handleCloseModal} className="px-6 py-2.5 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 rounded-xl text-xs font-bold transition-colors">Cancelar</button>
+                <button type="submit" className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black rounded-xl text-xs font-black transition-colors shadow-lg shadow-emerald-500/10">
+                  {selectedLead ? 'Guardar Ficha Comercial' : 'Crear Lead Geolocalizado'}
                 </button>
               </div>
             </form>

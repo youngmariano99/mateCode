@@ -26,9 +26,47 @@ namespace MateCode.Application.Services
 
         // --- CRM CLIENTES Y LEADS ---
         Task<IEnumerable<Cliente>> GetLeadsAsync(Guid agencyId);
-        Task<Cliente> CreateLeadAsync(Guid agencyId, string nombre, string email, string category, string qualification, string origen, string motivo, string descripcion);
+        Task<IEnumerable<string>> GetUniqueRubrosAsync(Guid agencyId);
+        Task<Cliente> CreateLeadAsync(
+            Guid agencyId, 
+            string nombre, 
+            string email, 
+            string category, 
+            string qualification, 
+            string origen, 
+            string motivo, 
+            string descripcion,
+            string? rubro = null,
+            string? direccionTexto = null,
+            double? latitud = null,
+            double? longitud = null,
+            string[]? etiquetasRapidas = null,
+            string? tipoSoftwareTiene = null,
+            string? tipoSoftwareQuiere = null,
+            string? doloresNotas = null,
+            JsonElement? bitacoraContactos = null,
+            JsonElement? linksRecursos = null);
         Task<bool> UpdateLeadStatusAsync(Guid leadId, string category, string position);
-        Task<bool> UpdateLeadAsync(Guid leadId, string nombre, string email, string category, string qualification, string origen, string motivo, string descripcion, JsonElement notas);
+        Task<bool> UpdateLeadAsync(
+            Guid leadId, 
+            string nombre, 
+            string email, 
+            string category, 
+            string qualification, 
+            string origen, 
+            string motivo, 
+            string descripcion, 
+            JsonElement notas,
+            string? rubro = null,
+            string? direccionTexto = null,
+            double? latitud = null,
+            double? longitud = null,
+            string[]? etiquetasRapidas = null,
+            string? tipoSoftwareTiene = null,
+            string? tipoSoftwareQuiere = null,
+            string? doloresNotas = null,
+            JsonElement? bitacoraContactos = null,
+            JsonElement? linksRecursos = null);
         Task<bool> DeleteLeadAsync(Guid leadId);
 
         // --- OBJETIVOS ---

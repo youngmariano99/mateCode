@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Trash2, Calendar, User, Briefcase, FileText, CheckCircle2, RotateCcw, Copy, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Trash2, Calendar, User, Briefcase, FileText, CheckCircle2, RotateCcw, Copy, ExternalLink, Zap } from 'lucide-react';
 import { useOperationsStore, parseColumnName, type TaskOperative } from '../../store/useOperationsStore';
 import { useAgencyStore } from '../../store/useAgencyStore';
 import type { Member } from '../../store/useAgencyStore';
@@ -500,6 +500,16 @@ export const OperationalCalendarSubTab: React.FC<OperationalCalendarSubTabProps>
           <div className="grid grid-cols-7 flex-1">
             {allCells.map((cell, idx) => {
               const cellTasks = activeTasks.filter(t => t.fecha_planificada && t.fecha_planificada.split('T')[0] === cell.dateString);
+              const constantTitles = new Set(tasks.filter(t => t.estado === 'Constante').map(t => t.titulo.toLowerCase()));
+              
+              const sortedCellTasks = [...cellTasks].sort((a, b) => {
+                const aConst = constantTitles.has(a.titulo.toLowerCase());
+                const bConst = constantTitles.has(b.titulo.toLowerCase());
+                if (aConst && !bConst) return -1;
+                if (!aConst && bConst) return 1;
+                return 0;
+              });
+              
               const isToday = cell.dateString === new Date().toISOString().split('T')[0];
 
               return (
@@ -532,9 +542,10 @@ export const OperationalCalendarSubTab: React.FC<OperationalCalendarSubTabProps>
 
                   {/* Tasks in the day */}
                   <div className="flex-1 flex flex-col gap-1 overflow-y-auto max-h-[80px] custom-scrollbar pr-0.5">
-                    {cellTasks.map((t) => {
+                    {sortedCellTasks.map((t) => {
                       const col = kanbanColumns.find(c => parseColumnName(c.nombre).name === t.estado);
                       const parsedCol = col ? parseColumnName(col.nombre) : { color: '#71717a' };
+                      const isConst = constantTitles.has(t.titulo.toLowerCase());
                       return (
                         <div
                           key={t.id}
@@ -542,14 +553,16 @@ export const OperationalCalendarSubTab: React.FC<OperationalCalendarSubTabProps>
                           onDragStart={(e) => handleDragStart(e, t.id, 'active')}
                           onClick={(e) => handleOpenEditModal(t, e)}
                           style={{
-                            backgroundColor: `${parsedCol.color}15`,
-                            borderLeft: `2.5px solid ${parsedCol.color}`,
-                            color: parsedCol.color
+                            backgroundColor: isConst ? 'rgba(99, 102, 241, 0.2)' : `${parsedCol.color}15`,
+                            borderLeft: isConst ? `2.5px solid #6366f1` : `2.5px solid ${parsedCol.color}`,
+                            color: isConst ? '#a5b4fc' : parsedCol.color,
+                            boxShadow: isConst ? '0 0 4px rgba(99, 102, 241, 0.15)' : 'none'
                           }}
-                          className="w-full text-left px-1.5 py-0.5 rounded text-[8px] font-black truncate hover:brightness-125 transition-all cursor-grab active:cursor-grabbing"
+                          className="w-full text-left px-1.5 py-0.5 rounded text-[8px] font-black truncate hover:brightness-125 transition-all cursor-grab active:cursor-grabbing flex items-center gap-0.5"
                           title={`${t.titulo} (${t.estado})`}
                         >
-                          {t.titulo}
+                          {isConst && <Zap size={7} className="text-indigo-400 shrink-0" />}
+                          <span className="truncate">{t.titulo}</span>
                         </div>
                       );
                     })}

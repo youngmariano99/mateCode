@@ -25,6 +25,18 @@ namespace MateCode.Core.Entities
         public string RangoLexicografico { get; set; } = "a";
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
         public bool Activo { get; set; } = true;
+
+        // Nuevos campos de geolocalización y perfilado de clientes
+        public string? Rubro { get; set; }
+        public string? DireccionTexto { get; set; }
+        public double? Latitud { get; set; }
+        public double? Longitud { get; set; }
+        public string[]? EtiquetasRapidas { get; set; }
+        public string? TipoSoftwareTiene { get; set; }
+        public string? TipoSoftwareQuiere { get; set; }
+        public string? DoloresNotas { get; set; }
+        public JsonElement? BitacoraContactos { get; set; }
+        public JsonElement? LinksRecursos { get; set; }
     }
 
     public class Proyecto

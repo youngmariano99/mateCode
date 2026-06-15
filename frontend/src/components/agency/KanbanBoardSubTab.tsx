@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Calendar, User, Copy, ExternalLink, Briefcase, FileText, CheckCircle2, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, Calendar, User, Copy, ExternalLink, Briefcase, FileText, CheckCircle2, RotateCcw, Zap } from 'lucide-react';
 import { useOperationsStore, parseColumnName, type TaskOperative } from '../../store/useOperationsStore';
 import { useAgencyStore } from '../../store/useAgencyStore';
 import type { Member } from '../../store/useAgencyStore';
@@ -260,6 +260,15 @@ export const KanbanBoardSubTab: React.FC<KanbanBoardSubTabProps> = ({ agencyMemb
         {columnsToRender.map(col => {
           const parsedCol = parseColumnName(col.nombre);
           const colTasks = filteredTasks.filter(t => parseColumnName(t.estado).name === parsedCol.name);
+          const constantTitles = new Set(tasks.filter(t => t.estado === 'Constante').map(t => t.titulo.toLowerCase()));
+          
+          const sortedColTasks = [...colTasks].sort((a, b) => {
+            const aConst = constantTitles.has(a.titulo.toLowerCase());
+            const bConst = constantTitles.has(b.titulo.toLowerCase());
+            if (aConst && !bConst) return -1;
+            if (!aConst && bConst) return 1;
+            return 0;
+          });
 
           return (
             <div
@@ -297,8 +306,9 @@ export const KanbanBoardSubTab: React.FC<KanbanBoardSubTabProps> = ({ agencyMemb
               </h4>
 
               <div className="flex-1 space-y-3 overflow-y-auto neon-scrollbar pr-1 min-h-[450px]">
-                {colTasks.map(task => {
+                {sortedColTasks.map(task => {
                   const assignedUser = agencyMembers.find(m => m.usuario_id === task.usuario_asignado_id);
+                  const isConst = constantTitles.has(task.titulo.toLowerCase());
                   return (
                     <div
                       key={task.id}
@@ -306,12 +316,23 @@ export const KanbanBoardSubTab: React.FC<KanbanBoardSubTabProps> = ({ agencyMemb
                       onDragStart={(e) => handleDragStart(e, task.id)}
                       onClick={() => handleOpenEditModal(task)}
                       style={{
-                        borderLeft: `3.5px solid ${parsedCol.color}`
+                        borderLeft: isConst ? `3.5px solid #6366f1` : `3.5px solid ${parsedCol.color}`
                       }}
-                      className="bg-zinc-950/70 border border-zinc-850 hover:border-zinc-750 p-4 rounded-2xl cursor-grab active:cursor-grabbing transition-all group space-y-3 hover:shadow-md"
+                      className={`border p-4 rounded-2xl cursor-grab active:cursor-grabbing transition-all group space-y-3 hover:shadow-md ${
+                        isConst 
+                          ? 'bg-indigo-950/20 border-indigo-500/30 hover:border-indigo-500/50 shadow-[0_0_12px_rgba(99,102,241,0.05)]' 
+                          : 'bg-zinc-950/70 border-zinc-850 hover:border-zinc-750'
+                      }`}
                     >
                       <div className="flex justify-between items-start">
-                        <h5 className="font-bold text-white text-xs leading-snug">{task.titulo}</h5>
+                        <div className="flex flex-col gap-1.5 min-w-0">
+                          {isConst && (
+                            <span className="text-[8px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded-md font-extrabold uppercase tracking-widest flex items-center gap-1 w-fit">
+                              <Zap size={8} className="text-indigo-400 animate-pulse" /> Constante
+                            </span>
+                          )}
+                          <h5 className="font-bold text-white text-xs leading-snug">{task.titulo}</h5>
+                        </div>
                         <button
                           onClick={(e) => handleDelete(e, task.id)}
                           className="text-zinc-650 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 p-0.5"

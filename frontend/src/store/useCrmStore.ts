@@ -15,6 +15,18 @@ export interface Lead {
   rangoLexicografico?: string;
   fechaCreacion: string;
   contextoJson?: any;
+  
+  // geoClientes fields
+  rubro?: string;
+  direccionTexto?: string;
+  latitud?: number;
+  longitud?: number;
+  etiquetasRapidas?: string[];
+  tipoSoftwareTiene?: string;
+  tipoSoftwareQuiere?: string;
+  doloresNotas?: string;
+  bitacoraContactos?: any[];
+  linksRecursos?: any[];
 }
 
 export interface Contract {
@@ -35,7 +47,9 @@ export interface Contract {
 interface CrmState {
   leads: Lead[];
   contracts: Contract[];
+  rubros: string[];
   fetchLeads: () => Promise<void>;
+  fetchRubros: () => Promise<void>;
   createLead: (lead: Omit<Lead, 'id' | 'agenciaId' | 'fechaCreacion'>) => Promise<void>;
   updateLeadStatus: (id: string, categoria: string, posicion?: string) => Promise<void>;
   updateLead: (id: string, lead: Partial<Lead>) => Promise<void>;
@@ -52,10 +66,19 @@ interface CrmState {
 export const useCrmStore = create<CrmState>((set) => ({
   leads: [],
   contracts: [],
+  rubros: [],
   fetchLeads: async () => {
     try {
       const data = await api.get('/AgencyCrm');
       set({ leads: data });
+    } catch (err) {
+      console.error(err);
+    }
+  },
+  fetchRubros: async () => {
+    try {
+      const data = await api.get('/AgencyCrm/rubros');
+      set({ rubros: data || [] });
     } catch (err) {
       console.error(err);
     }

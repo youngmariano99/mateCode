@@ -18,7 +18,35 @@ namespace MateCode.Infrastructure.Services
                 .ToListAsync();
         }
 
-        public async Task<Cliente> CreateLeadAsync(Guid agencyId, string nombre, string email, string category, string qualification, string origen, string motivo, string descripcion)
+        public async Task<IEnumerable<string>> GetUniqueRubrosAsync(Guid agencyId)
+        {
+            return await _context.Clientes
+                .Where(l => l.AgenciaId == agencyId && l.Activo && !string.IsNullOrEmpty(l.Rubro))
+                .Select(l => l.Rubro!)
+                .Distinct()
+                .OrderBy(r => r)
+                .ToListAsync();
+        }
+
+        public async Task<Cliente> CreateLeadAsync(
+            Guid agencyId, 
+            string nombre, 
+            string email, 
+            string category, 
+            string qualification, 
+            string origen, 
+            string motivo, 
+            string descripcion,
+            string? rubro = null,
+            string? direccionTexto = null,
+            double? latitud = null,
+            double? longitud = null,
+            string[]? etiquetasRapidas = null,
+            string? tipoSoftwareTiene = null,
+            string? tipoSoftwareQuiere = null,
+            string? doloresNotas = null,
+            JsonElement? bitacoraContactos = null,
+            JsonElement? linksRecursos = null)
         {
             var lead = new Cliente
             {
@@ -38,7 +66,17 @@ namespace MateCode.Infrastructure.Services
                 FechaCreacion = DateTime.UtcNow,
                 TokenEnlaceMagico = Guid.NewGuid().ToString("N"),
                 ContextoJson = JsonSerializer.Deserialize<JsonElement>("{}"),
-                Activo = true
+                Activo = true,
+                Rubro = rubro,
+                DireccionTexto = direccionTexto,
+                Latitud = latitud,
+                Longitud = longitud,
+                EtiquetasRapidas = etiquetasRapidas ?? Array.Empty<string>(),
+                TipoSoftwareTiene = tipoSoftwareTiene,
+                TipoSoftwareQuiere = tipoSoftwareQuiere,
+                DoloresNotas = doloresNotas,
+                BitacoraContactos = bitacoraContactos ?? JsonSerializer.Deserialize<JsonElement>("[]"),
+                LinksRecursos = linksRecursos ?? JsonSerializer.Deserialize<JsonElement>("[]")
             };
 
             await _context.Clientes.AddAsync(lead);
@@ -62,7 +100,26 @@ namespace MateCode.Infrastructure.Services
             return await _context.SaveChangesAsync() > 0;
         }
 
-        public async Task<bool> UpdateLeadAsync(Guid leadId, string nombre, string email, string category, string qualification, string origen, string motivo, string descripcion, JsonElement notas)
+        public async Task<bool> UpdateLeadAsync(
+            Guid leadId, 
+            string nombre, 
+            string email, 
+            string category, 
+            string qualification, 
+            string origen, 
+            string motivo, 
+            string descripcion, 
+            JsonElement notas,
+            string? rubro = null,
+            string? direccionTexto = null,
+            double? latitud = null,
+            double? longitud = null,
+            string[]? etiquetasRapidas = null,
+            string? tipoSoftwareTiene = null,
+            string? tipoSoftwareQuiere = null,
+            string? doloresNotas = null,
+            JsonElement? bitacoraContactos = null,
+            JsonElement? linksRecursos = null)
         {
             var lead = await _context.Clientes.FindAsync(leadId);
             if (lead == null) return false;
@@ -83,6 +140,26 @@ namespace MateCode.Infrastructure.Services
             if (category.Equals("Aceptado", StringComparison.OrdinalIgnoreCase))
             {
                 lead.Estado = "aprobado";
+            }
+
+            lead.Rubro = rubro;
+            lead.DireccionTexto = direccionTexto;
+            lead.Latitud = latitud;
+            lead.Longitud = longitud;
+            if (etiquetasRapidas != null)
+            {
+                lead.EtiquetasRapidas = etiquetasRapidas;
+            }
+            lead.TipoSoftwareTiene = tipoSoftwareTiene;
+            lead.TipoSoftwareQuiere = tipoSoftwareQuiere;
+            lead.DoloresNotas = doloresNotas;
+            if (bitacoraContactos.HasValue && bitacoraContactos.Value.ValueKind != JsonValueKind.Undefined)
+            {
+                lead.BitacoraContactos = bitacoraContactos.Value;
+            }
+            if (linksRecursos.HasValue && linksRecursos.Value.ValueKind != JsonValueKind.Undefined)
+            {
+                lead.LinksRecursos = linksRecursos.Value;
             }
 
             return await _context.SaveChangesAsync() > 0;
