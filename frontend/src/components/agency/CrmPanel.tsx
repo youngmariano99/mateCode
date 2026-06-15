@@ -8,10 +8,10 @@ import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
 
 const ETIQUETAS_OPCIONES = [
-  "Anota en papel", "Local propio", "Local alquilado", "Desbordado de gente", 
-  "Local vacío", "Usa Posnet", "Sólo efectivo", "Familiar / Pyme", 
-  "Cadena / Franquicia", "Desconfiado de la tecnología", "Curioso / Abierto", 
-  "Joven / Digital", "Ya intentó digitalizarse", "Necesita urgente", "Volver más tarde"
+  "Anota en papel", "Local propio", "Local alquilado", "Desbordado de gente",
+  "Local vacío", "Usa Posnet", "Sólo efectivo", "Familiar / Pyme",
+  "Cadena / Franquicia", "Desconfiado de la tecnología", "Curioso / Abierto",
+  "Joven / Digital", "Ya intentó digitalizarse", "Necesita urgente", "Volve más tarde"
 ];
 
 export const CrmPanel: React.FC = () => {
@@ -21,7 +21,7 @@ export const CrmPanel: React.FC = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [associatingLead, setAssociatingLead] = useState<Lead | null>(null);
   const [associationSearch, setAssociationSearch] = useState('');
-  
+
   const [form, setForm] = useState({
     nombre: '',
     email: '',
@@ -62,7 +62,7 @@ export const CrmPanel: React.FC = () => {
       Swal.fire({ title: 'Falta Calle', text: 'Ingresa al menos el nombre de la calle.', icon: 'info' });
       return;
     }
-    
+
     setIsSearchingGeocode(true);
     const query = `${calle} ${altura}, ${ciudad}, ${provincia}, ${pais}`;
     try {
@@ -112,7 +112,7 @@ export const CrmPanel: React.FC = () => {
 
   const handleEditClick = (lead: Lead) => {
     setSelectedLead(lead);
-    
+
     // Parse address fields
     let calle = '';
     let altura = '';
@@ -331,7 +331,7 @@ export const CrmPanel: React.FC = () => {
 
       await updateLead(targetClient.id, { descripcion: mergedDescription });
       await deleteLead(associatingLead.id);
-      
+
       setAssociatingLead(null);
       Swal.fire({
         title: 'Asociación Exitosa',
@@ -404,26 +404,26 @@ export const CrmPanel: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-black text-white tracking-tight">
-              {activeTab === 'kanban' 
-                ? 'Clientes & Leads (CRM)' 
+              {activeTab === 'kanban'
+                ? 'Clientes & Leads (CRM)'
                 : activeTab === 'map'
-                ? 'Mapa de Clientes'
-                : activeTab === 'forms' 
-                ? 'Formularios de Captación' 
-                : activeTab === 'contracts'
-                ? 'Contratos Digitales'
-                : 'Respuestas de Formularios'}
+                  ? 'Mapa de Clientes'
+                  : activeTab === 'forms'
+                    ? 'Formularios de Captación'
+                    : activeTab === 'contracts'
+                      ? 'Contratos Digitales'
+                      : 'Respuestas de Formularios'}
             </h1>
             <p className="text-zinc-500 text-xs mt-1">
               {activeTab === 'kanban'
                 ? 'Arrastra y suelta prospectos para calificar tus oportunidades de venta de software.'
                 : activeTab === 'map'
-                ? 'Toca cualquier punto en el mapa para registrar un comercio o negocio geolocalizado en vivo.'
-                : activeTab === 'forms'
-                ? 'Crea y administra los cuestionarios de relevamiento para captar clientes desde tu enlace mágico.'
-                : activeTab === 'contracts'
-                ? 'Formaliza tus relaciones comerciales con firmas digitales criptográficas dibujables.'
-                : 'Inbox de respuestas completadas por clientes potenciales a través del enlace mágico.'}
+                  ? 'Toca cualquier punto en el mapa para registrar un comercio o negocio geolocalizado en vivo.'
+                  : activeTab === 'forms'
+                    ? 'Crea y administra los cuestionarios de relevamiento para captar clientes desde tu enlace mágico.'
+                    : activeTab === 'contracts'
+                      ? 'Formaliza tus relaciones comerciales con firmas digitales criptográficas dibujables.'
+                      : 'Inbox de respuestas completadas por clientes potenciales a través del enlace mágico.'}
             </p>
           </div>
           <div className="flex gap-2">
@@ -452,9 +452,8 @@ export const CrmPanel: React.FC = () => {
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab('kanban')}
-            className={`pb-2 px-4 text-xs font-bold transition-all relative ${
-              activeTab === 'kanban' ? 'text-emerald-400 font-extrabold' : 'text-zinc-500 hover:text-zinc-300'
-            }`}
+            className={`pb-2 px-4 text-xs font-bold transition-all relative ${activeTab === 'kanban' ? 'text-emerald-400 font-extrabold' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
           >
             <span>Tablero Kanban</span>
             {activeTab === 'kanban' && (
@@ -463,9 +462,8 @@ export const CrmPanel: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('map')}
-            className={`pb-2 px-4 text-xs font-bold transition-all relative ${
-              activeTab === 'map' ? 'text-emerald-400 font-extrabold' : 'text-zinc-500 hover:text-zinc-300'
-            }`}
+            className={`pb-2 px-4 text-xs font-bold transition-all relative ${activeTab === 'map' ? 'text-emerald-400 font-extrabold' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
           >
             <span>Mapa de Clientes</span>
             {activeTab === 'map' && (
@@ -474,9 +472,8 @@ export const CrmPanel: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('responses')}
-            className={`pb-2 px-4 text-xs font-bold transition-all relative ${
-              activeTab === 'responses' ? 'text-emerald-400 font-extrabold' : 'text-zinc-500 hover:text-zinc-300'
-            }`}
+            className={`pb-2 px-4 text-xs font-bold transition-all relative ${activeTab === 'responses' ? 'text-emerald-400 font-extrabold' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
           >
             <div className="flex items-center gap-1.5">
               <span>Respuestas Recibidas</span>
@@ -492,9 +489,8 @@ export const CrmPanel: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('forms')}
-            className={`pb-2 px-4 text-xs font-bold transition-all relative ${
-              activeTab === 'forms' ? 'text-emerald-400 font-extrabold' : 'text-zinc-500 hover:text-zinc-300'
-            }`}
+            className={`pb-2 px-4 text-xs font-bold transition-all relative ${activeTab === 'forms' ? 'text-emerald-400 font-extrabold' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
           >
             <span>Formularios de Captación</span>
             {activeTab === 'forms' && (
@@ -503,9 +499,8 @@ export const CrmPanel: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('contracts')}
-            className={`pb-2 px-4 text-xs font-bold transition-all relative ${
-              activeTab === 'contracts' ? 'text-emerald-400 font-extrabold' : 'text-zinc-500 hover:text-zinc-300'
-            }`}
+            className={`pb-2 px-4 text-xs font-bold transition-all relative ${activeTab === 'contracts' ? 'text-emerald-400 font-extrabold' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
           >
             <span>Contratos Digitales</span>
             {activeTab === 'contracts' && (
@@ -547,11 +542,10 @@ export const CrmPanel: React.FC = () => {
                       className="bg-zinc-900/70 border border-zinc-850 hover:border-zinc-700/80 p-4 rounded-2xl cursor-grab active:cursor-grabbing transition-all space-y-2.5 group"
                     >
                       <div className="flex justify-between items-start">
-                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                          lead.calificacion === 'Calificado' 
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${lead.calificacion === 'Calificado'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                             : 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                        }`}>
+                          }`}>
                           {lead.calificacion}
                         </span>
                         <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -624,7 +618,7 @@ export const CrmPanel: React.FC = () => {
                         </div>
                         <h4 className="font-extrabold text-white text-sm">{lead.nombre}</h4>
                         {lead.email && <p className="text-xs text-zinc-400">{lead.email}</p>}
-                        
+
                         <div className="bg-zinc-950/45 p-3.5 rounded-2xl text-[11px] text-zinc-400 space-y-1.5 max-h-[220px] overflow-y-auto neon-scrollbar">
                           {Object.entries(ctx)
                             .filter(([key]) => key !== 'esRespuestaFormulario' && key !== 'formTemplateId' && key !== 'nombre' && key !== 'email')
@@ -669,7 +663,7 @@ export const CrmPanel: React.FC = () => {
       {/* Modal Carga/Edición */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
-          <motion.div 
+          <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto space-y-4 neon-scrollbar"
@@ -679,9 +673,9 @@ export const CrmPanel: React.FC = () => {
                 <ClipboardList className="text-emerald-400 size-5" />
                 <span>{selectedLead ? 'Ficha Comercial / Editar Lead' : 'Cargar Relevamiento Comercial'}</span>
               </h3>
-              <button 
-                type="button" 
-                onClick={handleCloseModal} 
+              <button
+                type="button"
+                onClick={handleCloseModal}
                 className="text-zinc-400 hover:text-white text-lg font-bold p-1"
               >
                 ✕
@@ -689,7 +683,7 @@ export const CrmPanel: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
+
               {/* Columna Izquierda: Datos Básicos & Geolocalización */}
               <div className="space-y-4">
                 <div className="bg-zinc-950/20 border border-zinc-850 p-4 rounded-2xl space-y-3">
@@ -700,13 +694,13 @@ export const CrmPanel: React.FC = () => {
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Rubro</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       list="rubros-sugeridos"
-                      value={form.rubro} 
-                      onChange={e => setForm({ ...form, rubro: e.target.value })} 
+                      value={form.rubro}
+                      onChange={e => setForm({ ...form, rubro: e.target.value })}
                       placeholder="Gastronomía, Indumentaria, Estética..."
-                      className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white" 
+                      className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white"
                     />
                     <datalist id="rubros-sugeridos">
                       {rubros.map(r => <option key={r} value={r} />)}
@@ -742,7 +736,7 @@ export const CrmPanel: React.FC = () => {
                     <MapPin size={10} className="text-red-400" />
                     <span>Ubicación en Mapa</span>
                   </h4>
-                  
+
                   {/* Address segmented inputs */}
                   <div className="grid grid-cols-3 gap-2">
                     <div className="col-span-2">
@@ -821,16 +815,15 @@ export const CrmPanel: React.FC = () => {
                           type="button"
                           key={tag}
                           onClick={() => {
-                            const nuevas = activa 
+                            const nuevas = activa
                               ? form.etiquetasRapidas.filter(t => t !== tag)
                               : [...form.etiquetasRapidas, tag];
                             setForm({ ...form, etiquetasRapidas: nuevas });
                           }}
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition ${
-                            activa 
-                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-sm' 
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition ${activa
+                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-sm'
                               : 'bg-zinc-950/40 border-zinc-800 text-zinc-400 hover:border-zinc-700'
-                          }`}
+                            }`}
                         >
                           {activa ? '✓ ' : ''}{tag}
                         </button>
@@ -867,11 +860,11 @@ export const CrmPanel: React.FC = () => {
                     <span>Bitácora de Contactos / Interacciones</span>
                   </h4>
                   <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      id="new-contact-log" 
-                      placeholder="Nueva interacción... (Presiona Enter)" 
-                      className="flex-1 bg-zinc-950 border border-zinc-800 p-2 rounded-xl text-xs text-white" 
+                    <input
+                      type="text"
+                      id="new-contact-log"
+                      placeholder="Nueva interacción... (Presiona Enter)"
+                      className="flex-1 bg-zinc-950 border border-zinc-800 p-2 rounded-xl text-xs text-white"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -1000,8 +993,8 @@ export const CrmPanel: React.FC = () => {
             <div className="max-h-[250px] overflow-y-auto neon-scrollbar space-y-2 border border-zinc-850 p-2 rounded-2xl bg-zinc-950/20">
               {leads
                 .filter(l => !isFormResponse(l))
-                .filter(l => 
-                  l.nombre.toLowerCase().includes(associationSearch.toLowerCase()) || 
+                .filter(l =>
+                  l.nombre.toLowerCase().includes(associationSearch.toLowerCase()) ||
                   (l.email && l.email.toLowerCase().includes(associationSearch.toLowerCase()))
                 )
                 .map(client => (
