@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 're
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Lead } from '../../store/useCrmStore';
-import { Navigation, Compass } from 'lucide-react';
+import { Navigation, Compass, ClipboardList } from 'lucide-react';
 
 // Default center (e.g. Coronel Pringles / Argentina or fallback)
 const DEFAULT_CENTER = { lat: -37.980, lng: -61.397, zoom: 15 };
@@ -220,9 +220,58 @@ export const ClientesMapa: React.FC<ClientesMapaProps> = ({ leads, onSelectLead,
     return [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng];
   }, [geoLeads]);
 
+  // Helper to extract city name
+  const extraerCiudad = (direccion?: string): string => {
+    if (!direccion) return 'Sin dirección';
+    const partes = direccion.split(',').map(p => p.trim());
+    for (const part of partes) {
+      if (part.toLowerCase().includes('pringles')) return 'Coronel Pringles';
+      if (part.toLowerCase().includes('bahia blanca') || part.toLowerCase().includes('bahía blanca')) return 'Bahía Blanca';
+      if (part.toLowerCase().includes('buenos aires')) continue;
+      if (part.toLowerCase().includes('argentina')) continue;
+    }
+    if (partes.length >= 3 && isNaN(Number(partes[2]))) return partes[2];
+    if (partes.length >= 2 && isNaN(Number(partes[1]))) return partes[1];
+    return 'Otras';
+  };
+
+  // Grouping metrics
+  const metricas = useMemo(() => {
+    const rubrosMap: Record<string, number> = {};
+    const ciudadesMap: Record<string, number> = {};
+    const estadosMap: Record<string, number> = {
+      'Confirmado': 0,
+      'Potencial': 0,
+      'Indeciso': 0,
+      'Negado': 0
+    };
+
+    leads.forEach(lead => {
+      // 1. Rubro
+      const rub = lead.rubro ? lead.rubro.trim() : 'Sin rubro';
+      rubrosMap[rub] = (rubrosMap[rub] || 0) + 1;
+
+      // 2. Ciudad
+      const cd = extraerCiudad(lead.direccionTexto);
+      ciudadesMap[cd] = (ciudadesMap[cd] || 0) + 1;
+
+      // 3. Estado
+      const estadoInfo = getEstadoLead(lead);
+      estadosMap[estadoInfo.etiqueta] = (estadosMap[estadoInfo.etiqueta] || 0) + 1;
+    });
+
+    return {
+      rubros: Object.entries(rubrosMap).sort((a, b) => b[1] - a[1]),
+      ciudades: Object.entries(ciudadesMap).sort((a, b) => b[1] - a[1]),
+      estados: Object.entries(estadosMap).filter(([_, count]) => count > 0)
+    };
+  }, [leads]);
+
   return (
-    <div className="relative w-full h-[580px] rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-950 shadow-2xl flex flex-col">
-      {/* Map Header */}
+    <div className="relative w-full h-[580px] rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-950 shadow-2xl flex flex-col lg:flex-row">
+      {/* Map container (Left on desktop) */}
+      <div className="relative flex-1 h-[400px] lg:h-full">
+        {/* Map Header */}
       <div className="absolute top-4 left-4 z-[1000] bg-zinc-900/90 border border-zinc-800 backdrop-blur-md px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-xl">
         <Compass className="text-emerald-400 size-4 animate-spin-slow" />
         <div>
@@ -329,6 +378,69 @@ export const ClientesMapa: React.FC<ClientesMapaProps> = ({ leads, onSelectLead,
           );
         })}
       </MapContainer>
+      </div>
+
+      {/* Sidebar de Métricas / Leyenda */}
+      <div className="w-full lg:w-80 bg-zinc-900/40 backdrop-blur-md p-5 overflow-y-auto neon-scrollbar flex flex-col gap-5 text-white">
+        <div className="border-b border-zinc-800 pb-3">
+          <h3 className="text-sm font-black text-white flex items-center gap-2">
+            <ClipboardList className="text-emerald-400 size-4" />
+            <span>Métricas del Relevamiento</span>
+          </h3>
+          <p className="text-[10px] text-zinc-550 mt-1">Resumen consolidado comercial</p>
+        </div>
+
+        {/* Estados */}
+        <div className="space-y-2">
+          <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Por Estado</h4>
+          <div className="grid grid-cols-2 gap-2">
+            {metricas.estados.map(([estado, count]) => {
+              const bg = estado === 'Confirmado' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                         estado === 'Indeciso' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400' :
+                         estado === 'Negado' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
+                         'bg-blue-500/10 border-blue-500/20 text-blue-400';
+              return (
+                <div key={estado} className={`p-2 rounded-xl border ${bg} text-center flex flex-col items-center justify-center`}>
+                  <span className="text-xs font-black">{count}</span>
+                  <span className="text-[9px] uppercase tracking-wider font-bold block mt-0.5">{estado}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Ciudades */}
+        <div className="space-y-2">
+          <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Por Ciudad</h4>
+          <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1 neon-scrollbar">
+            {metricas.ciudades.map(([ciudad, count]) => (
+              <div key={ciudad} className="flex justify-between items-center bg-zinc-950/40 border border-zinc-850 px-3 py-2 rounded-xl text-xs">
+                <span className="font-bold text-zinc-350 truncate pr-2">{ciudad}</span>
+                <span className="bg-zinc-850 px-2 py-0.5 rounded-lg font-black text-[10px] text-zinc-300">{count}</span>
+              </div>
+            ))}
+            {metricas.ciudades.length === 0 && (
+              <p className="text-[10px] text-zinc-500 italic">No hay direcciones registradas.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Rubros */}
+        <div className="space-y-2">
+          <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Por Rubro</h4>
+          <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1 neon-scrollbar">
+            {metricas.rubros.map(([rubro, count]) => (
+              <div key={rubro} className="flex justify-between items-center bg-zinc-950/40 border border-zinc-850 px-3 py-2 rounded-xl text-xs">
+                <span className="font-bold text-zinc-350 truncate pr-2">🏷️ {rubro}</span>
+                <span className="bg-zinc-850 px-2 py-0.5 rounded-lg font-black text-[10px] text-zinc-300">{count}</span>
+              </div>
+            ))}
+            {metricas.rubros.length === 0 && (
+              <p className="text-[10px] text-zinc-500 italic">No hay rubros definidos.</p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
