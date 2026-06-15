@@ -270,6 +270,13 @@ export const ClientesMapa: React.FC<ClientesMapaProps> = ({ leads, onSelectLead,
             >
               <Popup>
                 <div className="min-w-[200px] p-2 bg-zinc-950 text-white rounded-xl space-y-2 font-sans">
+                  <div className="w-full h-20 rounded-lg overflow-hidden border border-zinc-850 mb-1">
+                    <img 
+                      src="/appyStudio.jpeg" 
+                      alt="AppyStudio" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                   <h4 className="font-extrabold text-sm text-white leading-tight">{lead.nombre}</h4>
                   {lead.rubro && (
                     <span className="text-[10px] font-bold text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-md inline-block">

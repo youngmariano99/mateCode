@@ -8,6 +8,7 @@ export interface Lead {
   email?: string;
   categoria: string;
   calificacion: string;
+  estado?: string;
   origenContacto?: string;
   motivoContacto?: string;
   descripcion?: string;
