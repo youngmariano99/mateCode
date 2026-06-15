@@ -439,7 +439,13 @@ export const KanbanBoardSubTab: React.FC<KanbanBoardSubTabProps> = ({ agencyMemb
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Planificada Para</label>
-                  <input type="date" value={form.fecha_planificada} onChange={e => setForm({ ...form, fecha_planificada: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800/80 p-2.5 rounded-xl text-xs text-white" />
+                  <input 
+                    type="date" 
+                    value={form.fecha_planificada} 
+                    onChange={e => setForm({ ...form, fecha_planificada: e.target.value })} 
+                    onClick={(e) => (e.target as any).showPicker?.()}
+                    className="w-full bg-zinc-950 border border-zinc-800/80 p-2.5 rounded-xl text-xs text-white cursor-pointer focus:border-emerald-500/50" 
+                  />
                 </div>
               </div>
               

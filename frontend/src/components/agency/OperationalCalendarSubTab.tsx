@@ -286,6 +286,22 @@ export const OperationalCalendarSubTab: React.FC<OperationalCalendarSubTabProps>
     setIsModalOpen(true);
   };
 
+  const handleOpenCreateGeneral = () => {
+    setEditingTask(null);
+    setSelectedDateString(null);
+    setForm({
+      titulo: '',
+      descripcion: '',
+      estado: activeColumns[0] || 'Todo',
+      fecha_planificada: new Date().toISOString().split('T')[0],
+      usuario_asignado_id: '',
+      espacioTrabajoId: '',
+      proyectoId: '',
+      recursoId: ''
+    });
+    setIsModalOpen(true);
+  };
+
   const handleOpenEditModal = (task: TaskOperative, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingTask(task);
@@ -459,6 +475,13 @@ export const OperationalCalendarSubTab: React.FC<OperationalCalendarSubTabProps>
             <button onClick={handleToday} className="px-2.5 py-1.5 bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 text-zinc-300 rounded-xl text-xs font-bold transition-colors">
               Hoy
             </button>
+            <button
+              onClick={handleOpenCreateGeneral}
+              className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black rounded-xl text-xs font-bold transition-colors flex items-center gap-1 shadow-lg shadow-emerald-500/10"
+            >
+              <Plus size={14} />
+              <span>Cargar Actividad</span>
+            </button>
           </div>
         </div>
 
@@ -500,7 +523,8 @@ export const OperationalCalendarSubTab: React.FC<OperationalCalendarSubTabProps>
                     </span>
                     <button
                       onClick={() => handleOpenCreateOnDate(cell.dateString)}
-                      className="opacity-0 hover:opacity-100 p-0.5 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-500 hover:text-white transition-opacity text-[8px] font-black"
+                      className="p-1 bg-zinc-900/80 border border-zinc-800/80 rounded-md text-zinc-400 hover:text-emerald-450 hover:border-emerald-500/30 transition-all text-[10px] font-black flex items-center justify-center w-5 h-5 shadow-sm"
+                      title="Agregar actividad para este día"
                     >
                       +
                     </button>
@@ -585,7 +609,13 @@ export const OperationalCalendarSubTab: React.FC<OperationalCalendarSubTabProps>
                 </div>
                 <div>
                   <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Planificada Para</label>
-                  <input type="date" value={form.fecha_planificada} onChange={e => setForm({ ...form, fecha_planificada: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800/80 p-2.5 rounded-xl text-xs text-white" />
+                  <input 
+                    type="date" 
+                    value={form.fecha_planificada} 
+                    onChange={e => setForm({ ...form, fecha_planificada: e.target.value })} 
+                    onClick={(e) => (e.target as any).showPicker?.()}
+                    className="w-full bg-zinc-950 border border-zinc-800/80 p-2.5 rounded-xl text-xs text-white cursor-pointer focus:border-emerald-500/50" 
+                  />
                 </div>
               </div>
               

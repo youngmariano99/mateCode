@@ -12,11 +12,11 @@ export const AgencyContentDashboard: React.FC<AgencyContentDashboardProps> = ({
   agencyMembers
 }) => {
   // Filtrar solo las planificaciones semanales estructuradas
-  const weeklyPlans = contents.filter(c => c.estado === 'Plan Semanal' && c.resumen_analitico);
+  const weeklyPlans = contents.filter(c => c.estado === 'Plan Semanal' && (c.resumen_analitico || c.resumenAnalitico));
 
   // Parsear el JSON del planificador
   const parsedPlans = weeklyPlans.map(p => {
-    let detail = p.resumen_analitico;
+    let detail = p.resumen_analitico || p.resumenAnalitico;
     if (typeof detail === 'string') {
       try {
         detail = JSON.parse(detail);

@@ -32,7 +32,7 @@ export const IdeasBank: React.FC<IdeasBankProps> = ({
   onPlanifyIdea
 }) => {
   // Filtrar solo las ideas
-  const ideas = contents.filter(c => c.estado === 'Idea' && !c.resumen_analitico?.esPlanSemanal);
+  const ideas = contents.filter(c => c.estado === 'Idea' && !(c.resumen_analitico || c.resumenAnalitico)?.esPlanSemanal);
 
   // Estados del Creador Inline
   const [inlineTitle, setInlineTitle] = useState('');
@@ -140,7 +140,7 @@ export const IdeasBank: React.FC<IdeasBankProps> = ({
   // ====================================================================================
   const handleToggleVisibility = async (idea: any) => {
     try {
-      const ra = idea.resumen_analitico || {};
+      const ra = idea.resumen_analitico || idea.resumenAnalitico || {};
       const newEsGrupal = !ra.esGrupal;
       const updatedRA = {
         ...ra,
@@ -150,11 +150,11 @@ export const IdeasBank: React.FC<IdeasBankProps> = ({
       await updateContent(idea.id, {
         titulo: idea.titulo,
         plataformas: idea.plataformas,
-        guionPlantilla: idea.guion_plantilla || '',
+        guionPlantilla: idea.guion_plantilla || idea.guionPlantilla || '',
         dialogo: idea.dialogo || '',
-        procedimientoEstandar: idea.procedimiento_estandar || '',
+        procedimientoEstandar: idea.procedimiento_estandar || idea.procedimientoEstandar || '',
         estado: 'Idea',
-        notasMejora: idea.notas_mejora || '',
+        notasMejora: idea.notas_mejora || idea.notasMejora || '',
         resumenAnalitico: updatedRA
       });
 
@@ -174,13 +174,13 @@ export const IdeasBank: React.FC<IdeasBankProps> = ({
   };
 
   const handleStartEdit = (idea: any) => {
-    const ra = idea.resumen_analitico || {};
+    const ra = idea.resumen_analitico || idea.resumenAnalitico || {};
     setEditingIdeaId(idea.id);
     setEditingForm({
       titulo: idea.titulo,
       plataformas: idea.plataformas || [],
       esGrupal: ra.esGrupal ?? true,
-      notas: idea.guion_plantilla || '',
+      notas: idea.guion_plantilla || idea.guionPlantilla || '',
       tags: ra.tags || []
     });
   };
@@ -190,7 +190,7 @@ export const IdeasBank: React.FC<IdeasBankProps> = ({
     if (!original) return;
 
     try {
-      const ra = original.resumen_analitico || {};
+      const ra = original.resumen_analitico || original.resumenAnalitico || {};
       const updatedRA = {
         ...ra,
         esGrupal: editingForm.esGrupal,
@@ -203,9 +203,9 @@ export const IdeasBank: React.FC<IdeasBankProps> = ({
         plataformas: editingForm.plataformas,
         guionPlantilla: editingForm.notas,
         dialogo: original.dialogo || '',
-        procedimientoEstandar: original.procedimiento_estandar || '',
+        procedimientoEstandar: original.procedimiento_estandar || original.procedimientoEstandar || '',
         estado: 'Idea',
-        notasMejora: original.notas_mejora || '',
+        notasMejora: original.notas_mejora || original.notasMejora || '',
         resumenAnalitico: updatedRA
       });
 
@@ -247,7 +247,7 @@ export const IdeasBank: React.FC<IdeasBankProps> = ({
   // FILTRADO DE IDEAS
   // ====================================================================================
   const filteredIdeas = ideas.filter(idea => {
-    const ra = idea.resumen_analitico || {};
+    const ra = idea.resumen_analitico || idea.resumenAnalitico || {};
     const createdByMe = (idea.miembro_id || idea.miembroId) === currentUserId;
 
     // 1. Aislamiento / Seguridad: Si es privada (esGrupal === false) y no soy el creador (y no soy admin), NO se muestra
@@ -260,7 +260,7 @@ export const IdeasBank: React.FC<IdeasBankProps> = ({
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = idea.titulo?.toLowerCase().includes(q);
-      const matchDesc = idea.guion_plantilla?.toLowerCase().includes(q);
+      const matchDesc = (idea.guion_plantilla || idea.guionPlantilla)?.toLowerCase().includes(q);
       const matchTags = ra.tags?.some((t: string) => t.toLowerCase().includes(q));
       if (!matchTitle && !matchDesc && !matchTags) return false;
     }
@@ -486,7 +486,7 @@ export const IdeasBank: React.FC<IdeasBankProps> = ({
             </div>
           ) : (
             filteredIdeas.map(idea => {
-              const ra = idea.resumen_analitico || {};
+              const ra = idea.resumen_analitico || idea.resumenAnalitico || {};
               const isEditing = editingIdeaId === idea.id;
               const creador = ra.creadorNombre || 'Miembro';
               const vecesUsada = ra.vecesUsada || 0;
@@ -613,9 +613,9 @@ export const IdeasBank: React.FC<IdeasBankProps> = ({
                       <div className="space-y-2">
                         <h4 className="font-extrabold text-sm text-white line-clamp-2">{idea.titulo}</h4>
                         
-                        {idea.guion_plantilla && (
+                        {(idea.guion_plantilla || idea.guionPlantilla) && (
                           <p className="text-[11px] text-zinc-400 line-clamp-3 whitespace-pre-wrap font-mono bg-zinc-950/20 p-2.5 rounded-xl border border-zinc-850/40">
-                            {idea.guion_plantilla}
+                            {idea.guion_plantilla || idea.guionPlantilla}
                           </p>
                         )}
                       </div>

@@ -35,6 +35,28 @@ export interface TaskOperative {
   recurso?: { id: string; titulo: string; tipo: string; contenido?: string };
 }
 
+export const normalizeTask = (t: any): TaskOperative => {
+  if (!t) return t;
+  return {
+    ...t,
+    id: t.id,
+    agencia_id: t.agenciaId || t.agencia_id,
+    titulo: t.titulo,
+    descripcion: t.descripcion,
+    estado: t.estado,
+    fecha_planificada: t.fechaPlanificada || t.fecha_planificada,
+    usuario_asignado_id: t.usuarioAsignadoId || t.usuario_asignado_id,
+    rango_lexicografico: t.rangoLexicografico || t.rango_lexicografico,
+    fecha_creacion: t.fechaCreacion || t.fecha_creacion,
+    espacio_trabajo_id: t.espacioTrabajoId || t.espacio_trabajo_id,
+    proyecto_id: t.proyectoId || t.proyecto_id,
+    recurso_id: t.recursoId || t.recurso_id,
+    espacio_trabajo: t.espacioTrabajo || t.espacio_trabajo,
+    proyecto: t.proyecto,
+    recurso: t.recurso
+  };
+};
+
 export interface KanbanColumnaOperativa {
   id: string;
   agencia_id: string;
@@ -82,17 +104,25 @@ export interface WeeklyReport {
 export interface ContentPlan {
   id: string;
   agencia_id: string;
+  agenciaId?: string;
   miembro_id: string;
+  miembroId?: string;
   titulo: string;
   plataformas: string[];
   guion_plantilla?: string;
+  guionPlantilla?: string;
   dialogo?: string;
   procedimiento_estandar?: string;
+  procedimientoEstandar?: string;
   estado: string;
   notas_mejora?: string;
+  notasMejora?: string;
   resumen_analitico?: any;
+  resumenAnalitico?: any;
   fecha_publicacion?: string;
+  fechaPublicacion?: string;
   fecha_creacion: string;
+  fechaCreacion?: string;
 }
 
 export interface AuditLog {
@@ -124,9 +154,9 @@ interface OperationsState {
 
   // Tasks
   fetchTasks: () => Promise<void>;
-  createTask: (task: { titulo: string; descripcion: string; estado: string; fecha_planificada?: string; usuario_asignado_id?: string; espacioTrabajoId?: string; proyectoId?: string; recursoId?: string }) => Promise<void>;
+  createTask: (task: { titulo: string; descripcion: string; estado: string; fecha_planificada?: string; usuario_asignado_id?: string; espacioTrabajoId?: string; proyectoId?: string; recursoId?: string; espacio_trabajo_id?: string; proyecto_id?: string; recurso_id?: string }) => Promise<void>;
   updateTaskStatus: (id: string, estado: string, posicion?: string) => Promise<void>;
-  updateTask: (id: string, task: { titulo: string; descripcion: string; estado: string; fecha_planificada?: string; usuario_asignado_id?: string; espacioTrabajoId?: string; proyectoId?: string; recursoId?: string }) => Promise<void>;
+  updateTask: (id: string, task: { titulo: string; descripcion: string; estado: string; fecha_planificada?: string; usuario_asignado_id?: string; espacioTrabajoId?: string; proyectoId?: string; recursoId?: string; espacio_trabajo_id?: string; proyecto_id?: string; recurso_id?: string }) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
 
   // Contents
@@ -213,15 +243,25 @@ export const useOperationsStore = create<OperationsState>((set) => ({
   fetchTasks: async () => {
     try {
       const data = await api.get('/AgencyOperations/tasks');
-      set({ tasks: data });
+      set({ tasks: (data || []).map(normalizeTask) });
     } catch (err) {
       console.error(err);
     }
   },
   createTask: async (task) => {
     try {
-      const data = await api.post('/AgencyOperations/tasks', task);
-      set(state => ({ tasks: [...state.tasks, data] }));
+      const payload = {
+        titulo: task.titulo,
+        descripcion: task.descripcion,
+        estado: task.estado,
+        fechaPlanificada: task.fecha_planificada || (task as any).fechaPlanificada,
+        usuarioAsignadoId: task.usuario_asignado_id || (task as any).usuarioAsignadoId,
+        espacioTrabajoId: task.espacioTrabajoId || task.espacio_trabajo_id,
+        proyectoId: task.proyectoId || task.proyecto_id,
+        recursoId: task.recursoId || task.recurso_id
+      };
+      const data = await api.post('/AgencyOperations/tasks', payload);
+      set(state => ({ tasks: [...state.tasks, normalizeTask(data)] }));
     } catch (err) {
       console.error(err);
       throw err;
@@ -239,10 +279,20 @@ export const useOperationsStore = create<OperationsState>((set) => ({
   },
   updateTask: async (id, task) => {
     try {
-      await api.put(`/AgencyOperations/tasks/${id}`, task);
+      const payload = {
+        titulo: task.titulo,
+        descripcion: task.descripcion,
+        estado: task.estado,
+        fechaPlanificada: task.fecha_planificada || (task as any).fechaPlanificada,
+        usuarioAsignadoId: task.usuario_asignado_id || (task as any).usuarioAsignadoId,
+        espacioTrabajoId: task.espacioTrabajoId || task.espacio_trabajo_id,
+        proyectoId: task.proyectoId || task.proyecto_id,
+        recursoId: task.recursoId || task.recurso_id
+      };
+      await api.put(`/AgencyOperations/tasks/${id}`, payload);
       // Refetch tasks to load includes correctly
       const data = await api.get('/AgencyOperations/tasks');
-      set({ tasks: data });
+      set({ tasks: (data || []).map(normalizeTask) });
     } catch (err) {
       console.error(err);
       throw err;

@@ -201,13 +201,13 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
   const weeklyPlans = filteredContents.filter(c => c.estado === 'Plan Semanal');
   const individualPosts = filteredContents.filter(c => 
     c.estado !== 'Plan Semanal' && 
-    c.resumen_analitico?.esIdeaBanco !== true
+    (c.resumen_analitico || c.resumenAnalitico)?.esIdeaBanco !== true
   );
 
 
 
   const activePlanForRange = weeklyPlans.find(plan => {
-    let detail = plan.resumen_analitico;
+    let detail = plan.resumen_analitico || plan.resumenAnalitico;
     if (typeof detail === 'string') {
       try { detail = JSON.parse(detail); } catch { return false; }
     }
@@ -222,7 +222,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
     
     // 1. Get posts from activePlanForRange
     if (activePlanForRange) {
-      let detail = activePlanForRange.resumen_analitico;
+      let detail = activePlanForRange.resumen_analitico || activePlanForRange.resumenAnalitico;
       if (typeof detail === 'string') {
         try { detail = JSON.parse(detail); } catch { detail = {}; }
       }
@@ -236,7 +236,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
     // 2. Get posts from other plans that are scheduled in this week range
     weeklyPlans.forEach(plan => {
       if (plan.id === activePlanForRange?.id) return;
-      let detail = plan.resumen_analitico;
+      let detail = plan.resumen_analitico || plan.resumenAnalitico;
       if (typeof detail === 'string') {
         try { detail = JSON.parse(detail); } catch { detail = {}; }
       }
@@ -256,7 +256,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
 
   const getUnscheduledPosts = () => {
     if (!activePlanForRange) return [];
-    let detail = activePlanForRange.resumen_analitico;
+    let detail = activePlanForRange.resumen_analitico || activePlanForRange.resumenAnalitico;
     if (typeof detail === 'string') {
       try { detail = JSON.parse(detail); } catch { detail = {}; }
     }
@@ -270,7 +270,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
     const list: { planId: string; post: PostItem }[] = [];
     weeklyPlans.forEach(plan => {
       if (plan.id === activePlanForRange?.id) return;
-      let detail = plan.resumen_analitico;
+      let detail = plan.resumen_analitico || plan.resumenAnalitico;
       if (typeof detail === 'string') {
         try { detail = JSON.parse(detail); } catch { detail = {}; }
       }
@@ -289,7 +289,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
     if (!detailPlanId) return;
     const plan = contents.find(c => c.id === detailPlanId);
     if (!plan) return;
-    let detail = plan.resumen_analitico;
+    let detail = plan.resumen_analitico || plan.resumenAnalitico;
     if (typeof detail === 'string') {
       try { detail = JSON.parse(detail); } catch { return; }
     }
@@ -298,14 +298,14 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
     );
     
     await updateContent(plan.id, {
-      miembroId: plan.miembro_id,
+      miembroId: plan.miembro_id || plan.miembroId,
       titulo: plan.titulo,
       plataformas: plan.plataformas || [],
-      guionPlantilla: plan.guion_plantilla || '',
+      guionPlantilla: plan.guion_plantilla || plan.guionPlantilla || '',
       dialogo: plan.dialogo || '',
-      procedimientoEstandar: plan.procedimiento_estandar || '',
+      procedimientoEstandar: plan.procedimiento_estandar || plan.procedimientoEstandar || '',
       estado: 'Plan Semanal',
-      notasMejora: plan.notas_mejora || '',
+      notasMejora: plan.notas_mejora || plan.notasMejora || '',
       resumenAnalitico: {
         ...detail,
         posts: updatedPosts
@@ -344,7 +344,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
   };
 
   const handleEditWeekPlanClick = (plan: any) => {
-    let parsedData = plan.resumen_analitico;
+    let parsedData = plan.resumen_analitico || plan.resumenAnalitico;
     if (typeof parsedData === 'string') {
       try {
         parsedData = JSON.parse(parsedData);
@@ -448,7 +448,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
         progreso: selectedPost?.progreso || { guionado: false, grabado: false, editado: false, programado: false }
       };
 
-      let detail = activePlanForRange.resumen_analitico;
+      let detail = activePlanForRange.resumen_analitico || activePlanForRange.resumenAnalitico;
       if (typeof detail === 'string') {
         try { detail = JSON.parse(detail); } catch { detail = {}; }
       }
@@ -461,14 +461,14 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
       }
 
       await updateContent(activePlanForRange.id, {
-        miembroId: activePlanForRange.miembro_id,
+        miembroId: activePlanForRange.miembro_id || activePlanForRange.miembroId,
         titulo: activePlanForRange.titulo,
         plataformas: activePlanForRange.plataformas || [],
-        guionPlantilla: activePlanForRange.guion_plantilla || '',
+        guionPlantilla: activePlanForRange.guion_plantilla || activePlanForRange.guionPlantilla || '',
         dialogo: activePlanForRange.dialogo || '',
-        procedimientoEstandar: activePlanForRange.procedimiento_estandar || '',
+        procedimientoEstandar: activePlanForRange.procedimiento_estandar || activePlanForRange.procedimientoEstandar || '',
         estado: 'Plan Semanal',
-        notasMejora: activePlanForRange.notas_mejora || '',
+        notasMejora: activePlanForRange.notas_mejora || activePlanForRange.notasMejora || '',
         resumenAnalitico: {
           ...detail,
           posts: updatedPosts
@@ -479,7 +479,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
       if (originatingIdeaId) {
         const originalIdea = contents.find(c => c.id === originatingIdeaId);
         if (originalIdea) {
-          const ra = originalIdea.resumen_analitico || {};
+          const ra = originalIdea.resumen_analitico || originalIdea.resumenAnalitico || {};
           const updatedRA = {
             ...ra,
             vecesUsada: (ra.vecesUsada || 0) + 1
@@ -488,11 +488,11 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
           await updateContent(originalIdea.id, {
             titulo: originalIdea.titulo,
             plataformas: originalIdea.plataformas,
-            guionPlantilla: originalIdea.guion_plantilla || '',
+            guionPlantilla: originalIdea.guion_plantilla || originalIdea.guionPlantilla || '',
             dialogo: originalIdea.dialogo || '',
-            procedimientoEstandar: originalIdea.procedimiento_estandar || '',
+            procedimientoEstandar: originalIdea.procedimiento_estandar || originalIdea.procedimientoEstandar || '',
             estado: 'Idea',
-            notasMejora: originalIdea.notas_mejora || '',
+            notasMejora: originalIdea.notas_mejora || originalIdea.notasMejora || '',
             resumenAnalitico: updatedRA
           });
         }
@@ -556,7 +556,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
   const handleDropOnDay = async (postId: string, planId: string, dateStr: string) => {
     const plan = contents.find(c => c.id === planId);
     if (!plan) return;
-    let detail = plan.resumen_analitico;
+    let detail = plan.resumen_analitico || plan.resumenAnalitico;
     if (typeof detail === 'string') {
       try { detail = JSON.parse(detail); } catch { return; }
     }
@@ -568,14 +568,14 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
     });
 
     await updateContent(plan.id, {
-      miembroId: plan.miembro_id,
+      miembroId: plan.miembro_id || plan.miembroId,
       titulo: plan.titulo,
       plataformas: plan.plataformas || [],
-      guionPlantilla: plan.guion_plantilla || '',
+      guionPlantilla: plan.guion_plantilla || plan.guionPlantilla || '',
       dialogo: plan.dialogo || '',
-      procedimientoEstandar: plan.procedimiento_estandar || '',
+      procedimientoEstandar: plan.procedimiento_estandar || plan.procedimientoEstandar || '',
       estado: 'Plan Semanal',
-      notasMejora: plan.notas_mejora || '',
+      notasMejora: plan.notas_mejora || plan.notasMejora || '',
       resumenAnalitico: {
         ...detail,
         posts: updatedPosts
@@ -588,7 +588,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
   const handleUnschedulePost = async (postId: string, planId: string) => {
     const plan = contents.find(c => c.id === planId);
     if (!plan) return;
-    let detail = plan.resumen_analitico;
+    let detail = plan.resumen_analitico || plan.resumenAnalitico;
     if (typeof detail === 'string') {
       try { detail = JSON.parse(detail); } catch { return; }
     }
@@ -600,14 +600,14 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
     });
 
     await updateContent(plan.id, {
-      miembroId: plan.miembro_id,
+      miembroId: plan.miembro_id || plan.miembroId,
       titulo: plan.titulo,
       plataformas: plan.plataformas || [],
-      guionPlantilla: plan.guion_plantilla || '',
+      guionPlantilla: plan.guion_plantilla || plan.guionPlantilla || '',
       dialogo: plan.dialogo || '',
-      procedimientoEstandar: plan.procedimiento_estandar || '',
+      procedimientoEstandar: plan.procedimiento_estandar || plan.procedimientoEstandar || '',
       estado: 'Plan Semanal',
-      notasMejora: plan.notas_mejora || '',
+      notasMejora: plan.notas_mejora || plan.notasMejora || '',
       resumenAnalitico: {
         ...detail,
         posts: updatedPosts
@@ -620,7 +620,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
   const handleUpdatePostStatus = async (postId: string, planId: string, newStatus: string) => {
     const plan = contents.find(c => c.id === planId);
     if (!plan) return;
-    let detail = plan.resumen_analitico;
+    let detail = plan.resumen_analitico || plan.resumenAnalitico;
     if (typeof detail === 'string') {
       try { detail = JSON.parse(detail); } catch { return; }
     }
@@ -632,14 +632,14 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
     });
 
     await updateContent(plan.id, {
-      miembroId: plan.miembro_id,
+      miembroId: plan.miembro_id || plan.miembroId,
       titulo: plan.titulo,
       plataformas: plan.plataformas || [],
-      guionPlantilla: plan.guion_plantilla || '',
+      guionPlantilla: plan.guion_plantilla || plan.guionPlantilla || '',
       dialogo: plan.dialogo || '',
-      procedimientoEstandar: plan.procedimiento_estandar || '',
+      procedimientoEstandar: plan.procedimiento_estandar || plan.procedimientoEstandar || '',
       estado: 'Plan Semanal',
-      notasMejora: plan.notas_mejora || '',
+      notasMejora: plan.notas_mejora || plan.notasMejora || '',
       resumenAnalitico: {
         ...detail,
         posts: updatedPosts
@@ -656,7 +656,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
     return (
       <WeeklyPlannerSheet
         initialTitle={activeWeeklyPlan.titulo}
-        initialData={activeWeeklyPlan.resumen_analitico}
+        initialData={activeWeeklyPlan.resumen_analitico || activeWeeklyPlan.resumenAnalitico}
         isSaving={false}
         onCancel={() => setActiveWeeklyPlan(null)}
         onSave={handleSaveWeekPlan}
@@ -831,7 +831,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({ agencyMembers }) => 
                 </div>
               ) : (
                 weeklyPlans.map(plan => {
-                  let detail = plan.resumen_analitico;
+                  let detail = plan.resumen_analitico || plan.resumenAnalitico;
                   if (typeof detail === 'string') {
                     try {
                       detail = JSON.parse(detail);
