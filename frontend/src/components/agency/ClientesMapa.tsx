@@ -32,32 +32,56 @@ function getEstadoLead(lead: Lead): { valor: string; etiqueta: string; emoji: st
 function construirIconoCliente(lead: Lead) {
   const estado = getEstadoLead(lead);
   const color = COLOR_POR_ESTADO[estado.valor] || '#3b82f6';
-  const iniciales = lead.nombre.substring(0, 2).toUpperCase();
 
   return L.divIcon({
     className: 'marcador-cliente-div',
     html: `
       <div style="
-        background-color: ${color};
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        border: 2.5px solid #09090b;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.5);
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        color: white;
-        font-family: sans-serif;
-        font-weight: 900;
-        font-size: 11px;
+        width: 100px;
+        height: 60px;
       ">
-        ${iniciales}
+        <!-- Circular pin with AppyStudio logo and status border -->
+        <div style="
+          background-color: #09090b;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          border: 3px solid ${color};
+          box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">
+          <img src="/appyStudio.jpeg" style="width: 100%; height: 100%; object-fit: cover;" />
+        </div>
+        
+        <!-- Label below -->
+        <div style="
+          margin-top: 4px;
+          background-color: rgba(9, 9, 11, 0.9);
+          border: 1px solid rgba(63, 63, 70, 0.8);
+          padding: 2px 6px;
+          border-radius: 6px;
+          color: #ffffff;
+          font-family: system-ui, -apple-system, sans-serif;
+          font-weight: 800;
+          font-size: 9px;
+          white-space: nowrap;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        ">
+          ${lead.nombre}
+        </div>
       </div>
     `,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-    popupAnchor: [0, -15],
+    iconSize: [100, 60],
+    iconAnchor: [50, 16],
+    popupAnchor: [0, -16],
   });
 }
 
