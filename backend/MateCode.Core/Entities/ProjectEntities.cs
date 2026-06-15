@@ -10,7 +10,7 @@ namespace MateCode.Core.Entities
         public Guid? AgenciaId { get; set; }
         public Guid? EspacioTrabajoId { get; set; }
         public string Nombre { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
+        public string? Email { get; set; }
         public string Estado { get; set; } = string.Empty;
         public string TokenEnlaceMagico { get; set; } = string.Empty;
         public JsonElement ContextoJson { get; set; }

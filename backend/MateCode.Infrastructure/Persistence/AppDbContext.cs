@@ -101,7 +101,7 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(c => c.AgenciaId).HasColumnName("agencia_id");
                 e.Property(c => c.EspacioTrabajoId).HasColumnName("espacio_trabajo_id").IsRequired(false);
                 e.Property(c => c.Nombre).HasColumnName("nombre");
-                e.Property(c => c.Email).HasColumnName("email");
+                e.Property(c => c.Email).HasColumnName("email").IsRequired(false);
                 e.Property(c => c.Estado).HasColumnName("estado");
                 e.Property(c => c.TokenEnlaceMagico).HasColumnName("token_enlace_magico");
                 e.Property(c => c.ContextoJson).HasColumnName("contexto_json").HasColumnType("jsonb");

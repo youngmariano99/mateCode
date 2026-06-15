@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\PROYECTS\\ACTIVOS\\PERSONALES\\MateCode\\backend\\MateCode.Api\\MateCode.API.csproj": {}
+    "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\PROYECTS\\ACTIVOS\\PERSONALES\\MateCode\\backend\\MateCode.API\\MateCode.API.csproj": {}
   },
   "projects": {
-    "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\PROYECTS\\ACTIVOS\\PERSONALES\\MateCode\\backend\\MateCode.Api\\MateCode.API.csproj": {
+    "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\PROYECTS\\ACTIVOS\\PERSONALES\\MateCode\\backend\\MateCode.API\\MateCode.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\PROYECTS\\ACTIVOS\\PERSONALES\\MateCode\\backend\\MateCode.Api\\MateCode.API.csproj",
+        "projectUniqueName": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\PROYECTS\\ACTIVOS\\PERSONALES\\MateCode\\backend\\MateCode.API\\MateCode.API.csproj",
         "projectName": "MateCode.API",
-        "projectPath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\PROYECTS\\ACTIVOS\\PERSONALES\\MateCode\\backend\\MateCode.Api\\MateCode.API.csproj",
+        "projectPath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\PROYECTS\\ACTIVOS\\PERSONALES\\MateCode\\backend\\MateCode.API\\MateCode.API.csproj",
         "packagesPath": "C:\\Users\\mari_\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\PROYECTS\\ACTIVOS\\PERSONALES\\MateCode\\backend\\MateCode.Api\\obj\\",
+        "outputPath": "C:\\Users\\mari_\\OneDrive\\Escritorio\\t\\PROYECTS\\ACTIVOS\\PERSONALES\\MateCode\\backend\\MateCode.API\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
