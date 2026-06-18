@@ -45,17 +45,32 @@ export interface Contract {
   miembrosIds?: any;
 }
 
+export interface CrmColumn {
+  id: string;
+  agenciaId: string;
+  key: string;
+  label: string;
+  orden: number;
+  fechaCreacion: string;
+}
+
 interface CrmState {
   leads: Lead[];
   contracts: Contract[];
   rubros: string[];
+  crmColumns: CrmColumn[];
   fetchLeads: () => Promise<void>;
   fetchRubros: () => Promise<void>;
+  fetchCrmColumns: () => Promise<void>;
   createLead: (lead: Omit<Lead, 'id' | 'agenciaId' | 'fechaCreacion'>) => Promise<void>;
   updateLeadStatus: (id: string, categoria: string, posicion?: string) => Promise<void>;
   updateLead: (id: string, lead: Partial<Lead>) => Promise<void>;
   deleteLead: (id: string) => Promise<void>;
   
+  createCrmColumn: (col: { key: string; label: string; orden: number }) => Promise<void>;
+  updateCrmColumn: (id: string, col: { label: string; orden: number }) => Promise<void>;
+  deleteCrmColumn: (id: string) => Promise<void>;
+
   // Contratos
   fetchContracts: () => Promise<void>;
   createContract: (contract: Omit<Contract, 'id' | 'agenciaId' | 'fechaCreacion'>) => Promise<void>;
@@ -68,6 +83,7 @@ export const useCrmStore = create<CrmState>((set) => ({
   leads: [],
   contracts: [],
   rubros: [],
+  crmColumns: [],
   fetchLeads: async () => {
     try {
       const data = await api.get('/AgencyCrm');
@@ -82,6 +98,50 @@ export const useCrmStore = create<CrmState>((set) => ({
       set({ rubros: data || [] });
     } catch (err) {
       console.error(err);
+    }
+  },
+  fetchCrmColumns: async () => {
+    try {
+      const data = await api.get('/AgencyCrm/columnas');
+      set({ crmColumns: data || [] });
+    } catch (err) {
+      console.error(err);
+    }
+  },
+  createCrmColumn: async (col) => {
+    try {
+      const data = await api.post('/AgencyCrm/columnas', col);
+      set(state => ({ crmColumns: [...state.crmColumns, data].sort((a, b) => a.orden - b.orden) }));
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  },
+  updateCrmColumn: async (id, col) => {
+    try {
+      const data = await api.put(`/AgencyCrm/columnas/${id}`, col);
+      set(state => ({
+        crmColumns: state.crmColumns.map(c => c.id === id ? data : c).sort((a, b) => a.orden - b.orden)
+      }));
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  },
+  deleteCrmColumn: async (id) => {
+    try {
+      await api.delete(`/AgencyCrm/columnas/${id}`);
+      set(state => {
+        const deletedCol = state.crmColumns.find(c => c.id === id);
+        const deletedKey = deletedCol?.key;
+        return {
+          crmColumns: state.crmColumns.filter(c => c.id !== id),
+          leads: state.leads.map(l => l.categoria === deletedKey ? { ...l, categoria: 'Lead' } : l)
+        };
+      });
+    } catch (err) {
+      console.error(err);
+      throw err;
     }
   },
   createLead: async (lead) => {

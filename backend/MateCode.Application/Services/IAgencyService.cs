@@ -69,6 +69,12 @@ namespace MateCode.Application.Services
             JsonElement? linksRecursos = null);
         Task<bool> DeleteLeadAsync(Guid leadId);
 
+        // --- CRM KANBAN COLUMNS ---
+        Task<IEnumerable<CrmColumna>> GetCrmColumnsAsync(Guid agencyId);
+        Task<CrmColumna> CreateCrmColumnAsync(Guid agencyId, string key, string label, int orden);
+        Task<CrmColumna?> UpdateCrmColumnAsync(Guid agencyId, Guid columnId, string label, int orden);
+        Task<bool> DeleteCrmColumnAsync(Guid agencyId, Guid columnId);
+
         // --- OBJETIVOS ---
         Task<IEnumerable<Objetivo>> GetGoalsAsync(Guid agencyId, Guid? userId = null);
         Task<Objetivo> CreateGoalAsync(Guid agencyId, Guid assignedUserId, Guid creatorId, string titulo, string descripcion, string periodType, DateTime? limitDate);

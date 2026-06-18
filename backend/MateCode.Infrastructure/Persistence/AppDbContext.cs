@@ -31,6 +31,7 @@ namespace MateCode.Infrastructure.Persistence
         public DbSet<TecnologiaCatalogo> TecnologiasCatalogo { get; set; }
         public DbSet<ContratoAgencia> ContratosAgencia { get; set; }
         public DbSet<ContratoHistorial> ContratosHistorial { get; set; }
+        public DbSet<CrmColumna> CrmColumnas { get; set; }
 
         // Módulos de Agencia/Empresa
         public DbSet<Agencia> Agencias { get; set; }
@@ -128,6 +129,16 @@ namespace MateCode.Infrastructure.Persistence
                 e.Property(c => c.DoloresNotas).HasColumnName("dolores_notas");
                 e.Property(c => c.BitacoraContactos).HasColumnName("bitacora_contactos").HasColumnType("jsonb");
                 e.Property(c => c.LinksRecursos).HasColumnName("links_recursos").HasColumnType("jsonb");
+            });
+
+            modelBuilder.Entity<CrmColumna>(e => {
+                e.ToTable("kanban_columnas_crm", "crm");
+                e.Property(col => col.Id).HasColumnName("id");
+                e.Property(col => col.AgenciaId).HasColumnName("agencia_id");
+                e.Property(col => col.Key).HasColumnName("key");
+                e.Property(col => col.Label).HasColumnName("label");
+                e.Property(col => col.Orden).HasColumnName("orden");
+                e.Property(col => col.FechaCreacion).HasColumnName("fecha_creacion");
             });
 
             modelBuilder.Entity<Proyecto>(e => {

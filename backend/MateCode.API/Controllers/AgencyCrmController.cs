@@ -149,5 +149,66 @@ namespace MateCode.API.Controllers
             }
             catch (Exception ex) { return StatusCode(500, ex.Message); }
         }
+
+        [HttpGet("columnas")]
+        public async Task<IActionResult> GetColumns()
+        {
+            try {
+                var agencyId = GetAgencyId();
+                var cols = await _agencyService.GetCrmColumnsAsync(agencyId);
+                return Ok(cols);
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+
+        public class CreateCrmColumnRequest
+        {
+            public string Key { get; set; } = string.Empty;
+            public string Label { get; set; } = string.Empty;
+            public int Orden { get; set; }
+        }
+
+        [HttpPost("columnas")]
+        public async Task<IActionResult> CreateColumn([FromBody] CreateCrmColumnRequest req)
+        {
+            try {
+                var agencyId = GetAgencyId();
+                var col = await _agencyService.CreateCrmColumnAsync(agencyId, req.Key, req.Label, req.Orden);
+                return Ok(col);
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+
+        public class UpdateCrmColumnRequest
+        {
+            public string Label { get; set; } = string.Empty;
+            public int Orden { get; set; }
+        }
+
+        [HttpPut("columnas/{id}")]
+        public async Task<IActionResult> UpdateColumn(Guid id, [FromBody] UpdateCrmColumnRequest req)
+        {
+            try {
+                var agencyId = GetAgencyId();
+                var col = await _agencyService.UpdateCrmColumnAsync(agencyId, id, req.Label, req.Orden);
+                return col != null ? Ok(col) : NotFound("Columna no encontrada.");
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+
+        [HttpDelete("columnas/{id}")]
+        public async Task<IActionResult> DeleteColumn(Guid id)
+        {
+            try {
+                var agencyId = GetAgencyId();
+                var success = await _agencyService.DeleteCrmColumnAsync(agencyId, id);
+                return success ? Ok() : NotFound("Columna no encontrada.");
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
     }
 }

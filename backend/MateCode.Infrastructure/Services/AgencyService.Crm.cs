@@ -173,5 +173,59 @@ namespace MateCode.Infrastructure.Services
             lead.Activo = false;
             return await _context.SaveChangesAsync() > 0;
         }
+
+        public async Task<IEnumerable<CrmColumna>> GetCrmColumnsAsync(Guid agencyId)
+        {
+            return await _context.CrmColumnas
+                .Where(c => c.AgenciaId == agencyId)
+                .OrderBy(c => c.Orden)
+                .ToListAsync();
+        }
+
+        public async Task<CrmColumna> CreateCrmColumnAsync(Guid agencyId, string key, string label, int orden)
+        {
+            var col = new CrmColumna
+            {
+                Id = Guid.NewGuid(),
+                AgenciaId = agencyId,
+                Key = key,
+                Label = label,
+                Orden = orden,
+                FechaCreacion = DateTime.UtcNow
+            };
+            await _context.CrmColumnas.AddAsync(col);
+            await _context.SaveChangesAsync();
+            return col;
+        }
+
+        public async Task<CrmColumna?> UpdateCrmColumnAsync(Guid agencyId, Guid columnId, string label, int orden)
+        {
+            var col = await _context.CrmColumnas.FirstOrDefaultAsync(c => c.Id == columnId && c.AgenciaId == agencyId);
+            if (col == null) return null;
+
+            col.Label = label;
+            col.Orden = orden;
+            await _context.SaveChangesAsync();
+            return col;
+        }
+
+        public async Task<bool> DeleteCrmColumnAsync(Guid agencyId, Guid columnId)
+        {
+            var col = await _context.CrmColumnas.FirstOrDefaultAsync(c => c.Id == columnId && c.AgenciaId == agencyId);
+            if (col == null) return false;
+
+            // Reasignación automática de seguridad
+            var affectedLeads = await _context.Clientes
+                .Where(l => l.AgenciaId == agencyId && l.Categoria == col.Key && l.Activo)
+                .ToListAsync();
+
+            foreach (var lead in affectedLeads)
+            {
+                lead.Categoria = "Lead";
+            }
+
+            _context.CrmColumnas.Remove(col);
+            return await _context.SaveChangesAsync() > 0;
+        }
     }
 }

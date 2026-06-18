@@ -74,4 +74,26 @@ namespace MateCode.Core.Entities
         public virtual Proyecto? Proyecto { get; set; }
         public virtual EstandarCatalogo? Estandar { get; set; }
     }
+
+    [Table("kanban_columnas_crm", Schema = "crm")]
+    public class CrmColumna
+    {
+        [Column("id")]
+        public Guid Id { get; set; }
+
+        [Column("agencia_id")]
+        public Guid AgenciaId { get; set; }
+
+        [Column("key")]
+        public string Key { get; set; } = string.Empty;
+
+        [Column("label")]
+        public string Label { get; set; } = string.Empty;
+
+        [Column("orden")]
+        public int Orden { get; set; }
+
+        [Column("fecha_creacion")]
+        public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+    }
 }

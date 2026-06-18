@@ -462,6 +462,44 @@ using (var scope = app.Services.CreateScope())
                     WHERE NOT EXISTS (SELECT 1 FROM organizacion.kanban_columnas_operativas k WHERE k.agencia_id = a.id AND k.nombre = 'Done');
                 END IF;
 
+                -- Tabla de Columnas Kanban del CRM (Clientes)
+                CREATE TABLE IF NOT EXISTS crm.kanban_columnas_crm (
+                    id UUID PRIMARY KEY,
+                    agencia_id UUID NOT NULL REFERENCES nucleo.agencias(id) ON DELETE CASCADE,
+                    key VARCHAR(100) NOT NULL,
+                    label VARCHAR(255) NOT NULL,
+                    orden INT NOT NULL,
+                    fecha_creacion TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+                );
+
+                -- Sembrar columnas por defecto para agencias que no las tengan
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'crm' AND table_name = 'kanban_columnas_crm') THEN
+                    INSERT INTO crm.kanban_columnas_crm (id, agencia_id, key, label, orden, fecha_creacion)
+                    SELECT gen_random_uuid(), a.id, 'Lead', 'Lead / Prospecto', 0, NOW() 
+                    FROM nucleo.agencias a
+                    WHERE NOT EXISTS (SELECT 1 FROM crm.kanban_columnas_crm k WHERE k.agencia_id = a.id);
+
+                    INSERT INTO crm.kanban_columnas_crm (id, agencia_id, key, label, orden, fecha_creacion)
+                    SELECT gen_random_uuid(), a.id, 'Llamada agendada', 'Llamada Agendada', 1, NOW() 
+                    FROM nucleo.agencias a
+                    WHERE NOT EXISTS (SELECT 1 FROM crm.kanban_columnas_crm k WHERE k.agencia_id = a.id AND k.key = 'Llamada agendada');
+
+                    INSERT INTO crm.kanban_columnas_crm (id, agencia_id, key, label, orden, fecha_creacion)
+                    SELECT gen_random_uuid(), a.id, 'Propuesta enviada', 'Propuesta Enviada', 2, NOW() 
+                    FROM nucleo.agencias a
+                    WHERE NOT EXISTS (SELECT 1 FROM crm.kanban_columnas_crm k WHERE k.agencia_id = a.id AND k.key = 'Propuesta enviada');
+
+                    INSERT INTO crm.kanban_columnas_crm (id, agencia_id, key, label, orden, fecha_creacion)
+                    SELECT gen_random_uuid(), a.id, 'Aceptado', 'Ganado / Aceptado', 3, NOW() 
+                    FROM nucleo.agencias a
+                    WHERE NOT EXISTS (SELECT 1 FROM crm.kanban_columnas_crm k WHERE k.agencia_id = a.id AND k.key = 'Aceptado');
+
+                    INSERT INTO crm.kanban_columnas_crm (id, agencia_id, key, label, orden, fecha_creacion)
+                    SELECT gen_random_uuid(), a.id, 'Rechazado', 'Perdido / Rechazado', 4, NOW() 
+                    FROM nucleo.agencias a
+                    WHERE NOT EXISTS (SELECT 1 FROM crm.kanban_columnas_crm k WHERE k.agencia_id = a.id AND k.key = 'Rechazado');
+                END IF;
+
                 -- Tabla de Finanzas Corporativas
                 CREATE TABLE IF NOT EXISTS finanzas.transacciones_agencia (
                     id UUID PRIMARY KEY,

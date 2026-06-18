@@ -15,12 +15,17 @@ const ETIQUETAS_OPCIONES = [
 ];
 
 export const CrmPanel: React.FC = () => {
-  const { leads, fetchLeads, createLead, updateLead, updateLeadStatus, deleteLead, rubros, fetchRubros } = useCrmStore();
+  const { leads, fetchLeads, createLead, updateLead, updateLeadStatus, deleteLead, rubros, fetchRubros, crmColumns, fetchCrmColumns, createCrmColumn, updateCrmColumn, deleteCrmColumn } = useCrmStore();
   const [activeTab, setActiveTab] = useState<'kanban' | 'map' | 'forms' | 'contracts' | 'responses'>('kanban');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [associatingLead, setAssociatingLead] = useState<Lead | null>(null);
   const [associationSearch, setAssociationSearch] = useState('');
+  
+  const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
+  const [newColLabel, setNewColLabel] = useState('');
+  const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
+  const [editingColumnLabel, setEditingColumnLabel] = useState('');
 
   const [form, setForm] = useState({
     nombre: '',
@@ -45,6 +50,7 @@ export const CrmPanel: React.FC = () => {
   useEffect(() => {
     fetchLeads();
     fetchRubros();
+    fetchCrmColumns();
   }, []);
 
   const [addrFields, setAddrFields] = useState({
@@ -438,13 +444,22 @@ export const CrmPanel: React.FC = () => {
               </button>
             )}
             {activeTab === 'kanban' && (
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold rounded-xl flex items-center gap-2 transition-colors"
-              >
-                <Plus size={14} />
-                <span>Cargar Lead</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setIsColumnModalOpen(true)}
+                  className="px-4 py-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-xs font-bold rounded-xl flex items-center gap-2 transition-colors"
+                >
+                  <ListFilter size={14} className="text-emerald-400" />
+                  <span>Columnas CRM</span>
+                </button>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold rounded-xl flex items-center gap-2 transition-colors"
+                >
+                  <Plus size={14} />
+                  <span>Cargar Lead</span>
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -512,14 +527,14 @@ export const CrmPanel: React.FC = () => {
 
       <div className="flex-1 flex flex-col">
         {activeTab === 'kanban' ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 flex-1">
-            {[
-              { key: 'Lead', label: 'Lead / Prospecto' },
-              { key: 'Llamada agendada', label: 'Llamada Agendada' },
-              { key: 'Propuesta enviada', label: 'Propuesta Enviada' },
-              { key: 'Aceptado', label: 'Ganado / Aceptado' },
-              { key: 'Rechazado', label: 'Perdido / Rechazado' }
-            ].map(col => (
+          <div 
+            className="grid gap-4 flex-1 overflow-x-auto pb-4 pr-1 neon-scrollbar" 
+            style={{ 
+              gridTemplateColumns: `repeat(${crmColumns.length || 5}, minmax(250px, 1fr))`,
+              alignItems: 'start'
+            }}
+          >
+            {crmColumns.map(col => (
               <div
                 key={col.key}
                 onDragOver={(e) => e.preventDefault()}
@@ -714,11 +729,9 @@ export const CrmPanel: React.FC = () => {
                     <div>
                       <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Estado de Lead</label>
                       <select value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white">
-                        <option value="Lead">Lead / Potencial</option>
-                        <option value="Llamada agendada">Llamada agendada / Indeciso</option>
-                        <option value="Propuesta enviada">Propuesta enviada</option>
-                        <option value="Aceptado">Ganado / Aceptado</option>
-                        <option value="Rechazado">Perdido / Rechazado</option>
+                        {crmColumns.map(col => (
+                          <option key={col.key} value={col.key}>{col.label}</option>
+                        ))}
                       </select>
                     </div>
                     <div>
@@ -1022,6 +1035,208 @@ export const CrmPanel: React.FC = () => {
           </motion.div>
         </div>
       )}
-    </div>
+      {/* Column Management Modal */}
+      {isColumnModalOpen && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 w-full max-w-lg space-y-5 shadow-2xl"
+          >
+            <div className="flex justify-between items-center border-b border-zinc-850 pb-3">
+              <h3 className="text-base font-black text-white flex items-center gap-2">
+                <ListFilter size={16} className="text-emerald-400" />
+                <span>Administrar Columnas CRM</span>
+              </h3>
+              <button
+                onClick={() => {
+                  setIsColumnModalOpen(false);
+                  setEditingColumnId(null);
+                  setNewColLabel('');
+                }}
+                className="text-zinc-400 hover:text-white text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Crear nueva columna */}
+            <div className="bg-zinc-950/40 border border-zinc-850 p-4 rounded-2xl space-y-3">
+              <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Nuevo Estado</h4>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Ej: Seguimiento, Demo..."
+                  value={newColLabel}
+                  onChange={e => setNewColLabel(e.target.value)}
+                  className="flex-1 bg-zinc-950 border border-zinc-800 p-2.5 rounded-xl text-xs text-white"
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const label = newColLabel.trim();
+                    if (!label) return;
+                    const key = label.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                    // Check duplicate keys
+                    if (crmColumns.some(c => c.key === key)) {
+                      Swal.fire({ title: 'Error', text: 'Ya existe una columna con una clave similar.', icon: 'error' });
+                      return;
+                    }
+                    const nextOrder = crmColumns.length > 0 ? Math.max(...crmColumns.map(c => c.orden)) + 1 : 0;
+                    try {
+                      await createCrmColumn({ key, label, orden: nextOrder });
+                      setNewColLabel('');
+                    } catch (err: any) {
+                      Swal.fire({ title: 'Error', text: err.message, icon: 'error' });
+                    }
+                  }}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black rounded-xl"
+                >
+                  Agregar
+                </button>
+              </div>
+            </div>
+
+            {/* Listado de columnas */}
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 neon-scrollbar">
+              <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Columnas Activas</h4>
+              {crmColumns.map((col, idx) => {
+                const isEditing = editingColumnId === col.id;
+                return (
+                  <div key={col.id} className="bg-zinc-950/20 border border-zinc-850 p-3 rounded-2xl flex items-center justify-between gap-3">
+                    {isEditing ? (
+                      <div className="flex-1 flex gap-2">
+                        <input
+                          type="text"
+                          value={editingColumnLabel}
+                          onChange={e => setEditingColumnLabel(e.target.value)}
+                          className="flex-1 bg-zinc-950 border border-zinc-800 px-2 py-1 rounded-lg text-xs text-white"
+                        />
+                        <button
+                          onClick={async () => {
+                            if (!editingColumnLabel.trim()) return;
+                            try {
+                              await updateCrmColumn(col.id, { label: editingColumnLabel, orden: col.orden });
+                              setEditingColumnId(null);
+                            } catch (err: any) {
+                              Swal.fire({ title: 'Error', text: err.message, icon: 'error' });
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-emerald-500 text-black text-[10px] font-black rounded-lg"
+                        >
+                          Guardar
+                        </button>
+                        <button
+                          onClick={() => setEditingColumnId(null)}
+                          className="px-2.5 py-1 bg-zinc-800 text-zinc-400 text-[10px] font-bold rounded-lg"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] bg-zinc-850 text-zinc-500 font-bold px-1.5 py-0.5 rounded-md">
+                            {idx + 1}
+                          </span>
+                          <span className="text-xs font-bold text-white">{col.label}</span>
+                          <span className="text-[9px] text-zinc-650 font-mono">({col.key})</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {/* Reordenación */}
+                          <button
+                            disabled={idx === 0}
+                            onClick={async () => {
+                              const prevCol = crmColumns[idx - 1];
+                              await updateCrmColumn(col.id, { label: col.label, orden: prevCol.orden });
+                              await updateCrmColumn(prevCol.id, { label: prevCol.label, orden: col.orden });
+                            }}
+                            className="p-1 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-400 rounded disabled:opacity-30 text-[10px]"
+                            title="Subir"
+                          >
+                            ▲
+                          </button>
+                          <button
+                            disabled={idx === crmColumns.length - 1}
+                            onClick={async () => {
+                              const nextCol = crmColumns[idx + 1];
+                              await updateCrmColumn(col.id, { label: col.label, orden: nextCol.orden });
+                              await updateCrmColumn(nextCol.id, { label: nextCol.label, orden: col.orden });
+                            }}
+                            className="p-1 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-400 rounded disabled:opacity-30 text-[10px]"
+                            title="Bajar"
+                          >
+                            ▼
+                          </button>
+                          {/* Editar */}
+                          <button
+                            onClick={() => {
+                              setEditingColumnId(col.id);
+                              setEditingColumnLabel(col.label);
+                            }}
+                            className="p-1 text-zinc-500 hover:text-white"
+                            title="Editar nombre"
+                          >
+                            <Edit2 size={12} />
+                          </button>
+                          {/* Borrar */}
+                          <button
+                            onClick={async () => {
+                              const leadsInCol = leads.filter(l => l.categoria === col.key && !isFormResponse(l));
+                              const warningText = leadsInCol.length > 0
+                                ? `Esta columna contiene ${leadsInCol.length} prospectos. Al eliminarla, serán trasladados automáticamente al estado "Lead".`
+                                : 'Esta acción no se puede deshacer.';
+                              
+                              const { isConfirmed } = await Swal.fire({
+                                title: `¿Eliminar columna "${col.label}"?`,
+                                text: warningText,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                background: '#09090b',
+                                color: '#f4f4f5',
+                                confirmButtonColor: '#ef4444',
+                                cancelButtonColor: '#27272a',
+                                confirmButtonText: 'Sí, eliminar',
+                                cancelButtonText: 'Cancelar'
+                              });
+
+                              if (isConfirmed) {
+                                try {
+                                  await deleteCrmColumn(col.id);
+                                  fetchLeads(); // Refresh leads representation in frontend
+                                } catch (err: any) {
+                                  Swal.fire({ title: 'Error', text: err.message, icon: 'error' });
+                                }
+                              }
+                            }}
+                            className="p-1 text-zinc-500 hover:text-red-400"
+                            title="Eliminar columna"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="flex justify-end pt-2 border-t border-zinc-850">
+              <button
+                onClick={() => {
+                  setIsColumnModalOpen(false);
+                  setEditingColumnId(null);
+                  setNewColLabel('');
+                }}
+                className="px-5 py-2 bg-zinc-800 text-zinc-300 rounded-xl text-xs font-bold hover:bg-zinc-700"
+              >
+                Cerrar
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+      </div>
   );
 };
