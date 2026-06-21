@@ -10,5 +10,14 @@ if (!supabaseUrl || !supabaseUrl.startsWith('http')) {
 
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co', 
-  supabaseKey || 'placeholder'
+  supabaseKey || 'placeholder',
+  {
+    auth: {
+      persistSession: true,
+      storageKey: 'matecode-auth-token',
+      storage: window.localStorage,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  }
 );
