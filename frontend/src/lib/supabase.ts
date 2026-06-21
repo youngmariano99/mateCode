@@ -14,7 +14,6 @@ export const supabase = createClient(
   {
     auth: {
       persistSession: true,
-      storageKey: 'matecode-auth-token',
       storage: window.localStorage,
       autoRefreshToken: true,
       detectSessionInUrl: true
