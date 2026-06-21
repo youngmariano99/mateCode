@@ -28,7 +28,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let active = true;
 
-    // Obtener la sesión inicial de forma segura
+    // Obtener la sesión inicial de forma segura (espera el refresco automático)
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       if (active) {
         setSession(initialSession);
@@ -38,13 +38,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       if (active) setLoading(false);
     });
 
-    // Escuchar los eventos de cambio de estado
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+    // Escuchar cambios de estado en segundo plano (para deslogueos, etc.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       if (active) {
         setSession(currentSession);
-        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-          setLoading(false);
-        }
       }
     });
 
