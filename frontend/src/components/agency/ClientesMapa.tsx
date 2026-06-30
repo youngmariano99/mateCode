@@ -16,16 +16,52 @@ const COLOR_POR_ESTADO: Record<string, string> = {
 };
 
 function getEstadoLead(lead: Lead): { valor: string; etiqueta: string; emoji: string } {
+  const cat = (lead.categoria || '').toLowerCase().trim();
   const estadoRaw = lead.estado?.toLowerCase() || 'potencial';
-  if (estadoRaw === 'aprobado' || estadoRaw === 'confirmado' || lead.categoria === 'Aceptado') {
+
+  // 1. Confirmado / Ganado / Terminado (Verde)
+  if (
+    cat === 'aceptado' ||
+    cat === 'ganado' ||
+    cat === 'terminado' ||
+    cat === 'completado' ||
+    cat.includes('aceptad') ||
+    cat.includes('ganad') ||
+    cat.includes('terminad') ||
+    cat.includes('exit') ||
+    cat.includes('ok') ||
+    estadoRaw === 'aprobado' ||
+    estadoRaw === 'confirmado'
+  ) {
     return { valor: 'confirmado', etiqueta: 'Confirmado', emoji: '✅' };
   }
-  if (estadoRaw === 'negado' || lead.categoria === 'Rechazado') {
+
+  // 2. Negado / Rechazado / Perdido (Rojo)
+  if (
+    cat === 'rechazado' ||
+    cat === 'perdido' ||
+    cat === 'cancelado' ||
+    cat.includes('rechazad') ||
+    cat.includes('perdid') ||
+    cat.includes('cancelad') ||
+    estadoRaw === 'negado'
+  ) {
     return { valor: 'negado', etiqueta: 'Negado', emoji: '❌' };
   }
-  if (estadoRaw === 'indeciso') {
+
+  // 3. Indeciso / Seguimiento / Propuestas (Amarillo)
+  if (
+    cat === 'indeciso' ||
+    cat.includes('llamada') ||
+    cat.includes('propuesta') ||
+    cat.includes('espera') ||
+    cat.includes('seguimiento') ||
+    estadoRaw === 'indeciso'
+  ) {
     return { valor: 'indeciso', etiqueta: 'Indeciso', emoji: '🤔' };
   }
+
+  // 4. Default / Potencial / Lead (Azul)
   return { valor: 'potencial', etiqueta: 'Potencial', emoji: '⏳' };
 }
 
